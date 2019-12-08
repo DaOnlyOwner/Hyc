@@ -79,4 +79,5 @@ Thumbs.db
 !/generated
 !/meta
 !/.gitignore
+!/meson.build
 

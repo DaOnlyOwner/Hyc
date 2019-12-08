@@ -1,17 +1,17 @@
-#include "StackCreator.h"
+#include "PipelineStage_TypeChecking.h"
 #include <set>
 #include <algorithm>
 #include "DebugPrint.h"
 #include <Symbol.h>
 #include "TypeChecker.h"
 
-antlrcpp::Any StackCreatorVisitor::visitCompilationUnit(HyraParser::CompilationUnitContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitCompilationUnit(HyraParser::CompilationUnitContext* context)
 {
 	
 	context->stmtList.accept(this);
 }
 
-antlrcpp::Any StackCreatorVisitor::visitAssignmentExpr(HyraParser::AssignmentExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitAssignmentExpr(HyraParser::AssignmentExprContext* context)
 {
 	Variable var;
 	var.Name = context->lh->accept(this).as<std::string>();
@@ -42,7 +42,7 @@ UID getReturnTypeOperator(const StackCollection& stack, const UID& typeLh, const
 	}
 }
 
-antlrcpp::Any StackCreatorVisitor::visitMulDivModExpr(HyraParser::MulDivModExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitMulDivModExpr(HyraParser::MulDivModExprContext* context)
 {
 	UID typeLh = context->lh->accept(this).as<UID>();
 	UID typeRh = context->rh->accept(this).as<UID>();
@@ -55,87 +55,87 @@ antlrcpp::Any StackCreatorVisitor::visitMulDivModExpr(HyraParser::MulDivModExprC
 	}	
 }
 
-antlrcpp::Any StackCreatorVisitor::visitBitwiseNegateExpr(HyraParser::BitwiseNegateExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitBitwiseNegateExpr(HyraParser::BitwiseNegateExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitBitwiseOrExpr(HyraParser::BitwiseOrExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitBitwiseOrExpr(HyraParser::BitwiseOrExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitBitwiseAndExpr(HyraParser::BitwiseAndExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitBitwiseAndExpr(HyraParser::BitwiseAndExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitAddSubExpr(HyraParser::AddSubExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitAddSubExpr(HyraParser::AddSubExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitParenExpr(HyraParser::ParenExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitParenExpr(HyraParser::ParenExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitConstExpr(HyraParser::ConstExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitConstExpr(HyraParser::ConstExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitConstantExpr(HyraParser::ConstantExprContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitConstantExpr(HyraParser::ConstantExprContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitStmt(HyraParser::StmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitStmt(HyraParser::StmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitStmtList(HyraParser::StmtListContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitStmtList(HyraParser::StmtListContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitAtomicStmt(HyraParser::AtomicStmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitAtomicStmt(HyraParser::AtomicStmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitDecStmt(HyraParser::DecStmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitDecStmt(HyraParser::DecStmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitBlockStmt(HyraParser::BlockStmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitBlockStmt(HyraParser::BlockStmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitIfStmt(HyraParser::IfStmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitIfStmt(HyraParser::IfStmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitSimpleBlockStmt(HyraParser::SimpleBlockStmtContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitSimpleBlockStmt(HyraParser::SimpleBlockStmtContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitPattern(HyraParser::PatternContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitPattern(HyraParser::PatternContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitLiteral(HyraParser::LiteralContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitLiteral(HyraParser::LiteralContext* context)
 {
 	return antlrcpp::Any();
 }
 
-antlrcpp::Any StackCreatorVisitor::visitIdentifier(HyraParser::IdentifierContext* context)
+antlrcpp::Any PipelineStage_TypeChecking::visitIdentifier(HyraParser::IdentifierContext* context)
 {
 	return antlrcpp::Any();
 }

@@ -3,7 +3,7 @@
 #include "StackCollection.h"
 #include "HyraParser.h"
 
-class StackCreatorVisitor : HyraVisitor
+class PipelineStage_TypeChecking : HyraVisitor
 {
 private:
 	StackCollection m_stack;
