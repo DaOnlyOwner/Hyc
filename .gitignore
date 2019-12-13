@@ -79,5 +79,5 @@ Thumbs.db
 !/generated
 !/meta
 !/.gitignore
-!/meson.build
+!/CMakeLists.txt
 

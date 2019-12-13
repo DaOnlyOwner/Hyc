@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-struct SemanticErrorDescription
+struct ErrorDescription
 {
 	std::string Message;
 	size_t Line;
@@ -13,5 +13,6 @@ struct SemanticErrorDescription
 };
 
 void Debug(const std::string& str);
-void SemanticError(const SemanticErrorDescription& descr);
-
+void SemanticError(const ErrorDescription& descr);
+void LexicalError(const ErrorDescription& descr);
+void SyntacticalError(const ErrorDescription& descr);
