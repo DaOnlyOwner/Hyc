@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 project(Hyc VERSION 0.01 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -31,7 +31,7 @@ set (HEADERS
 
 file(GLOB_RECURSE REFLEX_SRC lib/reflex/*.cpp) #Static sources
 
-add_compile_definitions(ROOT=\"${CMAKE_SOURCE_DIR}\")
+add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 add_executable(Hyc ${SOURCES} ${REFLEX_SRC} ${HEADERS})
 
 set(SYNTAX_HEADERS 
