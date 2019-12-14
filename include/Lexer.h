@@ -30,6 +30,7 @@
 
 #include "Token.h"
 #include <vector>
+#include <algorithm>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +58,8 @@
 class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 
    std::vector<Token> m_tokens;
-   void push(Token::TokenType ttype)
+   size_t m_current_token = -1; // Start before the actual token
+   void push(Token::Type ttype)
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
@@ -68,10 +70,28 @@ public:
 	return std::move(m_tokens);
    }
 
-   Token next()
+   const Token& eat()
    {
-
+      const Token& out = lookahead(1);
+      m_current_token++;
+      return out;
    }
+
+   const Token& lookahead(size_t amount) const
+   {
+      auto minIndex = std::min(m_current_token+amount, m_tokens.size()-1);
+      return m_tokens[minIndex];
+   }
+
+   void match_token(Token::Type type)
+   {
+      const Token& token = eat();
+      if(token.type != type)
+      {
+          printf("not possible to match: %s", token.text);
+	  abort();
+      }
+    }
 
 
 

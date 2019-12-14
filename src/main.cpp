@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Lexer.h"
+#include "Pipeline.h"
 #include <fstream>
 #include <string>
 
@@ -11,13 +11,7 @@ int main(int argc, char** argv)
 		printf("Couldn't open file");
 		return -1;
 	}
-	Lexer lexer(fileInput);
-	lexer.lex();
-	auto tokens = lexer.get_tokens();
-	for (int i = 0; i < tokens.size(); i++)
-	{
-		printf("%s\n", Token::Translate(tokens[i].type).c_str());
-	}
 
-	getchar();
+	Pipeline p;
+	p.build(fileInput);
 }
