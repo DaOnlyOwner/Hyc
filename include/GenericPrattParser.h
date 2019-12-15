@@ -55,7 +55,7 @@ public:
 		const Token& prefix_token = m_token_source.eat();
 		// Let's parse a prefix
 		auto prefix_it = m_prefix_operation.find(prefix_token.type);
-		if (prefix_it == m_prefix_operation.end()) { printf("Cannot parse this shit you fucking idiot"); assert(false); }
+		if (prefix_it == m_prefix_operation.end()) { printf("Cannot parse this"); assert(false); }
 		PrefixOperation<TReturn>& prefix = prefix_it->second;
 		auto lh = prefix.operation(*this, prefix_token);
 		const Token* infix_token = &m_token_source.lookahead(1); // To reassign infix_token, use ptr.
@@ -75,7 +75,7 @@ public:
 				: infix_it->second.precedence + infix_it->second.right_assoc;
 		}
 
-		// TODO: Parse postfix operators
+		// TODO: Completness: Parse postfix, ternary operators
 
 
 		return std::move(lh);
@@ -92,5 +92,4 @@ private:
 	Lexer& m_token_source;
 	std::unordered_map<Token::Type, InfixOperation<TReturn>> m_infix_operation;
 	std::unordered_map<Token::Type, PrefixOperation<TReturn>> m_prefix_operation;
-	//std::unordered_map<Token::Type, PostfixOperation<TReturn>> m_postfix_operation;
 };

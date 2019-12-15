@@ -7,6 +7,7 @@
 typedef GenericPrattParser<Expr> ExprParser;
 typedef GenericPrattParser<Pattern> PatternParser;
 
+// TODO: Correctness: Check if an integer / float token is of valid length
 class Parser
 {
 public:

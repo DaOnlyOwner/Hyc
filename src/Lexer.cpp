@@ -136,7 +136,7 @@ int Lexer::lex()
           case 0:
             if (matcher().at_end())
             {
-              if (debug()) std::cerr << "--EOF rule at line 76 (start condition " << start() << ")\n";
+              if (debug()) std::cerr << "--EOF rule at line 92 (start condition " << start() << ")\n";
 { push(Token::Eof); return 0;}
             }
             else
@@ -145,47 +145,79 @@ int Lexer::lex()
               out().put(matcher().input());
             }
             break;
-          case 1: // rule at line 65: \s+
-            if (debug()) std::cerr << "--accepting rule at line 65 (\"" << matcher().text() << "\")\n";
+          case 1: // rule at line 73: \s+
+            if (debug()) std::cerr << "--accepting rule at line 73 (\"" << matcher().text() << "\")\n";
             break;
-          case 2: // rule at line 66: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))(?:u?(?:c|i|l))?)
-            if (debug()) std::cerr << "--accepting rule at line 66 (\"" << matcher().text() << "\")\n";
-{ push(Token::Integer); }
+          case 2: // rule at line 74: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u8)
+            if (debug()) std::cerr << "--accepting rule at line 74 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerU8); }
             break;
-          case 3: // rule at line 67: (?:\d*\.\d+(?:[Ee][\x2b\x2d]\d+)?)
-            if (debug()) std::cerr << "--accepting rule at line 67 (\"" << matcher().text() << "\")\n";
+          case 3: // rule at line 75: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u16)
+            if (debug()) std::cerr << "--accepting rule at line 75 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerU16); }
+            break;
+          case 4: // rule at line 76: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u32)
+            if (debug()) std::cerr << "--accepting rule at line 76 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerU32); }
+            break;
+          case 5: // rule at line 77: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u64)
+            if (debug()) std::cerr << "--accepting rule at line 77 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerU64); }
+            break;
+          case 6: // rule at line 78: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s8)
+            if (debug()) std::cerr << "--accepting rule at line 78 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerS8); }
+            break;
+          case 7: // rule at line 79: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s16)
+            if (debug()) std::cerr << "--accepting rule at line 79 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerS16); }
+            break;
+          case 8: // rule at line 80: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s32)
+            if (debug()) std::cerr << "--accepting rule at line 80 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerS32); }
+            break;
+          case 9: // rule at line 81: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s64?)
+            if (debug()) std::cerr << "--accepting rule at line 81 (\"" << matcher().text() << "\")\n";
+{ push(Token::IntegerS64); }
+            break;
+          case 10: // rule at line 82: (?:\d*\.\d+(?:[Ee][\x2b\x2d]\d+)?f)
+            if (debug()) std::cerr << "--accepting rule at line 82 (\"" << matcher().text() << "\")\n";
 { push(Token::Float); }
             break;
-          case 4: // rule at line 68: (?:(?:\Q+\E))
-            if (debug()) std::cerr << "--accepting rule at line 68 (\"" << matcher().text() << "\")\n";
+          case 11: // rule at line 83: (?:\d*\.\d+(?:[Ee][\x2b\x2d]\d+)?)
+            if (debug()) std::cerr << "--accepting rule at line 83 (\"" << matcher().text() << "\")\n";
+{ push(Token::Double); }
+            break;
+          case 12: // rule at line 84: (?:(?:\Q+\E))
+            if (debug()) std::cerr << "--accepting rule at line 84 (\"" << matcher().text() << "\")\n";
 { push(Token::Plus); }
             break;
-          case 5: // rule at line 69: (?:(?:\Q-\E))
-            if (debug()) std::cerr << "--accepting rule at line 69 (\"" << matcher().text() << "\")\n";
+          case 13: // rule at line 85: (?:(?:\Q-\E))
+            if (debug()) std::cerr << "--accepting rule at line 85 (\"" << matcher().text() << "\")\n";
 { push(Token::Minus); }
             break;
-          case 6: // rule at line 70: (?:(?:\Q*\E))
-            if (debug()) std::cerr << "--accepting rule at line 70 (\"" << matcher().text() << "\")\n";
+          case 14: // rule at line 86: (?:(?:\Q*\E))
+            if (debug()) std::cerr << "--accepting rule at line 86 (\"" << matcher().text() << "\")\n";
 { push(Token::Asterix); }
             break;
-          case 7: // rule at line 71: (?:(?:\Q/\E))
-            if (debug()) std::cerr << "--accepting rule at line 71 (\"" << matcher().text() << "\")\n";
+          case 15: // rule at line 87: (?:(?:\Q/\E))
+            if (debug()) std::cerr << "--accepting rule at line 87 (\"" << matcher().text() << "\")\n";
 { push(Token::Slash); }
             break;
-          case 8: // rule at line 72: (?:(?:\Q:=\E))
-            if (debug()) std::cerr << "--accepting rule at line 72 (\"" << matcher().text() << "\")\n";
+          case 16: // rule at line 88: (?:(?:\Q:=\E))
+            if (debug()) std::cerr << "--accepting rule at line 88 (\"" << matcher().text() << "\")\n";
 { push(Token::Decl); }
             break;
-          case 9: // rule at line 73: (?:(?:\Q=\E))
-            if (debug()) std::cerr << "--accepting rule at line 73 (\"" << matcher().text() << "\")\n";
+          case 17: // rule at line 89: (?:(?:\Q=\E))
+            if (debug()) std::cerr << "--accepting rule at line 89 (\"" << matcher().text() << "\")\n";
 { push(Token::Equal); }
             break;
-          case 10: // rule at line 74: (?:['A-Z_-z]['0-9A-Z_-z]*)
-            if (debug()) std::cerr << "--accepting rule at line 74 (\"" << matcher().text() << "\")\n";
+          case 18: // rule at line 90: (?:['A-Z_-z]['0-9A-Z_-z]*)
+            if (debug()) std::cerr << "--accepting rule at line 90 (\"" << matcher().text() << "\")\n";
 { push(Token::Ident); }
             break;
-          case 11: // rule at line 75: (?:(?:\Q;\E))
-            if (debug()) std::cerr << "--accepting rule at line 75 (\"" << matcher().text() << "\")\n";
+          case 19: // rule at line 91: (?:(?:\Q;\E))
+            if (debug()) std::cerr << "--accepting rule at line 91 (\"" << matcher().text() << "\")\n";
 { push(Token::Semicolon); }
             break;
         }
@@ -218,188 +250,251 @@ void reflex_code_INITIAL(reflex::Matcher& m)
 S0:
   m.FSM_FIND();
   c1 = m.FSM_CHAR();
-  if ('_' <= c1 && c1 <= 'z') goto S44;
-  if ('A' <= c1 && c1 <= 'Z') goto S44;
-  if (c1 == '=') goto S42;
-  if (c1 == ';') goto S50;
-  if (c1 == ':') goto S40;
+  if ('_' <= c1 && c1 <= 'z') goto S41;
+  if ('A' <= c1 && c1 <= 'Z') goto S41;
+  if (c1 == '=') goto S39;
+  if (c1 == ';') goto S47;
+  if (c1 == ':') goto S37;
   if ('1' <= c1 && c1 <= '9') goto S22;
   if (c1 == '0') goto S16;
-  if (c1 == '/') goto S38;
-  if (c1 == '.') goto S30;
-  if (c1 == '-') goto S34;
-  if (c1 == '+') goto S32;
-  if (c1 == '*') goto S36;
-  if (c1 == '\'') goto S44;
-  if (c1 == ' ') goto S52;
-  if ('\t' <= c1 && c1 <= '\r') goto S52;
+  if (c1 == '/') goto S35;
+  if (c1 == '.') goto S27;
+  if (c1 == '-') goto S31;
+  if (c1 == '+') goto S29;
+  if (c1 == '*') goto S33;
+  if (c1 == '\'') goto S41;
+  if (c1 == ' ') goto S49;
+  if ('\t' <= c1 && c1 <= '\r') goto S49;
   return m.FSM_HALT(c1);
 
 S16:
   c1 = m.FSM_CHAR();
-  if (c1 == 'x') goto S56;
-  if (c1 == 'b') goto S63;
-  if ('8' <= c1 && c1 <= '9') goto S74;
-  if ('0' <= c1 && c1 <= '7') goto S65;
-  if (c1 == '.') goto S30;
+  if (c1 == 'x') goto S53;
+  if (c1 == 'b') goto S60;
+  if ('8' <= c1 && c1 <= '9') goto S68;
+  if ('0' <= c1 && c1 <= '7') goto S62;
+  if (c1 == '.') goto S27;
   return m.FSM_HALT(c1);
 
 S22:
-  m.FSM_TAKE(2);
   c1 = m.FSM_CHAR();
-  if (c1 == 'u') goto S77;
-  if (c1 == 'l') goto S81;
-  if (c1 == 'i') goto S81;
-  if (c1 == 'c') goto S81;
+  if (c1 == 'u') goto S71;
+  if (c1 == 's') goto S76;
   if ('0' <= c1 && c1 <= '9') goto S22;
-  if (c1 == '.') goto S30;
+  if (c1 == '.') goto S27;
   return m.FSM_HALT(c1);
 
-S30:
+S27:
   c1 = m.FSM_CHAR();
-  if ('0' <= c1 && c1 <= '9') goto S83;
+  if ('0' <= c1 && c1 <= '9') goto S81;
   return m.FSM_HALT(c1);
 
-S32:
-  m.FSM_TAKE(4);
+S29:
+  m.FSM_TAKE(12);
   return m.FSM_HALT();
 
-S34:
-  m.FSM_TAKE(5);
+S31:
+  m.FSM_TAKE(13);
   return m.FSM_HALT();
 
-S36:
-  m.FSM_TAKE(6);
+S33:
+  m.FSM_TAKE(14);
   return m.FSM_HALT();
 
-S38:
-  m.FSM_TAKE(7);
+S35:
+  m.FSM_TAKE(15);
   return m.FSM_HALT();
 
-S40:
+S37:
   c1 = m.FSM_CHAR();
-  if (c1 == '=') goto S88;
+  if (c1 == '=') goto S87;
   return m.FSM_HALT(c1);
 
-S42:
-  m.FSM_TAKE(9);
+S39:
+  m.FSM_TAKE(17);
   return m.FSM_HALT();
 
-S44:
-  m.FSM_TAKE(10);
+S41:
+  m.FSM_TAKE(18);
   c1 = m.FSM_CHAR();
-  if ('_' <= c1 && c1 <= 'z') goto S44;
-  if ('A' <= c1 && c1 <= 'Z') goto S44;
-  if ('0' <= c1 && c1 <= '9') goto S44;
-  if (c1 == '\'') goto S44;
+  if ('_' <= c1 && c1 <= 'z') goto S41;
+  if ('A' <= c1 && c1 <= 'Z') goto S41;
+  if ('0' <= c1 && c1 <= '9') goto S41;
+  if (c1 == '\'') goto S41;
   return m.FSM_HALT(c1);
 
-S50:
-  m.FSM_TAKE(11);
+S47:
+  m.FSM_TAKE(19);
   return m.FSM_HALT();
 
-S52:
+S49:
   m.FSM_TAKE(1);
   c1 = m.FSM_CHAR();
-  if (c1 == ' ') goto S52;
-  if ('\t' <= c1 && c1 <= '\r') goto S52;
+  if (c1 == ' ') goto S49;
+  if ('\t' <= c1 && c1 <= '\r') goto S49;
   return m.FSM_HALT(c1);
 
-S56:
+S53:
   c1 = m.FSM_CHAR();
-  if (c1 == 'x') goto S90;
-  if (c1 == 't') goto S90;
-  if (c1 == 'i') goto S90;
-  if (c1 == 'g') goto S90;
-  if (c1 == 'd') goto S90;
-  if (c1 == ':') goto S90;
+  if (c1 == 'x') goto S89;
+  if (c1 == 't') goto S89;
+  if (c1 == 'i') goto S89;
+  if (c1 == 'g') goto S89;
+  if (c1 == 'd') goto S89;
+  if (c1 == ':') goto S89;
   return m.FSM_HALT(c1);
 
-S63:
+S60:
   c1 = m.FSM_CHAR();
-  if ('0' <= c1 && c1 <= '1') goto S101;
+  if ('0' <= c1 && c1 <= '1') goto S98;
   return m.FSM_HALT(c1);
 
-S65:
-  m.FSM_TAKE(2);
+S62:
   c1 = m.FSM_CHAR();
-  if (c1 == 'u') goto S77;
-  if (c1 == 'l') goto S81;
-  if (c1 == 'i') goto S81;
-  if (c1 == 'c') goto S81;
-  if ('8' <= c1 && c1 <= '9') goto S74;
-  if ('0' <= c1 && c1 <= '7') goto S65;
-  if (c1 == '.') goto S30;
+  if (c1 == 'u') goto S71;
+  if (c1 == 's') goto S76;
+  if ('8' <= c1 && c1 <= '9') goto S68;
+  if ('0' <= c1 && c1 <= '7') goto S62;
+  if (c1 == '.') goto S27;
   return m.FSM_HALT(c1);
 
-S74:
+S68:
   c1 = m.FSM_CHAR();
-  if ('0' <= c1 && c1 <= '9') goto S74;
-  if (c1 == '.') goto S30;
+  if ('0' <= c1 && c1 <= '9') goto S68;
+  if (c1 == '.') goto S27;
   return m.FSM_HALT(c1);
 
-S77:
+S71:
   c1 = m.FSM_CHAR();
-  if (c1 == 'l') goto S81;
-  if (c1 == 'i') goto S81;
-  if (c1 == 'c') goto S81;
+  if (c1 == '8') goto S102;
+  if (c1 == '6') goto S108;
+  if (c1 == '3') goto S106;
+  if (c1 == '1') goto S104;
+  return m.FSM_HALT(c1);
+
+S76:
+  c1 = m.FSM_CHAR();
+  if (c1 == '8') goto S110;
+  if (c1 == '6') goto S116;
+  if (c1 == '3') goto S114;
+  if (c1 == '1') goto S112;
   return m.FSM_HALT(c1);
 
 S81:
+  m.FSM_TAKE(11);
+  c1 = m.FSM_CHAR();
+  if (c1 == 'f') goto S119;
+  if (c1 == 'e') goto S121;
+  if (c1 == 'E') goto S121;
+  if ('0' <= c1 && c1 <= '9') goto S81;
+  return m.FSM_HALT(c1);
+
+S87:
+  m.FSM_TAKE(16);
+  return m.FSM_HALT();
+
+S89:
+  c1 = m.FSM_CHAR();
+  if (c1 == 'x') goto S89;
+  if (c1 == 'u') goto S71;
+  if (c1 == 't') goto S89;
+  if (c1 == 's') goto S76;
+  if (c1 == 'i') goto S89;
+  if (c1 == 'g') goto S89;
+  if (c1 == 'd') goto S89;
+  if (c1 == ':') goto S89;
+  return m.FSM_HALT(c1);
+
+S98:
+  c1 = m.FSM_CHAR();
+  if (c1 == 'u') goto S71;
+  if (c1 == 's') goto S76;
+  if ('0' <= c1 && c1 <= '1') goto S98;
+  return m.FSM_HALT(c1);
+
+S102:
   m.FSM_TAKE(2);
   return m.FSM_HALT();
 
-S83:
-  m.FSM_TAKE(3);
+S104:
   c1 = m.FSM_CHAR();
-  if (c1 == 'e') goto S108;
-  if (c1 == 'E') goto S108;
-  if ('0' <= c1 && c1 <= '9') goto S83;
+  if (c1 == '6') goto S124;
   return m.FSM_HALT(c1);
 
-S88:
-  m.FSM_TAKE(8);
-  return m.FSM_HALT();
-
-S90:
-  m.FSM_TAKE(2);
+S106:
   c1 = m.FSM_CHAR();
-  if (c1 == 'x') goto S90;
-  if (c1 == 'u') goto S77;
-  if (c1 == 't') goto S90;
-  if (c1 == 'l') goto S81;
-  if (c1 == 'i') goto S90;
-  if (c1 == 'g') goto S90;
-  if (c1 == 'd') goto S90;
-  if (c1 == 'c') goto S81;
-  if (c1 == ':') goto S90;
-  return m.FSM_HALT(c1);
-
-S101:
-  m.FSM_TAKE(2);
-  c1 = m.FSM_CHAR();
-  if (c1 == 'u') goto S77;
-  if (c1 == 'l') goto S81;
-  if (c1 == 'i') goto S81;
-  if (c1 == 'c') goto S81;
-  if ('0' <= c1 && c1 <= '1') goto S101;
+  if (c1 == '2') goto S126;
   return m.FSM_HALT(c1);
 
 S108:
   c1 = m.FSM_CHAR();
-  if (c1 == '-') goto S111;
-  if (c1 == '+') goto S111;
+  if (c1 == '4') goto S128;
   return m.FSM_HALT(c1);
 
-S111:
+S110:
+  m.FSM_TAKE(6);
+  return m.FSM_HALT();
+
+S112:
   c1 = m.FSM_CHAR();
-  if ('0' <= c1 && c1 <= '9') goto S113;
+  if (c1 == '6') goto S130;
   return m.FSM_HALT(c1);
 
-S113:
+S114:
+  c1 = m.FSM_CHAR();
+  if (c1 == '2') goto S132;
+  return m.FSM_HALT(c1);
+
+S116:
+  m.FSM_TAKE(9);
+  c1 = m.FSM_CHAR();
+  if (c1 == '4') goto S134;
+  return m.FSM_HALT(c1);
+
+S119:
+  m.FSM_TAKE(10);
+  return m.FSM_HALT();
+
+S121:
+  c1 = m.FSM_CHAR();
+  if (c1 == '-') goto S136;
+  if (c1 == '+') goto S136;
+  return m.FSM_HALT(c1);
+
+S124:
   m.FSM_TAKE(3);
+  return m.FSM_HALT();
+
+S126:
+  m.FSM_TAKE(4);
+  return m.FSM_HALT();
+
+S128:
+  m.FSM_TAKE(5);
+  return m.FSM_HALT();
+
+S130:
+  m.FSM_TAKE(7);
+  return m.FSM_HALT();
+
+S132:
+  m.FSM_TAKE(8);
+  return m.FSM_HALT();
+
+S134:
+  m.FSM_TAKE(9);
+  return m.FSM_HALT();
+
+S136:
   c1 = m.FSM_CHAR();
-  if ('0' <= c1 && c1 <= '9') goto S113;
+  if ('0' <= c1 && c1 <= '9') goto S138;
+  return m.FSM_HALT(c1);
+
+S138:
+  m.FSM_TAKE(11);
+  c1 = m.FSM_CHAR();
+  if (c1 == 'f') goto S119;
+  if ('0' <= c1 && c1 <= '9') goto S138;
   return m.FSM_HALT(c1);
 }
 

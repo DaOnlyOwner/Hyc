@@ -13,19 +13,19 @@ InfixOperation<Expr> product{ 4,      false,	 [](InfixExprFnArgs) {
 	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal(4));
 } };
 
-InfixOperation<Expr> sum	{ 3,	  false,	 [](InfixExprFnArgs) {
+InfixOperation<Expr> sum{ 3,	  false,	 [](InfixExprFnArgs) {
 	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal(3));
 } };
 
 
 // "Prefix" Operators
 
-PrefixOperation<Expr> float_lit{10, [](PrefixExprFnArgs)
+PrefixOperation<Expr> float_lit{ 10, [](PrefixExprFnArgs)
 {
 	return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
 } };
 
-PrefixOperation<Expr> integer_lit{10, [](PrefixExprFnArgs)
+PrefixOperation<Expr> integer_lit{ 10, [](PrefixExprFnArgs)
 {
 	return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token));
 } };
@@ -34,7 +34,7 @@ PrefixOperation<Expr> ident_expr{ 10, [](PrefixExprFnArgs) {
 	return std::make_unique<IdentExpr>(token);
 } };
 
-PrefixOperation<Expr> unary_operator{6, [](PrefixExprFnArgs)
+PrefixOperation<Expr> unary_operator{ 6, [](PrefixExprFnArgs)
 {
 	switch (token.type)
 	{
@@ -60,7 +60,7 @@ PrefixOperation<Pattern> ident_pattern{ 10, [](PrefixPatternFnArgs) {
 
 Parser::Parser(Lexer& token_source)
 	:m_expr_parser(token_source),
-	 m_token_source(token_source),
+	m_token_source(token_source),
 	m_pattern_parser(token_source)
 {
 	m_expr_parser.add_operation(Token::Asterix, product);
@@ -70,7 +70,7 @@ Parser::Parser(Lexer& token_source)
 	m_expr_parser.add_operation(Token::Minus, unary_operator);
 	m_expr_parser.add_operation(Token::Plus, unary_operator);
 	m_expr_parser.add_operation(Token::Ident, ident_expr);
-	m_pattern_parser.add_operation(Token::Ident, ident_pattern);	
+	m_pattern_parser.add_operation(Token::Ident, ident_pattern);
 }
 
 std::unique_ptr<Stmt> Parser::parse()
@@ -81,11 +81,12 @@ std::unique_ptr<Stmt> Parser::parse()
 // stmt*
 std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 {
-	std::unique_ptr<Stmt> stmt = parse_inferred_decl_stmt();
-	std::unique_ptr<Stmt> stmt2 = parse_inferred_decl_stmt();
+	const Token* token = &m_token_source.lookahead(1);
 	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Ident, "GLOBAL", "", 0, 0, 0, 0));
-	nms->stmts.push_back(mv(stmt));
-	nms->stmts.push_back(mv(stmt2));
+	while (token->type != Token::Eof)
+	{
+		nms->stmts.push_back(parse_inferred_decl_stmt());
+	}
 	return mv(nms);
 }
 

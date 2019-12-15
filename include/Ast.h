@@ -2,6 +2,7 @@
 #include <memory>
 #include "Token.h"
 #include <vector>
+#include <algorithm>
 
 #define IMPL_VISITOR virtual void accept(AstVisitor& visitor) override {visitor.visit(*this);}
 

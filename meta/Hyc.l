@@ -46,32 +46,48 @@ public:
 
 %}
 
-ubin	0b[0-1]+
-uoct	0[0-7]+
-uhex	0x[:xdigit:]+	
-udec	[1-9]\d*
-ident	[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
-integer ({uhex}|{uoct}|{ubin}|{udec})(u?(c|i|l))? 
-float	\d*\.\d+([Ee][-+]\d+)?
-plus    "+"
-minus   "-"
-asterix "*"
-slash   "/"
-decl	":="
-equal	"="
-semicln ";"
+ubin		0b[0-1]+
+uoct		0[0-7]+
+uhex		0x[:xdigit:]+	
+udec		[1-9]\d*
+ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
+integerU8 	({uhex}|{uoct}|{ubin}|{udec})u8
+integerU16 	({uhex}|{uoct}|{ubin}|{udec})u16
+integerU32 	({uhex}|{uoct}|{ubin}|{udec})u32
+integerU64 	({uhex}|{uoct}|{ubin}|{udec})u64
+integerS8 	({uhex}|{uoct}|{ubin}|{udec})s8
+integerS16 	({uhex}|{uoct}|{ubin}|{udec})s16
+integerS32 	({uhex}|{uoct}|{ubin}|{udec})s32
+integerS64	({uhex}|{uoct}|{ubin}|{udec})s64? 
+float		\d*\.\d+([Ee][-+]\d+)?f
+double		\d*\.\d+([Ee][-+]\d+)?
+plus    	"+"
+minus   	"-"
+asterix 	"*"
+slash   	"/"
+decl		":="
+equal		"="
+semicln 	";"
 
 %%
 \s+
-{integer} { push(Token::Integer); }
-{float}   { push(Token::Float); }
-{plus} 	  { push(Token::Plus); }
-{minus}   { push(Token::Minus); }
-{asterix} { push(Token::Asterix); }
-{slash}   { push(Token::Slash); }
-{decl}	  { push(Token::Decl); }
-{equal}   { push(Token::Equal); }
-{ident}	  { push(Token::Ident); }
-{semicln} { push(Token::Semicolon); }
-<<EOF>>   { push(Token::Eof); return 0;}
+{integerU8} 	{ push(Token::IntegerU8); }
+{integerU16} 	{ push(Token::IntegerU16); }
+{integerU32}	{ push(Token::IntegerU32); }
+{integerU64} 	{ push(Token::IntegerU64); }
+{integerS8} 	{ push(Token::IntegerS8); }
+{integerS16} 	{ push(Token::IntegerS16); }
+{integerS32} 	{ push(Token::IntegerS32); }
+{integerS64}	{ push(Token::IntegerS64); }
+{float}   	{ push(Token::Float); }
+{double}	{ push(Token::Double); }
+{plus} 	  	{ push(Token::Plus); }
+{minus}   	{ push(Token::Minus); }
+{asterix} 	{ push(Token::Asterix); }
+{slash}   	{ push(Token::Slash); }
+{decl}	  	{ push(Token::Decl); }
+{equal}   	{ push(Token::Equal); }
+{ident}	  	{ push(Token::Ident); }
+{semicln} 	{ push(Token::Semicolon); }
+<<EOF>>   	{ push(Token::Eof); return 0;}
 %%
