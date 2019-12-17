@@ -41,16 +41,41 @@ std::vector<Function>& Scopes::get_funcs(const UID& uid)
 
 std::pair<MetaType*, UID> Scopes::get_meta_type(const std::string& name)
 {
+	if (name[0] == 'u')
+	{
+		if (name[1] == '6' && name[2] == '4' && name.size() == 3) return get_primitive_type(Primitive::Specifier::u64);
+		if (name[1] == '3' && name[2] == '2' && name.size() == 3) return get_primitive_type(Primitive::Specifier::u32);
+		if (name[1] == '1' && name[2] == '6' && name.size() == 3) return get_primitive_type(Primitive::Specifier::u16);
+		if (name[1] == '8' && name.size() == 2) return get_primitive_type(Primitive::Specifier::u8);
+	}
+
+	else if (name[0] == 's')
+	{
+		if (name[1] == '6' && name[2] == '4' && name.size() == 3) return get_primitive_type(Primitive::Specifier::s64);
+		if (name[1] == '3' && name[2] == '2' && name.size() == 3) return get_primitive_type(Primitive::Specifier::s32);
+		if (name[1] == '1' && name[2] == '6' && name.size() == 3) return get_primitive_type(Primitive::Specifier::s16);
+		if (name[1] == '8' && name.size() == 2) return get_primitive_type(Primitive::Specifier::s8);
+	}
+
+	else if (name == "float") return get_primitive_type(Primitive::Specifier::Float);
+	else if (name == "double") return get_primitive_type(Primitive::Specifier::Double);	
+
 	GET_ELEM_BY_NAME(get_meta_type)
 }
 
 MetaType& Scopes::get_meta_type(const UID& uid)
 {
+	if (uid.stack_index == 0 && uid.index <= 10) return *get_primitive_type(static_cast<Primitive::Specifier>(uid.index)).first;
 #if NDEBUG
 	return m_collection[uid.stack_index].table.get_meta_type(uid);
 #else
 	return m_collection.at(uid.stack_index).table.get_meta_type(uid);
 #endif
+}
+
+std::pair<Primitive*, UID> Scopes::get_primitive_type(Primitive::Specifier specifier)
+{
+	return { &m_primitive_lookup_table[static_cast<unsigned int>(specifier)], UID(0,static_cast<unsigned int>(specifier)) };
 }
 
 void Scopes::ascend()

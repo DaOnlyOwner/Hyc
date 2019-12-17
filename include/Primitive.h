@@ -7,19 +7,18 @@ public:
 	//TODO: Performance: To encode floating point, size and if it's signed or not, use a bitmap e.g. 1|0|bin(32)| means signed, not float, size==32. 
 	enum class Specifier : unsigned int
 	{
-		u8 = 8, u16 = 16, u32 = 32, u64 = 64, 
-		s8 = 108, s16 = 116, s32 = 132, s64 = 164, Float = 232, Double = 264
+		u8 = 1, u16, u32, u64,s8,s16,s32,s64,Float,Double
 	};
-	Primitive(Specifier specifier)
-		:m_specifier(specifier){}
+	Primitive(const std::string& name, Specifier specifier)
+		:MetaType(name),m_specifier(specifier){}
 	Primitive() = default;
 
-	Specifier get_primitive()
+	Specifier get_type()
 	{
 		return m_specifier;
 	}
 
-	bool is_signed()
+	/*bool is_signed()
 	{
 		static_cast<unsigned int>(m_specifier) > 100;
 	}
@@ -28,9 +27,9 @@ public:
 	{
 		unsigned int size = static_cast<unsigned int>(m_specifier);
 		return is_signed 
-			? (size - 100 > 100 ? /* float or double */ size - 100 : size) 
+			? (size - 100 > 100 ?  size - 100 : size) 
 			: size;
-	}
+	}*/
 	
 private:
 	Specifier m_specifier;

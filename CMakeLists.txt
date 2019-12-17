@@ -33,6 +33,7 @@ set (HEADERS
     include/UID.h
     include/Primitive.h
     include/ValueStorage.h
+    include/MetaType.h
 )
 
 file(GLOB_RECURSE REFLEX_SRC lib/reflex/*.cpp) #Static sources
