@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#define IMPL_VISITOR virtual void accept(AstVisitor& visitor) override {visitor.visit(*this);}
+#define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 
 template <typename TRet, typename TArg>
 inline std::unique_ptr<TRet> ast_as(std::unique_ptr<TArg> arg)
@@ -18,7 +18,7 @@ using uptr = std::unique_ptr<T>;
 // Couldn't get std::move alias to work, so now here is a macro
 #define mv(arg) std::move(arg)
 
-struct AstVisitor
+struct IAstVisitor
 {
 	virtual void visit(struct FloatLiteralExpr& lit) = 0;
 	virtual void visit(struct IntegerLiteralExpr& lit) = 0;
@@ -33,7 +33,7 @@ struct AstVisitor
 
 struct Node
 {
-	virtual void accept(AstVisitor& visitor) = 0;
+	virtual void accept(IAstVisitor& visitor) = 0;
 	virtual ~Node() = default;
 };
 

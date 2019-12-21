@@ -84,18 +84,20 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 
 void TypeChecker::visit(InferredDeclStmt& decl_inferred)
 {
-	auto ident = get(decl_inferred.bind_to);
-	auto type = get(decl_inferred.expr);
-	auto& name_uid = m_scopes.get_var(ident);
-	name_uid.type = type;
+	auto expr_type_uid = get(decl_inferred.expr);
+	MetaType& expr_type = m_scopes.get_meta_type(expr_type_uid);
+
+	m_type_to_pattern_match = std::make_pair(expr_type, expr_type_uid);
+	decl_inferred.bind_to->accept(*this);
 }
 
 void TypeChecker::visit(IdentPattern& ident)
 {
-	// Return the type name  
-	auto ident_uid = m_scopes.get_var(ident.ident.text);
-	if (ident_uid.first == nullptr) { Debug("Userbug OR Compilerbug, ident not declared"); abort(); }
-	ret(ident_uid.second);
+	bool success = m_scopes.add(Variable(ident.ident.text,m_type_to_pattern_match.second));	
+	if (!success)
+	{
+		Debug("Variable already exists."); abort();
+	}
 }
 
 void TypeChecker::visit(IdentExpr& ident)
@@ -107,4 +109,9 @@ void TypeChecker::visit(IdentExpr& ident)
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 {
+	for (int i = 0; i < namespace_stmt.stmts.size(); i++)
+	{
+		auto& stmt = namespace_stmt.stmts[i];
+		stmt->accept(*this);
+	}
 }

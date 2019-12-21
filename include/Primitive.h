@@ -1,13 +1,15 @@
 #pragma once
 #include "MetaType.h"
 
+constexpr int AMOUNT_PRIMITIVE_TYPES = 10;
+
 class Primitive : public MetaType
 {
 public:
 	//TODO: Performance: To encode floating point, size and if it's signed or not, use a bitmap e.g. 1|0|bin(32)| means signed, not float, size==32. 
-	enum class Specifier : unsigned int
+	enum class Specifier : size_t
 	{
-		u8 = 1, u16, u32, u64,s8,s16,s32,s64,Float,Double
+		u8 = 1, u16, u32, u64,s8,s16,s32,s64,Float,Double,Count
 	};
 	Primitive(const std::string& name, Specifier specifier)
 		:MetaType(name),m_specifier(specifier){}
@@ -31,6 +33,7 @@ public:
 			: size;
 	}*/
 	
+	IMPL_VISITOR_TYPE
 private:
 	Specifier m_specifier;
 };

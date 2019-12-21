@@ -2,12 +2,12 @@
 #include "Ast.h"
 #include <string>
 
-class GraphOutput : public AstVisitor
+class GraphOutput : public IAstVisitor
 {
 public:
 	void write_to_file(const std::string& filename);
 private:
-	// Geerbt über AstVisitor
+	// Geerbt über IAstVisitor
 	virtual void visit(FloatLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;

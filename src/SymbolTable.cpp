@@ -20,7 +20,7 @@ inline SymbolTable::SymbolTable()
 
 bool SymbolTable::add(Function&& fn)
 {
-	auto fns = m_functions.Get(fn.name);
+	auto fns = m_functions.get(fn.name);
 	if (fns.first == nullptr) m_functions.add(fn.name, { std::move(fn) });
 	// Might be an overload
 	else

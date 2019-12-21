@@ -20,7 +20,7 @@ public:
 
 	Scopes()
 	{
-		m_collection.emplace_back(t_entry{ 0,SymbolTable(10) });
+		m_collection.emplace_back(t_entry{ 0,SymbolTable(AMOUNT_PRIMITIVE_TYPES) });
 	}
 	bool add(Variable&& v) { get_current_entry().table.add(std::move(v)); }
 	bool add(MetaType&& mt) { get_current_entry().table.add(std::move(mt)); }
@@ -36,7 +36,6 @@ public:
 	MetaType& get_meta_type(const UID& uid);
 
 	std::pair<Primitive*, UID> get_primitive_type(Primitive::Specifier specifier);
-	Primitive& get_primitive_type(const UID& uid);
 
 	void ascend();
 	// Expands the tree, allocates a new node and descends to it
@@ -68,7 +67,7 @@ private:
 		return m_collection[index];
 	}
 
-	std::array<Primitive, 10> m_primitive_lookup_table =
+	PerfectHashmap<Primitive::Specifier, Primitive, (size_t)Primitive::Specifier::Count> m_predefined_types =
 	{
 		Primitive("u8",Primitive::Specifier::u8),
 		Primitive("u16",Primitive::Specifier::u16),

@@ -30,15 +30,6 @@ std::pair<std::vector<Function>*, UID> Scopes::get_funcs(const std::string& name
 	GET_ELEM_BY_NAME(get_funcs)
 }
 
-std::vector<Function>& Scopes::get_funcs(const UID& uid)
-{
-#if NDEBUG
-	return m_collection[uid.stack_index].table.get_funcs(uid);
-#else
-	return m_collection.at(uid.stack_index).table.get_funcs(uid);
-#endif
-}
-
 std::pair<MetaType*, UID> Scopes::get_meta_type(const std::string& name)
 {
 	if (name[0] == 'u')
@@ -65,7 +56,7 @@ std::pair<MetaType*, UID> Scopes::get_meta_type(const std::string& name)
 
 MetaType& Scopes::get_meta_type(const UID& uid)
 {
-	if (uid.stack_index == 0 && uid.index <= 10) return *get_primitive_type(static_cast<Primitive::Specifier>(uid.index)).first;
+	if (uid.stack_index == 0 && uid.index <= AMOUNT_PRIMITIVE_TYPES) return *get_primitive_type(static_cast<Primitive::Specifier>(uid.index)).first;
 #if NDEBUG
 	return m_collection[uid.stack_index].table.get_meta_type(uid);
 #else
@@ -75,7 +66,7 @@ MetaType& Scopes::get_meta_type(const UID& uid)
 
 std::pair<Primitive*, UID> Scopes::get_primitive_type(Primitive::Specifier specifier)
 {
-	return { &m_primitive_lookup_table[static_cast<unsigned int>(specifier)], UID(0,static_cast<unsigned int>(specifier)) };
+	return { &m_predefined_types[static_cast<unsigned int>(specifier)], UID(0,static_cast<unsigned int>(specifier)) };
 }
 
 void Scopes::ascend()

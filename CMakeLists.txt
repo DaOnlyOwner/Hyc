@@ -34,6 +34,7 @@ set (HEADERS
     include/Primitive.h
     include/ValueStorage.h
     include/MetaType.h
+    include/ImplicitTypes.h
 )
 
 file(GLOB_RECURSE REFLEX_SRC lib/reflex/*.cpp) #Static sources
@@ -71,6 +72,7 @@ set(SEMANTIC_HEADERS
     include/UID.h
     include/Primitive.h
     include/MetaType.h
+    include/ImplicitTypes.h
 )
 
 set (TOOLS_HEADERS
