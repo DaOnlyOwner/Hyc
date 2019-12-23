@@ -55,7 +55,7 @@ class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   void push(Token::Type ttype)
+   void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
@@ -79,12 +79,12 @@ public:
       return m_tokens[minIndex];
    }
 
-   void match_token(Token::Type type)
+   void match_token(Token::Specifier type)
    {
       const Token& token = eat();
       if(token.type != type)
       {
-          printf("not possible to match: %s", token.text);
+          printf("not possible to match: %s", token.text.c_str());
 	  abort();
       }
     }
@@ -137,7 +137,7 @@ int Lexer::lex()
             if (matcher().at_end())
             {
               if (debug()) std::cerr << "--EOF rule at line 92 (start condition " << start() << ")\n";
-{ push(Token::Eof); return 0;}
+{ push(Token::Specifier::Eof); return 0;}
             }
             else
             {
@@ -150,75 +150,75 @@ int Lexer::lex()
             break;
           case 2: // rule at line 74: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u8)
             if (debug()) std::cerr << "--accepting rule at line 74 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerU8); }
+{ push(Token::Specifier::IntegerU8); }
             break;
           case 3: // rule at line 75: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u16)
             if (debug()) std::cerr << "--accepting rule at line 75 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerU16); }
+{ push(Token::Specifier::IntegerU16); }
             break;
           case 4: // rule at line 76: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u32)
             if (debug()) std::cerr << "--accepting rule at line 76 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerU32); }
+{ push(Token::Specifier::IntegerU32); }
             break;
           case 5: // rule at line 77: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))u64)
             if (debug()) std::cerr << "--accepting rule at line 77 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerU64); }
+{ push(Token::Specifier::IntegerU64); }
             break;
           case 6: // rule at line 78: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s8)
             if (debug()) std::cerr << "--accepting rule at line 78 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerS8); }
+{ push(Token::Specifier::IntegerS8); }
             break;
           case 7: // rule at line 79: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s16)
             if (debug()) std::cerr << "--accepting rule at line 79 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerS16); }
+{ push(Token::Specifier::IntegerS16); }
             break;
           case 8: // rule at line 80: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s32)
             if (debug()) std::cerr << "--accepting rule at line 80 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerS32); }
+{ push(Token::Specifier::IntegerS32); }
             break;
           case 9: // rule at line 81: (?:(?:(?:0x[:dgitx]+)|(?:0[0-7]+)|(?:0b[01]+)|(?:[1-9]\d*))s64?)
             if (debug()) std::cerr << "--accepting rule at line 81 (\"" << matcher().text() << "\")\n";
-{ push(Token::IntegerS64); }
+{ push(Token::Specifier::IntegerS64); }
             break;
           case 10: // rule at line 82: (?:\d*\.\d+(?:[Ee][\x2b\x2d]\d+)?f)
             if (debug()) std::cerr << "--accepting rule at line 82 (\"" << matcher().text() << "\")\n";
-{ push(Token::Float); }
+{ push(Token::Specifier::Float); }
             break;
           case 11: // rule at line 83: (?:\d*\.\d+(?:[Ee][\x2b\x2d]\d+)?)
             if (debug()) std::cerr << "--accepting rule at line 83 (\"" << matcher().text() << "\")\n";
-{ push(Token::Double); }
+{ push(Token::Specifier::Double); }
             break;
           case 12: // rule at line 84: (?:(?:\Q+\E))
             if (debug()) std::cerr << "--accepting rule at line 84 (\"" << matcher().text() << "\")\n";
-{ push(Token::Plus); }
+{ push(Token::Specifier::Plus); }
             break;
           case 13: // rule at line 85: (?:(?:\Q-\E))
             if (debug()) std::cerr << "--accepting rule at line 85 (\"" << matcher().text() << "\")\n";
-{ push(Token::Minus); }
+{ push(Token::Specifier::Minus); }
             break;
           case 14: // rule at line 86: (?:(?:\Q*\E))
             if (debug()) std::cerr << "--accepting rule at line 86 (\"" << matcher().text() << "\")\n";
-{ push(Token::Asterix); }
+{ push(Token::Specifier::Asterix); }
             break;
           case 15: // rule at line 87: (?:(?:\Q/\E))
             if (debug()) std::cerr << "--accepting rule at line 87 (\"" << matcher().text() << "\")\n";
-{ push(Token::Slash); }
+{ push(Token::Specifier::Slash); }
             break;
           case 16: // rule at line 88: (?:(?:\Q:=\E))
             if (debug()) std::cerr << "--accepting rule at line 88 (\"" << matcher().text() << "\")\n";
-{ push(Token::Decl); }
+{ push(Token::Specifier::Decl); }
             break;
           case 17: // rule at line 89: (?:(?:\Q=\E))
             if (debug()) std::cerr << "--accepting rule at line 89 (\"" << matcher().text() << "\")\n";
-{ push(Token::Equal); }
+{ push(Token::Specifier::Equal); }
             break;
           case 18: // rule at line 90: (?:['A-Z_-z]['0-9A-Z_-z]*)
             if (debug()) std::cerr << "--accepting rule at line 90 (\"" << matcher().text() << "\")\n";
-{ push(Token::Ident); }
+{ push(Token::Specifier::Ident); }
             break;
           case 19: // rule at line 91: (?:(?:\Q;\E))
             if (debug()) std::cerr << "--accepting rule at line 91 (\"" << matcher().text() << "\")\n";
-{ push(Token::Semicolon); }
+{ push(Token::Specifier::Semicolon); }
             break;
         }
   }

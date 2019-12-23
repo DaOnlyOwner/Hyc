@@ -9,7 +9,7 @@
 %class{
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   void push(Token::Type ttype)
+   void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
@@ -33,7 +33,7 @@ public:
       return m_tokens[minIndex];
    }
 
-   void match_token(Token::Type type)
+   void match_token(Token::Specifier type)
    {    
       const Token& token = eat();
       if(token.type != type) 
@@ -71,23 +71,23 @@ semicln 	";"
 
 %%
 \s+
-{integerU8} 	{ push(Token::IntegerU8); }
-{integerU16} 	{ push(Token::IntegerU16); }
-{integerU32}	{ push(Token::IntegerU32); }
-{integerU64} 	{ push(Token::IntegerU64); }
-{integerS8} 	{ push(Token::IntegerS8); }
-{integerS16} 	{ push(Token::IntegerS16); }
-{integerS32} 	{ push(Token::IntegerS32); }
-{integerS64}	{ push(Token::IntegerS64); }
-{float}   	{ push(Token::Float); }
-{double}	{ push(Token::Double); }
-{plus} 	  	{ push(Token::Plus); }
-{minus}   	{ push(Token::Minus); }
-{asterix} 	{ push(Token::Asterix); }
-{slash}   	{ push(Token::Slash); }
-{decl}	  	{ push(Token::Decl); }
-{equal}   	{ push(Token::Equal); }
-{ident}	  	{ push(Token::Ident); }
-{semicln} 	{ push(Token::Semicolon); }
-<<EOF>>   	{ push(Token::Eof); return 0;}
+{integerU8} 	{ push(Token::Specifier::IntegerU8); }
+{integerU16} 	{ push(Token::Specifier::IntegerU16); }
+{integerU32}	{ push(Token::Specifier::IntegerU32); }
+{integerU64} 	{ push(Token::Specifier::IntegerU64); }
+{integerS8} 	{ push(Token::Specifier::IntegerS8); }
+{integerS16} 	{ push(Token::Specifier::IntegerS16); }
+{integerS32} 	{ push(Token::Specifier::IntegerS32); }
+{integerS64}	{ push(Token::Specifier::IntegerS64); }
+{float}   	{ push(Token::Specifier::Float); }
+{double}	{ push(Token::Specifier::Double); }
+{plus} 	  	{ push(Token::Specifier::Plus); }
+{minus}   	{ push(Token::Specifier::Minus); }
+{asterix} 	{ push(Token::Specifier::Asterix); }
+{slash}   	{ push(Token::Specifier::Slash); }
+{decl}	  	{ push(Token::Specifier::Decl); }
+{equal}   	{ push(Token::Specifier::Equal); }
+{ident}	  	{ push(Token::Specifier::Ident); }
+{semicln} 	{ push(Token::Specifier::Semicolon); }
+<<EOF>>   	{ push(Token::Specifier::Eof); return 0;}
 %%

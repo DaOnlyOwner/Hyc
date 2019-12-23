@@ -29,8 +29,8 @@ set (HEADERS
     include/TypeChecker.h
     include/SymbolTable.h
     include/Scopes.h
-    include/IndexedHashmap.h
-    include/UID.h
+    include/Hashmap.h
+    include/PerfectHashmap.h
     include/Primitive.h
     include/ValueStorage.h
     include/MetaType.h
@@ -62,14 +62,12 @@ set(SEMANTIC_SOURCES
     src/TypeChecker.cpp
     src/SymbolTable.cpp
     src/Scopes.cpp
-    src/UID.cpp
 )
 
 set(SEMANTIC_HEADERS
     include/TypeChecker.h
     include/SymbolTable.h
     include/Scopes.h
-    include/UID.h
     include/Primitive.h
     include/MetaType.h
     include/ImplicitTypes.h
@@ -77,8 +75,9 @@ set(SEMANTIC_HEADERS
 
 set (TOOLS_HEADERS
     include/DebugPrint.h
-    include/IndexedHashmap.h
+    include/Hashmap.h
     include/ValueStorage.h
+    include/PerfectHashmap.h
 )
 
 set(TOOLS_SOURCES

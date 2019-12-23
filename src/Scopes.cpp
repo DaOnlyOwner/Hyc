@@ -1,36 +1,29 @@
 #include "Scopes.h"
 #include <cassert>
 
-#define GET_ELEM_BY_NAME(method_name)\
-size_t father = get_entry(m_current_index).father;\
+#define GET_ELEM_BY_NAME(symbol_table_func)\
+int father = get_entry(m_current_index).father;\
 for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)\
 {\
 	t_entry& e = get_entry(i);\
-	auto elem = e.table.##method_name##(name);\
-	if (elem.first != nullptr) return std::make_pair(elem.first,UID(i,elem.second));\
+	auto* elem = e.table.##symbol_table_func##(name);\
+	if (elem != nullptr) return elem;\
 }\
-return std::make_pair(nullptr,UID::Zero);
+return nullptr;
 
-std::pair<Variable*, UID> Scopes::get_var(const std::string& name)
+Variable* Scopes::get_var(const std::string & name)
 {
-	GET_ELEM_BY_NAME(get_var)
+	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
+	{
+		t_entry& e = get_entry(i);
+		auto* elem = e.table.get_var(name);
+		if (elem != nullptr) return elem;
+	}
+	return nullptr;
 }
 
-Variable& Scopes::get_var(const UID& uid)
-{
-#if NDEBUG
-	return m_collection[uid.stack_index].table.get_var(uid);
-#else
-	return m_collection.at(uid.stack_index).table.get_var(uid);
-#endif
-}
 
-std::pair<std::vector<Function>*, UID> Scopes::get_funcs(const std::string& name)
-{
-	GET_ELEM_BY_NAME(get_funcs)
-}
-
-std::pair<MetaType*, UID> Scopes::get_meta_type(const std::string& name)
+MetaType* Scopes::get_meta_type(const std::string& name)
 {
 	if (name[0] == 'u')
 	{
@@ -49,24 +42,15 @@ std::pair<MetaType*, UID> Scopes::get_meta_type(const std::string& name)
 	}
 
 	else if (name == "float") return get_primitive_type(Primitive::Specifier::Float);
-	else if (name == "double") return get_primitive_type(Primitive::Specifier::Double);	
+	else if (name == "double") return get_primitive_type(Primitive::Specifier::Double);
 
-	GET_ELEM_BY_NAME(get_meta_type)
-}
-
-MetaType& Scopes::get_meta_type(const UID& uid)
-{
-	if (uid.stack_index == 0 && uid.index <= AMOUNT_PRIMITIVE_TYPES) return *get_primitive_type(static_cast<Primitive::Specifier>(uid.index)).first;
-#if NDEBUG
-	return m_collection[uid.stack_index].table.get_meta_type(uid);
-#else
-	return m_collection.at(uid.stack_index).table.get_meta_type(uid);
-#endif
-}
-
-std::pair<Primitive*, UID> Scopes::get_primitive_type(Primitive::Specifier specifier)
-{
-	return { &m_predefined_types[static_cast<unsigned int>(specifier)], UID(0,static_cast<unsigned int>(specifier)) };
+	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
+	{
+		t_entry& e = get_entry(i);
+		auto* elem = e.table.get_meta_type(name);
+		if (elem != nullptr) return elem;
+	}
+	return nullptr;
 }
 
 void Scopes::ascend()
@@ -78,9 +62,10 @@ void Scopes::ascend()
 
 // Expands the tree, allocates a new node and descends to it
 
-size_t Scopes::expand()
+int Scopes::expand()
 {
-	m_collection.push_back({ m_current_index,SymbolTable() });
+	auto indexTablePair = t_entry(m_current_index, SymbolTable());
+	m_collection.push_back(std::move(indexTablePair));
 	m_current_index = m_collection.size() - 1;
 	return m_current_index;
 }
@@ -104,7 +89,7 @@ void Scopes::descend(size_t nthChild)
 {
 	// Iterate until we find the nth node that points to the current index
 	int count = 0;
-	for (size_t i = m_current_index; i < m_collection.size(); i++)
+	for (int i = m_current_index; i < m_collection.size(); i++)
 	{
 		auto& e = get_entry(i);
 		count += e.father == m_current_index;

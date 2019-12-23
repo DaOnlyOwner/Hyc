@@ -4,7 +4,7 @@
 
 // TODO: Completness: Finish this and also add _mul_ functions etc. in SymbolTable.
 
-UID determine_return_type(std::vector<Function>& fns, std::vector<UID>& args_to_compare)
+MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
 {
 	auto it = std::find_if(fns.begin(), fns.end(), [&](Function& fnComp) {
 		return fnComp.arguments == args_to_compare;
@@ -24,57 +24,50 @@ UID determine_return_type(std::vector<Function>& fns, std::vector<UID>& args_to_
 // TODO: Performance: define a function Scopes::get_primitive_type(Primitive::Specifier) which doesn't rely on lookup per string if the primitive type is clear.
 void TypeChecker::visit(FloatLiteralExpr& lit)
 {
-	auto pair = m_scopes.get_meta_type("float");
-	assert(pair.first != nullptr);
-	ret(pair.second);
+	Primitive* primitive = m_scopes.get_primitive_type(Primitive::Specifier::Double);
+	assert(primitive != nullptr);
+	ret(static_cast<MetaType*>(primitive));
 }
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	std::string suffix = Token::IntegerTypeToSuffixStr(lit.integer_literal.type);
-	auto pair = m_scopes.get_meta_type(suffix);
-	assert(pair.first != nullptr);
-	ret(pair.second);
+	Primitive* primitive = m_scopes.get_primitive_type(Primitive::from_token_specifier(lit.integer_literal.type));
+	assert(primitive!=nullptr);
+	ret(static_cast<MetaType*>(primitive));
 }
 
 void TypeChecker::visit(BinOpExpr& bin_op)
 {
-	auto typeLh = get(bin_op.lh);
-	auto typeRh = get(bin_op.rh);
+	auto* typeLh = get(bin_op.lh);
+	auto* typeRh = get(bin_op.rh);
 
-	std::pair<std::vector<Function>*, UID> fns;
-	switch (bin_op.op.type)
+	BinaryOperator* bin_operator = m_scopes.get_binary_operator(BinaryOperator::from_token_specifier(bin_op.op.type), [typeLh,typeRh](const BinaryOperator* bin) {
+		return bin->lh == typeLh && bin->rh == typeRh;
+	});
+
+	if (bin_operator == nullptr)
 	{
-	case Token::Asterix:
-		fns = m_scopes.get_funcs("_mul_");
-	case Token::Plus:
-		fns = m_scopes.get_funcs("_add_");
-	case Token::Minus:
-		fns = m_scopes.get_funcs("_sub_");
-	case Token::Slash:
-		fns = m_scopes.get_funcs("_div_");
-	default:
-		Debug("nope, function name not found, but should. it's a compilerbug.");
+		Debug("Binary operator not found, userbug or compilerbug");
 		abort();
 	}
-	ret(determine_return_type(*fns.first, { typeLh,typeRh }));
+
+	ret(bin_operator->return_type);
 }
 
 void TypeChecker::visit(PrefixOpExpr& pre_op)
 {
-	auto type = get(pre_op);
-	std::pair<std::vector<Function>*, UID> fns;
-	switch (pre_op.op.type)
+	auto* type = get(pre_op.lh);
+	UnaryOperator* unary_operator = m_scopes.get_unary_operator(UnaryOperator::from_token_specifier(pre_op.op.type), [type](const UnaryOperator* un) {
+		return un->rh == type;
+		});
+
+	if (unary_operator == nullptr)
 	{
-	case Token::Minus:
-		fns = m_scopes.get_funcs("_pneg_"); // e.g. -2
-	case Token::Plus:
-		fns = m_scopes.get_funcs("_pplus_"); // e.g. +2
-	default:
-		Debug("Compilerbug, function should exist");
-		assert(false);
+		Debug("Binary operator not found, userbug or compilerbug");
+		abort();
 	}
-	ret(determine_return_type(*fns.first, { type }));
+
+	ret(unary_operator->return_type);
 }
 
 void TypeChecker::visit(PostfixOpExpr& post_op)
@@ -84,16 +77,15 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 
 void TypeChecker::visit(InferredDeclStmt& decl_inferred)
 {
-	auto expr_type_uid = get(decl_inferred.expr);
-	MetaType& expr_type = m_scopes.get_meta_type(expr_type_uid);
-
-	m_type_to_pattern_match = std::make_pair(expr_type, expr_type_uid);
+	auto* expr_type = get(decl_inferred.expr);
+	
+	m_type_to_pattern_match = expr_type;
 	decl_inferred.bind_to->accept(*this);
 }
 
 void TypeChecker::visit(IdentPattern& ident)
 {
-	bool success = m_scopes.add(Variable(ident.ident.text,m_type_to_pattern_match.second));	
+	bool success = m_scopes.add(new Variable(ident.ident.text,m_type_to_pattern_match));	
 	if (!success)
 	{
 		Debug("Variable already exists."); abort();
@@ -102,16 +94,18 @@ void TypeChecker::visit(IdentPattern& ident)
 
 void TypeChecker::visit(IdentExpr& ident)
 {
-	auto ident_uid = m_scopes.get_var(ident.ident.text);
-	if (ident_uid.first == nullptr) { Debug("Userbug, ident not declared"); abort(); }
-	ret(ident_uid.second);
+	auto* var = m_scopes.get_var(ident.ident.text);
+	if (var == nullptr) { Debug("Userbug, ident not declared"); abort(); }
+	ret(static_cast<MetaType*>(var->type));
 }
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 {
+	m_scopes.expand();
 	for (int i = 0; i < namespace_stmt.stmts.size(); i++)
 	{
 		auto& stmt = namespace_stmt.stmts[i];
 		stmt->accept(*this);
 	}
+	m_scopes.ascend();
 }

@@ -59,7 +59,7 @@ class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   void push(Token::Type ttype)
+   void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
@@ -83,12 +83,12 @@ public:
       return m_tokens[minIndex];
    }
 
-   void match_token(Token::Type type)
+   void match_token(Token::Specifier type)
    {
       const Token& token = eat();
       if(token.type != type)
       {
-          printf("not possible to match: %s", token.text);
+          printf("not possible to match: %s", token.text.c_str());
 	  abort();
       }
     }

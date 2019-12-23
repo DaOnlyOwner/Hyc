@@ -1,6 +1,7 @@
 #include "Pipeline.h"
 #include "Parser.h"
 #include "GraphOutput.h"
+#include "TypeChecker.h"
 
 void Pipeline::build(std::ifstream& input)
 {
@@ -11,8 +12,10 @@ void Pipeline::build(std::ifstream& input)
 	Parser parser(lexer);
 	auto parsed = parser.parse();
 
-	GraphOutput go;
-	parsed->accept(go);
-	go.write_to_file("test.dot");
+	TypeChecker tc;
+	parsed->accept(tc);
+	
+
+	//go.write_to_file("test.dot");
 
 }

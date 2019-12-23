@@ -1,33 +1,16 @@
 #include "SymbolTable.h"
 
-inline SymbolTable::SymbolTable()
+bool SymbolTable::add(Function* fn)
 {
-	m_meta_types.add("u8", Primitive(Primitive::Specifier::u8));
-	m_meta_types.add("u16", Primitive(Primitive::Specifier::u16));
-	m_meta_types.add("u32", Primitive(Primitive::Specifier::u32));
-	m_meta_types.add("u64", Primitive(Primitive::Specifier::u64));
-	m_meta_types.add("s8", Primitive(Primitive::Specifier::s8));
-	m_meta_types.add("s16", Primitive(Primitive::Specifier::s16));
-	m_meta_types.add("s32", Primitive(Primitive::Specifier::s32));
-	m_meta_types.add("s64", Primitive(Primitive::Specifier::s64));
-	m_meta_types.add("float", Primitive(Primitive::Specifier::Float));
-	m_meta_types.add("double", Primitive(Primitive::Specifier::Double));
-
-	m_functions.add("_mul_", Function());
-
-
-}
-
-bool SymbolTable::add(Function&& fn)
-{
-	auto fns = m_functions.get(fn.name);
-	if (fns.first == nullptr) m_functions.add(fn.name, { std::move(fn) });
+	auto maybe_fns = m_functions.get(fn->name);
+	if (maybe_fns == nullptr) m_functions.insert(std::string(fn->name), { std::unique_ptr<Function>(fn) });
 	// Might be an overload
 	else
 	{
-		if (std::find(fns.first->begin(), fns.first->end(), fn) == fns.first->end())
+		auto& fns = *maybe_fns;
+		if (std::find_if(fns.begin(), fns.end(), [fn](auto& uptrFn) {return fn == uptrFn.get();}) == fns.end())
 		{
-			fns.first->push_back(std::move(fn));
+			fns.push_back(std::unique_ptr<Function>(fn));
 		}
 		else return false;
 	}

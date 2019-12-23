@@ -38,12 +38,12 @@ PrefixOperation<Expr> unary_operator{ 6, [](PrefixExprFnArgs)
 {
 	switch (token.type)
 	{
-	case Token::Minus:
+	case Token::Specifier::Minus:
 		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal(6)));
-	case Token::Plus:
+	case Token::Specifier::Plus:
 		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal(6)));
 	default:
-		assert(false);
+		abort();
 	}
 } };
 
@@ -63,14 +63,21 @@ Parser::Parser(Lexer& token_source)
 	m_token_source(token_source),
 	m_pattern_parser(token_source)
 {
-	m_expr_parser.add_operation(Token::Asterix, product);
-	m_expr_parser.add_operation(Token::Plus, sum);
-	m_expr_parser.add_operation(Token::Float, float_lit);
-	m_expr_parser.add_operation(Token::Integer, integer_lit);
-	m_expr_parser.add_operation(Token::Minus, unary_operator);
-	m_expr_parser.add_operation(Token::Plus, unary_operator);
-	m_expr_parser.add_operation(Token::Ident, ident_expr);
-	m_pattern_parser.add_operation(Token::Ident, ident_pattern);
+	m_expr_parser.add_operation(Token::Specifier::Asterix, product);
+	m_expr_parser.add_operation(Token::Specifier::Plus, sum);
+	m_expr_parser.add_operation(Token::Specifier::Float, float_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerU8, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerU16, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerU32, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerU64, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerS8, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerS16, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerS32, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::IntegerS64, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::Minus, unary_operator);
+	m_expr_parser.add_operation(Token::Specifier::Plus, unary_operator);
+	m_expr_parser.add_operation(Token::Specifier::Ident, ident_expr);
+	m_pattern_parser.add_operation(Token::Specifier::Ident, ident_pattern);
 }
 
 std::unique_ptr<Stmt> Parser::parse()
@@ -82,8 +89,8 @@ std::unique_ptr<Stmt> Parser::parse()
 std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 {
 	const Token* token = &m_token_source.lookahead(1);
-	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Ident, "GLOBAL", "", 0, 0, 0, 0));
-	while (token->type != Token::Eof)
+	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", "", 0, 0, 0, 0));
+	while (token->type != Token::Specifier::Eof)
 	{
 		nms->stmts.push_back(parse_inferred_decl_stmt());
 	}
@@ -94,8 +101,8 @@ std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 std::unique_ptr<Stmt> Parser::parse_inferred_decl_stmt()
 {
 	auto lh = m_pattern_parser.parse();
-	m_token_source.match_token(Token::Decl);
+	m_token_source.match_token(Token::Specifier::Decl);
 	auto rh = m_expr_parser.parse();
-	m_token_source.match_token(Token::Semicolon);
+	m_token_source.match_token(Token::Specifier::Semicolon);
 	return std::make_unique<InferredDeclStmt>(mv(lh),mv(rh));
 }

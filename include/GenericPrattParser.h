@@ -40,12 +40,12 @@ class GenericPrattParser
 public:
 	GenericPrattParser(Lexer& token_source)
 		: m_token_source(token_source){}
-	bool add_operation(Token::Type ttype, const InfixOperation<TReturn>& left)
+	bool add_operation(Token::Specifier ttype, const InfixOperation<TReturn>& left)
 	{
 		return m_infix_operation.emplace(ttype,left).second;
 	}
 
-	bool add_operation(Token::Type ttype, const PrefixOperation<TReturn>& prefix)
+	bool add_operation(Token::Specifier ttype, const PrefixOperation<TReturn>& prefix)
 	{
 		return m_prefix_operation.emplace(ttype, prefix).second;
 	}
@@ -90,6 +90,6 @@ public:
 	   
 private:
 	Lexer& m_token_source;
-	std::unordered_map<Token::Type, InfixOperation<TReturn>> m_infix_operation;
-	std::unordered_map<Token::Type, PrefixOperation<TReturn>> m_prefix_operation;
+	std::unordered_map<Token::Specifier, InfixOperation<TReturn>> m_infix_operation;
+	std::unordered_map<Token::Specifier, PrefixOperation<TReturn>> m_prefix_operation;
 };

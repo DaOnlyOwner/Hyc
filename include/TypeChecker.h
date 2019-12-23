@@ -1,11 +1,13 @@
 #pragma once
 #include "Ast.h"
 #include "ValueStorage.h"
-#include "UID.h"
 #include "Scopes.h"
 
-class TypeChecker : public IAstVisitor, public ValueStorage<UID>
+class TypeChecker : public IAstVisitor, public ValueStorage<MetaType*>
 {
+public:
+	TypeChecker()
+		:ValueStorage(this){}
 	// Geerbt über IAstVisitor
 	virtual void visit(FloatLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
@@ -16,7 +18,13 @@ class TypeChecker : public IAstVisitor, public ValueStorage<UID>
 	virtual void visit(IdentPattern& ident) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
+
+	Scopes&& get_scopes()
+	{
+		return std::move(m_scopes);
+	}
+
 private:
 	Scopes m_scopes;
-	std::pair<MetaType&,UID> m_type_to_pattern_match;
+	MetaType* m_type_to_pattern_match = nullptr;
 };

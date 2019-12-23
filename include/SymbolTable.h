@@ -1,41 +1,36 @@
 #pragma once
 
 #include <string>
-#include "IndexedHashmap.h"
+#include "PerfectHashmap.h"
+#include "Hashmap.h"
 #include "MetaType.h"
-#include "UID.h"
 #include "Primitive.h"
 #include <algorithm>
-
-#define GET_ELEM_BY_NAME_AND_FN(container_name)\
-auto* vars = container_name##.get(name);\
-if (vars.get(name) != nullptr)\
-{\
-	auto it = std::find_if(vars->begin(), vars->end(), fn);\
-	if (it != vars->end()) return *it;\
-}\
-return nullptr;
+#include <optional>
+#include <memory>
+#include "DebugPrint.h"
 
 // TODO: Performance: Use move constructor for strings too.
 struct Function 
 {
-	Function(const std::string& name, std::vector<UID>&& arguments)
-		: name(name), arguments(std::move(arguments)){}
+	Function(const std::string& name, std::vector<MetaType*>&& arguments, MetaType* return_type)
+		: name(name), arguments(std::move(arguments)), return_type{ return_type }{}
+	Function() =default;
 	std::string name;
-	UID return_type;
-	std::vector<UID> arguments;
-	bool operator==(const Function& other) { name == other.name && arguments == other.arguments; }
-	bool operator!=(const Function& other) { !(*this == other); }
+	std::vector<MetaType*> arguments;
+	MetaType* return_type = nullptr;
+	bool operator==(const Function& other) { return name == other.name && arguments == other.arguments; }
+	bool operator!=(const Function& other) { return !(*this == other); }
 };
 
 struct Variable
 {
-	Variable(const std::string& name, UID type)
+	Variable(const std::string& name, MetaType* type)
 		:name(name), type(type){}
 	std::string name;
-	UID type;
-	bool operator==(const Variable& other) { name == other.name && type == other.type; }
-	bool operator!=(const Variable& other) { !(*this == other); }
+	MetaType* type;
+	bool operator==(const Variable& other) { return name == other.name && type == other.type; }
+	bool operator!=(const Variable& other) { return !(*this == other); }
 };
 
 struct UnaryOperator
@@ -45,8 +40,27 @@ struct UnaryOperator
 		Plus,Minus,Count
 	};
 
+	UnaryOperator(Specifier spec, MetaType* rh):
+		operation(spec),rh(rh),return_type(rh){}
+
+	static Specifier from_token_specifier(Token::Specifier spec)
+	{
+		switch (spec)
+		{
+		
+		case Token::Specifier::Plus:
+			return Specifier::Plus;
+		case Token::Specifier::Minus:
+			return Specifier::Minus;
+		default:
+			Debug("bad unary specifier from token specifier");
+			abort();
+		}
+	}
+
 	Specifier operation;
-	UID rh;
+	MetaType* rh;
+	MetaType* return_type;
 };
 
 struct BinaryOperator
@@ -56,8 +70,34 @@ struct BinaryOperator
 		Plus,Minus,Multiplication,Division,Count
 	};
 
+	BinaryOperator(Specifier spec, MetaType* lh, MetaType* rh):
+		operation(spec),rh(rh),lh(lh),return_type(rh){}
+
+	
+
+	static Specifier from_token_specifier(Token::Specifier spec)
+	{
+		switch (spec)
+		{
+		
+		case Token::Specifier::Slash:
+			return Specifier::Division;
+		case Token::Specifier::Plus:
+			return Specifier::Plus;
+		case Token::Specifier::Minus:
+			return Specifier::Minus;
+		case Token::Specifier::Asterix:
+			return Specifier::Multiplication;
+		default:
+			Debug("bad binary specifier from token specifier");
+			abort();
+		}
+	}
+
 	Specifier operation;
-	UID lh, rh;
+	MetaType* lh;
+	MetaType* rh;
+	MetaType* return_type;
 
 };
 
@@ -65,46 +105,72 @@ struct BinaryOperator
 class SymbolTable
 {
 public:
-	SymbolTable() = default;
-	SymbolTable(size_t offset)
-		:m_meta_types(offset), m_variables(offset){}
+	SymbolTable()
+		: m_binary_operators(),m_unary_operators() {}
 
-	bool add(Variable&& var) { return m_variables.add(var.name,std::move(var)) > 0; }
-	bool add(Function&& fn);
-	bool add(MetaType&& mt) { return m_meta_types.add(mt.get_name(), std::move(mt)) > 0; }
+	SymbolTable(const SymbolTable& other) = delete;
+	SymbolTable& operator=(const SymbolTable& other) = delete;
 
-	std::pair<Variable*, size_t> get_var(const std::string& name) { auto ret = m_variables.get(name); return std::make_pair(ret.first, ret.second); }
-	Variable& get_var(const UID& uid) { return m_variables.get_by_index(uid.index); }
+	SymbolTable(SymbolTable&& other) = default;
+	SymbolTable& operator=(SymbolTable&& other) = default;
 
-	std::pair<MetaType*,size_t> get_meta_type(const std::string& name) {return m_meta_types.get(name);}
-	MetaType& get_meta_type(const UID& uid) { return m_meta_types.get_by_index(uid.index); }
 
-	// Returns the function for which fn returns true.
-	template<typename Fn>
-	Function* get_func(const std::string& name, Fn fn) 
+
+	bool add(Variable* var) { return m_variables.insert(std::string(var->name), std::unique_ptr<Variable>(var)); }
+	bool add(Function* fn);
+	bool add(MetaType* mt) { return m_meta_types.insert(std::string(mt->get_name()), std::unique_ptr<MetaType>(mt)); }
+
+	Variable* get_var(const std::string& name)
 	{
-		GET_ELEM_BY_NAME_AND_FN(m_functions)
+		auto* elem = m_variables.get(name);
+		return elem == nullptr ? nullptr : elem->get();
 	}
-	
-	template<typename Fn>
-	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name) 
+	MetaType* get_meta_type(const std::string& name)
 	{
-		GET_ELEM_BY_NAME_AND_FN(m_unary_operators)
+		auto* elem = m_meta_types.get(name);
+		return elem == nullptr ? nullptr : elem->get();
 	}
 
-	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name) {
-		GET_ELEM_BY_NAME_AND_FN(m_binary_operators)
+	template<typename Pred>
+	Function* get_func(const std::string& name, Pred pred)
+	{
+
+		auto* vars = m_functions.get(name);
+		if (vars != nullptr)
+		{
+			auto& it = std::find_if(vars->begin(), vars->end(), [](const std::unique_ptr<Function>& func) {return pred(func.get()); });
+			if (it != vars->end()) return it->get();
+		}
+		return nullptr;
 	}
-	
+
+	template<typename Pred>
+	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name, Pred pred)
+	{
+		auto& vars = m_unary_operators.get(name);
+		auto it = std::find_if(vars.begin(), vars.end(), [pred](const std::unique_ptr<UnaryOperator>& func) {return pred(func.get()); });
+		if (it != vars.end()) return it->get();
+		return nullptr;
+	}
+
+	template<typename Pred>
+	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name, Pred pred) {
+
+		auto& vars = m_binary_operators.get(name);
+		auto it = std::find_if(vars.begin(), vars.end(), [pred](const std::unique_ptr<BinaryOperator>& func) {return pred(func.get()); });
+		if (it != vars.end()) return it->get();
+		return nullptr;
+	}
+
 private:
-	IndexedHashmap<std::string, Variable> m_variables;
-	IndexedHashmap<std::string, MetaType> m_meta_types;
-	
-	// We don't need indices here because functions / operators cannot be "carried around" in code.
+	Hashmap<std::string, std::unique_ptr<Variable>> m_variables;
+	Hashmap<std::string, std::unique_ptr<MetaType>> m_meta_types;
+
 	// binary and unary operators are statically known at compile time, so we can store them in a perfect hashmap
-	PerfectHashmap<BinaryOperator::Specifier, std::vector<BinaryOperator>,static_cast<unsigned int>(BinaryOperator::Specifier::Count)> m_binary_operators;
-	PerfectHashmap<UnaryOperator::Specifier, std::vector<UnaryOperator>, static_cast<unsigned int>(UnaryOperator::Specifier::Count)> m_unary_operators;
+	PerfectHashmap<BinaryOperator::Specifier, std::vector<std::unique_ptr<BinaryOperator>>, static_cast<size_t>(BinaryOperator::Specifier::Count)> m_binary_operators;
+
+	PerfectHashmap<UnaryOperator::Specifier, std::vector<std::unique_ptr<UnaryOperator>>, static_cast<size_t>(UnaryOperator::Specifier::Count)> m_unary_operators;
 
 	// Functions need a hashmap to lookup the name.
-	Hashmap<std::string, std::vector<Function>> m_functions;
+	Hashmap<std::string, std::vector<std::unique_ptr<Function>>> m_functions;
 };
