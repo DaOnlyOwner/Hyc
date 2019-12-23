@@ -29,11 +29,13 @@ public:
 	bool insert(TKey index, const TValue& val)
 	{
 		m_container[static_cast<size_t>(index)] = val;
+		return true;
 	}
 
 	bool insert(TKey index, TValue&& val)
 	{
 		m_container[static_cast<size_t>(index)] = std::move(val);
+		return true;
 	}
 	size_t size()
 	{

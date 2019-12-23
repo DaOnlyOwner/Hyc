@@ -138,7 +138,7 @@ public:
 		auto* vars = m_functions.get(name);
 		if (vars != nullptr)
 		{
-			auto& it = std::find_if(vars->begin(), vars->end(), [](const std::unique_ptr<Function>& func) {return pred(func.get()); });
+			auto& it = std::find_if(vars->begin(), vars->end(), [pred](const std::unique_ptr<Function>& func) {return pred(func.get()); });
 			if (it != vars->end()) return it->get();
 		}
 		return nullptr;

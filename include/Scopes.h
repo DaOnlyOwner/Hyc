@@ -27,11 +27,7 @@ return nullptr;
 class Scopes
 {
 public:
-	Scopes()
-	{
-
-	}
-
+	Scopes() = default;
 	Scopes(const Scopes&) = delete;
 	Scopes& operator=(const Scopes&) = delete;
 
@@ -54,7 +50,7 @@ public:
 		auto& uop = m_predefined_unary_ops.get(name);
 		if (pred(&uop)) return &uop;
 		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_unary_operator(name, pred);
@@ -69,7 +65,7 @@ public:
 		auto& bop = m_predefined_binary_ops.get(name);
 		if (pred(&bop)) return &bop;
 		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_binary_operator(name, pred);
@@ -83,7 +79,7 @@ public:
 	Function* get_func(const std::string& name, Pred pred)
 	{
 		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_func(name, pred);

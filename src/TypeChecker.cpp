@@ -2,9 +2,7 @@
 #include <cassert>
 #include "DebugPrint.h"
 
-// TODO: Completness: Finish this and also add _mul_ functions etc. in SymbolTable.
-
-MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
+/*MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
 {
 	auto it = std::find_if(fns.begin(), fns.end(), [&](Function& fnComp) {
 		return fnComp.arguments == args_to_compare;
@@ -18,7 +16,7 @@ MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType
 	{
 		return it->return_type;
 	}
-}
+}*/
 
 
 // TODO: Performance: define a function Scopes::get_primitive_type(Primitive::Specifier) which doesn't rely on lookup per string if the primitive type is clear.

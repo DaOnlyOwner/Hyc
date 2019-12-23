@@ -3,12 +3,17 @@
 bool SymbolTable::add(Function* fn)
 {
 	auto maybe_fns = m_functions.get(fn->name);
-	if (maybe_fns == nullptr) m_functions.insert(std::string(fn->name), { std::unique_ptr<Function>(fn) });
+	if (maybe_fns == nullptr)
+    {
+        std::vector<std::unique_ptr<Function>> funcs;
+        funcs.push_back(std::unique_ptr<Function>(fn));
+        m_functions.insert(std::string(fn->name),std::move(funcs));
+    }
 	// Might be an overload
 	else
 	{
 		auto& fns = *maybe_fns;
-		if (std::find_if(fns.begin(), fns.end(), [fn](auto& uptrFn) {return fn == uptrFn.get();}) == fns.end())
+		if (std::find_if(fns.begin(), fns.end(), [fn](auto& uptr_fn) {return fn == uptr_fn.get();}) == fns.end())
 		{
 			fns.push_back(std::unique_ptr<Function>(fn));
 		}
