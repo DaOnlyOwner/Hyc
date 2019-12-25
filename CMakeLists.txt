@@ -35,6 +35,7 @@ set (HEADERS
     include/ValueStorage.h
     include/MetaType.h
     include/ImplicitTypes.h
+    include/Precedence.h
 )
 
 file(GLOB_RECURSE REFLEX_SRC lib/reflex/*.cpp) #Static sources
@@ -50,6 +51,7 @@ set(SYNTAX_HEADERS
     include/Parser.h
     include/Ast.h
     include/GraphOutput.h
+    include/Precedence.h
 )
 
 set(SYNTAX_SOURCES

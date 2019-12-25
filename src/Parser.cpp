@@ -1,6 +1,6 @@
 #include "Parser.h"
 #include "GenericPrattParser.h"
-
+#include "Precedence.h"
 
 // Expressions
 
@@ -9,44 +9,38 @@
 #define PrefixExprFnArgs ExprParser& parser, const Token& token
 
 					 // Precedence  Right assoc?  Parsing function
-InfixOperation<Expr> product{ 4,      false,	 [](InfixExprFnArgs) {
-	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal(4));
+InfixOperation<Expr> productGroup{(int)ExprPrecedence::productGroup, false, [](InfixExprFnArgs) {
+	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::productGroup));
 } };
 
-InfixOperation<Expr> sum{ 3,	  false,	 [](InfixExprFnArgs) {
-	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal(3));
+InfixOperation<Expr> sumGroup{(int)ExprPrecedence::sumGroup, false, [](InfixExprFnArgs) {
+	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::sumGroup));
 } };
 
 
 // "Prefix" Operators
 
-PrefixOperation<Expr> float_lit{ 10, [](PrefixExprFnArgs)
+PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::float_lit, [](PrefixExprFnArgs)
 {
 	return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
 } };
 
-PrefixOperation<Expr> integer_lit{ 10, [](PrefixExprFnArgs)
+PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
 {
 	return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token));
 } };
 
-PrefixOperation<Expr> ident_expr{ 10, [](PrefixExprFnArgs) {
-	return std::make_unique<IdentExpr>(token);
+PrefixOperation<Expr> ident_expr{ (int)ExprPrecedence::ident_expr, [](PrefixExprFnArgs) {
+	if(parser.lookahead(1) == '(') 
+    return std::make_unique<IdentExpr>(token);
 } };
 
-PrefixOperation<Expr> unary_operator{ 6, [](PrefixExprFnArgs)
+PrefixOperation<Expr> unary_operator{ (int)ExprPrecedence::unary_op, [](PrefixExprFnArgs)
 {
-	switch (token.type)
-	{
-	case Token::Specifier::Minus:
-		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal(6)));
-	case Token::Specifier::Plus:
-		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal(6)));
-	default:
-		abort();
-	}
+    return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
 } };
 
+PrefixOperation<Expr> function_call{  };
 
 // Patterns
 #define InfixPatternFnArgs PatternParser& parser, const Token& token, std::unique_ptr<Pattern> lh
@@ -63,8 +57,8 @@ Parser::Parser(Lexer& token_source)
 	m_token_source(token_source),
 	m_pattern_parser(token_source)
 {
-	m_expr_parser.add_operation(Token::Specifier::Asterix, product);
-	m_expr_parser.add_operation(Token::Specifier::Plus, sum);
+	m_expr_parser.add_operation(Token::Specifier::Asterix, productGroup);
+	m_expr_parser.add_operation(Token::Specifier::Plus, sumGroup);
 	m_expr_parser.add_operation(Token::Specifier::Float, float_lit);
 	m_expr_parser.add_operation(Token::Specifier::IntegerU8, integer_lit);
 	m_expr_parser.add_operation(Token::Specifier::IntegerU16, integer_lit);
