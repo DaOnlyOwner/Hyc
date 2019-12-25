@@ -61,7 +61,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 
 	if (unary_operator == nullptr)
 	{
-		Debug("Binary operator not found, userbug or compilerbug");
+		Debug("Unary operator not found, userbug or compilerbug");
 		abort();
 	}
 

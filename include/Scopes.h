@@ -47,9 +47,9 @@ public:
 	template<typename Pred>
 	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name, Pred pred)
 	{
-		auto& uop = m_predefined_unary_ops.get(name);
-		if (pred(&uop)) return &uop;
-		int father = get_entry(m_current_index).father;
+		auto& ops = m_predefined_unary_ops.get(name);
+		auto it = std::find_if(ops.begin(), ops.end(), [pred](auto& op) {return pred(&op); });
+		if (it != ops.end()) return &*it; // Deref the iterator and take the reference of the object
 		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
 		{
 			t_entry& e = get_entry(i);
@@ -62,9 +62,9 @@ public:
 	template<typename Pred>
 	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name, Pred pred)
 	{
-		auto& bop = m_predefined_binary_ops.get(name);
-		if (pred(&bop)) return &bop;
-		int father = get_entry(m_current_index).father;
+		auto& ops = m_predefined_binary_ops.get(name);
+		auto it = std::find_if(ops.begin(), ops.end(), [pred](auto& op) {return pred(&op); });
+		if (it != ops.end()) return &*it;
 		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
 		{
 			t_entry& e = get_entry(i);
@@ -102,13 +102,16 @@ public:
 
 	void descend(size_t nthChild);
 
+	void debug_print();
+
+
 
 private:
 	struct t_entry
 	{
 		t_entry(int father, SymbolTable&& table)
 			:father(father),
-			table(std::move(table)){}
+			table(std::move(table)) {}
 		int father;
 		SymbolTable table;
 	};
@@ -123,7 +126,7 @@ private:
 	{
 		return m_collection[index];
 	}
-	
+
 
 	PerfectHashmap<Primitive::Specifier, Primitive, (size_t)Primitive::Specifier::Count> m_predefined_types
 	{
@@ -138,94 +141,84 @@ private:
 		Primitive("float",Primitive::Specifier::Float),
 		Primitive("double",Primitive::Specifier::Double)}
 	};
-	
-	PerfectHashmap<UnaryOperator::Specifier, UnaryOperator, (size_t)UnaryOperator::Specifier::Count * (size_t)Primitive::Specifier::Count> m_predefined_unary_ops
+
+	PerfectHashmap<UnaryOperator::Specifier, std::array<UnaryOperator, (size_t)Primitive::Specifier::Count>, (size_t)UnaryOperator::Specifier::Count> m_predefined_unary_ops
 	{
 		{
-			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u8)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u8)),
+			std::array<UnaryOperator, (size_t)Primitive::Specifier::Count>
 
+			{UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u8)),
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u16)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u16)),
-			
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u32)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u32)),
-
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u64)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u64)),
-
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s8)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s8)),
-
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s16)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s16)),
-
-			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s32)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s32)),
-
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s64)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s64)),
-
 			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Float)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Float)),
+			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s32)),
+			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Double))},
 
-			UnaryOperator(UnaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Double)),
-			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Double))
+			{UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u8)),
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u16)),		
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u32)),		
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u64)),		
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s8)),	
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s16)),
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s32)),
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s64)),
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Float)),
+			UnaryOperator(UnaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Double))}
 		}
 	};
 
-	PerfectHashmap<BinaryOperator::Specifier, BinaryOperator, (size_t)BinaryOperator::Specifier::Count * (size_t)Primitive::Specifier::Count> m_predefined_binary_ops
+	PerfectHashmap<BinaryOperator::Specifier, std::array<BinaryOperator,(size_t)Primitive::Specifier::Count>, (size_t)BinaryOperator::Specifier::Count> m_predefined_binary_ops
 	{
 		{
-			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
-
+			std::array<BinaryOperator,(size_t)Primitive::Specifier::Count>
+			
+			{BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
-
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
-
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
-
-			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s8),&m_predefined_types.get(Primitive::Specifier::s8)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s8),&m_predefined_types.get(Primitive::Specifier::s8)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s8),&m_predefined_types.get(Primitive::Specifier::s8)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s8),&m_predefined_types.get(Primitive::Specifier::s8)),
-		
+			BinaryOperator(BinaryOperator::Specifier::Minus, &m_predefined_types.get(Primitive::Specifier::s8), &m_predefined_types.get(Primitive::Specifier::s8)),
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
-
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
-
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
-
 			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
+			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double))},
 
-			BinaryOperator(BinaryOperator::Specifier::Minus,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double)),
-			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double)),
-			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double)),
-			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double))
+			{BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
+			BinaryOperator(BinaryOperator::Specifier::Plus, &m_predefined_types.get(Primitive::Specifier::s8), &m_predefined_types.get(Primitive::Specifier::s8)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
+			BinaryOperator(BinaryOperator::Specifier::Plus,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double))},
+			
+			{BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
+			BinaryOperator(BinaryOperator::Specifier::Division, &m_predefined_types.get(Primitive::Specifier::s8), &m_predefined_types.get(Primitive::Specifier::s8)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
+			BinaryOperator(BinaryOperator::Specifier::Division,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double))},
+			
+			{BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u16),&m_predefined_types.get(Primitive::Specifier::u16)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u32),&m_predefined_types.get(Primitive::Specifier::u32)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u8),&m_predefined_types.get(Primitive::Specifier::u8)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::u64),&m_predefined_types.get(Primitive::Specifier::u64)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication, &m_predefined_types.get(Primitive::Specifier::s8), &m_predefined_types.get(Primitive::Specifier::s8)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s16),&m_predefined_types.get(Primitive::Specifier::s16)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s32),&m_predefined_types.get(Primitive::Specifier::s32)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::s64),&m_predefined_types.get(Primitive::Specifier::s64)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::Float),&m_predefined_types.get(Primitive::Specifier::Float)),
+			BinaryOperator(BinaryOperator::Specifier::Multiplication,&m_predefined_types.get(Primitive::Specifier::Double),&m_predefined_types.get(Primitive::Specifier::Double))}
 		
 		}
 	};

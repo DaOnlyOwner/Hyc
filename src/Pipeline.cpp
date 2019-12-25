@@ -12,9 +12,15 @@ void Pipeline::build(std::ifstream& input)
 	Parser parser(lexer);
 	auto parsed = parser.parse();
 
+	GraphOutput go;
+	parsed->accept(go);
+	go.write_to_file("go.dot");
+
 	TypeChecker tc;
 	parsed->accept(tc);
 	
+	Scopes scopes = tc.get_scopes();
+	scopes.debug_print();
 
 	//go.write_to_file("test.dot");
 

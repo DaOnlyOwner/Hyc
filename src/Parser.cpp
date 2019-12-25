@@ -88,9 +88,8 @@ std::unique_ptr<Stmt> Parser::parse()
 // stmt*
 std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 {
-	const Token* token = &m_token_source.lookahead(1);
 	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", "", 0, 0, 0, 0));
-	while (token->type != Token::Specifier::Eof)
+	while (m_token_source.lookahead(1).type != Token::Specifier::Eof)
 	{
 		nms->stmts.push_back(parse_inferred_decl_stmt());
 	}

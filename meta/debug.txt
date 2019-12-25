@@ -1,2 +1,10 @@
-x := 3+-2*5+2+5+1+5+23*-83+2+4;
-y := 3+x;
+int main()
+{
+    return fac(10);
+}
+
+s64 add(s64 a, s64 b)
+{
+    result := a + b;
+    return result;   
+}

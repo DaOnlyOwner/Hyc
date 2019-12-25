@@ -100,3 +100,9 @@ void Scopes::descend(size_t nthChild)
 		}
 	}
 }
+
+void Scopes::debug_print()
+{
+	int tmp_current_index = m_current_index;
+	
+}

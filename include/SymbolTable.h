@@ -168,7 +168,6 @@ private:
 
 	// binary and unary operators are statically known at compile time, so we can store them in a perfect hashmap
 	PerfectHashmap<BinaryOperator::Specifier, std::vector<std::unique_ptr<BinaryOperator>>, static_cast<size_t>(BinaryOperator::Specifier::Count)> m_binary_operators;
-
 	PerfectHashmap<UnaryOperator::Specifier, std::vector<std::unique_ptr<UnaryOperator>>, static_cast<size_t>(UnaryOperator::Specifier::Count)> m_unary_operators;
 
 	// Functions need a hashmap to lookup the name.
