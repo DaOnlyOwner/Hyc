@@ -29,6 +29,11 @@ struct IAstVisitor
 	virtual void visit(struct IdentPattern& ident) = 0;
 	virtual void visit(struct IdentExpr& ident) = 0;
 	virtual void visit(struct NamespaceStmt& namespace_stmt) = 0;
+	virtual void visit(struct FuncCallExpr& func_call_expr) = 0;
+	virtual void visit(struct FuncDefStmt& func_call_def_stmt) = 0;
+	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
+	virtual void visit(struct ExprStmt& expr_stmt) = 0;
+
 };
 
 struct Node
@@ -104,6 +109,16 @@ struct IdentExpr : Expr
 	IMPL_VISITOR
 };
 
+struct FuncCallExpr : Expr
+{
+	FuncCallExpr(const Token& name, std::vector<uptr<Expr>> arg_list)
+		: name(name), arg_list(std::move(arg_list)){}
+	Token name;
+	std::vector<uptr<Expr>> arg_list;
+	IMPL_VISITOR
+};
+
+
 // Statements
 
 struct Stmt : Node {};
@@ -125,6 +140,33 @@ struct NamespaceStmt : Stmt
 		:name(name){}
 	std::vector<uptr<Stmt>> stmts;
 	Token name;
+	IMPL_VISITOR
+};
+
+struct FuncDefStmt : Stmt
+{
+	FuncDefStmt(const Token& type, const Token& name, std::vector<std::pair<Token, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
+		: type(type), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
+	Token type;
+	Token name;
+	std::vector<std::pair<Token, Token>> arg_list_type_ident;
+	std::vector<uptr<Stmt>> body;
+	IMPL_VISITOR
+};
+
+struct ExprStmt : Stmt
+{
+	ExprStmt(uptr<Expr>&& expr)
+		: expr(mv(expr)){}
+	uptr<Expr> expr;
+	IMPL_VISITOR
+};
+
+struct ReturnStmt : Stmt
+{
+	ReturnStmt(uptr<Expr>&& returned_expr)
+		: returned_expr(mv(returned_expr)){}
+	uptr<Expr> returned_expr;
 	IMPL_VISITOR
 };
 

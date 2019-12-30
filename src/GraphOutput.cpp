@@ -104,6 +104,60 @@ void GraphOutput::visit(NamespaceStmt& nms_stmt)
 		child_name = node + 1;
 	}
 }
+void GraphOutput::visit(FuncCallExpr& func_call_expr)
+{
+	int node_name = new_name();
+	int child_name = node + 1;
+	out += label(node_name, "FuncCallExpr", func_call_expr.name.text);
+	for (int i = 0; i < func_call_expr.arg_list.size(); i++)
+	{
+		auto& arg = func_call_expr.arg_list[i];
+		arg->accept(*this);
+		out += connect(node_name, child_name);
+	}
+}
+
+void GraphOutput::visit(FuncDefStmt& func_call_def_stmt)
+{
+	int node_name = new_name();
+	out += label(node_name, "FuncDefStmt", "name: " + func_call_def_stmt.name.text + "| type: " + func_call_def_stmt.type.text);
+	for (int i = 0; i < func_call_def_stmt.arg_list_type_ident.size(); i++)
+	{
+		auto& arg = func_call_def_stmt.arg_list_type_ident[i];
+		int child_name = new_name();
+		out += label(child_name, "TypeIdentPair (parameter)", "name: " + arg.first.text + "| type: " + arg.second.text);
+		out += connect(node_name, child_name);
+	}
+
+	int child_name = node + 1;
+	for (int i = 0; i < func_call_def_stmt.body.size(); i++)
+	{
+		auto& arg = func_call_def_stmt.body[i];
+		arg->accept(*this);
+		out += connect(node_name, child_name);
+		child_name = node + 1;
+	}
+
+
+}
+
+void GraphOutput::visit(ReturnStmt& ret_stmt)
+{
+	int node_name = new_name();
+	int child_name = node + 1;
+	out += label(node_name, "ReturnStmt","");
+	ret_stmt.returned_expr->accept(*this);
+	out += connect(node_name, child_name);
+}
+
+void GraphOutput::visit(ExprStmt& expr_stmt)
+{
+	int node_name = new_name();
+	int child_name = node + 1;
+	out += label(node_name, "ExprStmt", "");
+	expr_stmt.expr->accept(*this);
+	out += connect(node_name, child_name);
+}
 
 int GraphOutput::new_name()
 {

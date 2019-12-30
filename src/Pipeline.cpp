@@ -16,11 +16,11 @@ void Pipeline::build(std::ifstream& input)
 	parsed->accept(go);
 	go.write_to_file("go.dot");
 
-	TypeChecker tc;
-	parsed->accept(tc);
+	//TypeChecker tc;
+	//parsed->accept(tc);
 	
-	Scopes scopes = tc.get_scopes();
-	scopes.debug_print();
+	//Scopes scopes = tc.get_scopes();
+	//scopes.debug_print();
 
 	//go.write_to_file("test.dot");
 

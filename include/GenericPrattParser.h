@@ -86,7 +86,10 @@ public:
 		return parse_internal(0);
 	}
 
-
+	Lexer& get_token_source()
+	{
+		return m_token_source;
+	}
 	   
 private:
 	Lexer& m_token_source;

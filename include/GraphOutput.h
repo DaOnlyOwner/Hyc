@@ -17,10 +17,11 @@ private:
 	virtual void visit(IdentPattern& ident) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& nms_stmt) override;
+	virtual void visit(FuncCallExpr& func_call_expr) override;
+	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
+	virtual void visit(ReturnStmt& ret_stmt) override;
+	virtual void visit(ExprStmt& expr_stmt) override;
 	std::string out = "digraph AST {";
 	int node = 0;
 	int new_name();
-
-
-
 };

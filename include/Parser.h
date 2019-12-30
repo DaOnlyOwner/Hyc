@@ -17,6 +17,10 @@ public:
 private:
 	std::unique_ptr<Stmt> parse_compilation_unit();
 	std::unique_ptr<Stmt> parse_inferred_decl_stmt();
+	std::unique_ptr<Stmt> parse_function_def_stmt();
+	std::unique_ptr<Stmt> parse_stmt();
+	std::unique_ptr<Stmt> parse_expr_stmt();
+	std::unique_ptr<Stmt> parse_return_stmt();
 
 	Lexer& m_token_source; 
 	ExprParser m_expr_parser;

@@ -18,6 +18,10 @@ public:
 	virtual void visit(IdentPattern& ident) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
+	virtual void visit(FuncCallExpr& func_call_expr) override;
+	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
+	virtual void visit(ReturnStmt& ret_stmt) override;
+	virtual void visit(ExprStmt& expr_stmt) override;
 
 	Scopes&& get_scopes()
 	{
@@ -27,4 +31,7 @@ public:
 private:
 	Scopes m_scopes;
 	MetaType* m_type_to_pattern_match = nullptr;
+	MetaType* m_current_func_type = nullptr;
+
+
 };

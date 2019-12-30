@@ -2,7 +2,8 @@
 #include <cassert>
 #include "DebugPrint.h"
 
-/*MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
+template<typename TPred>
+MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
 {
 	auto it = std::find_if(fns.begin(), fns.end(), [&](Function& fnComp) {
 		return fnComp.arguments == args_to_compare;
@@ -16,7 +17,7 @@
 	{
 		return it->return_type;
 	}
-}*/
+}
 
 
 // TODO: Performance: define a function Scopes::get_primitive_type(Primitive::Specifier) which doesn't rely on lookup per string if the primitive type is clear.
@@ -106,4 +107,53 @@ void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 		stmt->accept(*this);
 	}
 	m_scopes.ascend();
+}
+
+void TypeChecker::visit(FuncCallExpr& func_call_expr)
+{
+	Function* func = m_scopes.get_func(func_call_expr.name.text, [&](const Function* func)
+		{
+			bool succ = true;
+			for (int i = 0; i < func->arguments.size(); i++)
+			{
+				auto overload_type = func->arguments[i];
+				auto& expr_in_arg = func_call_expr.arg_list[i];
+				auto type_in_arg = get(expr_in_arg);
+				if (type_in_arg != overload_type) return false;
+			}
+			return true;
+		});
+
+	if (func == nullptr)
+	{
+		Debug("Cannot find function");
+		abort();
+	}
+
+	ret(func->return_type);
+	return;
+}
+
+void TypeChecker::visit(FuncDefStmt& func_def_stmt)
+{
+	m_current_func_type = m_scopes.get_meta_type(func_def_stmt.type.text);
+	for (auto& stmt : func_def_stmt.body)
+	{
+		stmt->accept(*this);
+	}
+}
+
+void TypeChecker::visit(ReturnStmt& ret_stmt)
+{
+	auto expr_type = get(ret_stmt.returned_expr);
+	if (m_current_func_type != expr_type)
+	{
+		Debug("return stmt has not the right type for function definition");
+		abort();
+	}
+}
+
+void TypeChecker::visit(ExprStmt& expr_stmt)
+{
+	expr_stmt.expr->accept(*this);
 }

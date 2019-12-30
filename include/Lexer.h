@@ -64,12 +64,6 @@ class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
 public:
-   // this only has elements when Lexer.lex() is called.
-   std::vector<Token> get_tokens()
-   {
-	return std::move(m_tokens);
-   }
-
    const Token& eat()
    {
       const Token& out = lookahead(1);
@@ -83,7 +77,7 @@ public:
       return m_tokens[minIndex];
    }
 
-   void match_token(Token::Specifier type)
+   const Token& match_token(Token::Specifier type)
    {
       const Token& token = eat();
       if(token.type != type)
@@ -91,6 +85,7 @@ public:
           printf("not possible to match: %s", token.text.c_str());
 	  abort();
       }
+      return token;
     }
 
 

@@ -13,13 +13,7 @@
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
-public:
-   // this only has elements when Lexer.lex() is called.
-   std::vector<Token> get_tokens()
-   {
-	return std::move(m_tokens);
-   }
-   
+public:   
    const Token& eat()
    {
       const Token& out = lookahead(1);
@@ -33,7 +27,7 @@ public:
       return m_tokens[minIndex];
    }
 
-   void match_token(Token::Specifier type)
+   const Token& match_token(Token::Specifier type)
    {    
       const Token& token = eat();
       if(token.type != type) 
@@ -41,18 +35,13 @@ public:
           printf("not possible to match: %s", token.text.c_str());
 	  abort();
       }
+      return token;
     }
 
 
 %}
-
-ubin		0b[0-1]+
-uoct		0[0-7]+
-uhex		0x[:xdigit:]+	
-udec		[1-9]\d*
-ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
 kw_return 	"return"
-kw_u8		"u8"
+/*kw_u8		"u8"
 kw_u16		"u16"
 kw_u32		"u32"
 kw_u64		"u64"
@@ -61,7 +50,12 @@ kw_s16		"s16"
 kw_s32		"s32"
 kw_s64		"s64"
 kw_float	"float"
-kw_double	"double"
+kw_double	"double"*/
+ubin		0b[0-1]+
+uoct		0[0-7]+
+uhex		0x[:xdigit:]+	
+udec		[1-9]\d*
+ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
 integerS64	({uhex}|{uoct}|{ubin}|{udec})
 integerU8 	({uhex}|{uoct}|{ubin}|{udec})u8
 integerU16 	({uhex}|{uoct}|{ubin}|{udec})u16
@@ -81,23 +75,27 @@ equal		"="
 semicln 	";"
 rparen_l	"("
 rparen_r	")"
+brace_l		"{"
+brace_r		"}"
 comma		","
+
 
 %%
 \s+
-{kw_u8}		{ push(Token::u8);}
-{kw_u16}	{ push(Token::s16);}
-{kw_u32}	{ push(Token::s32);}
-{kw_u64}	{ push(Token::s64);}
-{kw_s8}		{ push(Token::s8);}
-{kw_s16}	{ push(Token::s16);}
-{kw_s32}	{ push(Token::s32);}
-{kw_s64}	{ push(Token::s64);}
-{kw_float}	{ push(Token::float);}
-{kw_double}	{ push(Token::double);}
-{comma}		{ push(Token::comma);}
-{rparen_l}	{ push(Token::rparen_l);}
-{rparen_r}	{ push(Token::rparen_r);}
+/*{kw_u8}		{ push(Token::Specifier::kw_u8);}
+{kw_u16}	{ push(Token::Specifier::kw_s16);}
+{kw_u32}	{ push(Token::Specifier::kw_s32);}
+{kw_u64}	{ push(Token::Specifier::kw_s64);}
+{kw_s8}		{ push(Token::Specifier::kw_s8);}
+{kw_s16}	{ push(Token::Specifier::kw_s16);}
+{kw_s32}	{ push(Token::Specifier::kw_s32);}
+{kw_s64}	{ push(Token::Specifier::kw_s64);}
+{kw_float}	{ push(Token::Specifier::kw_float);}
+{kw_double}	{ push(Token::Specifier::kw_double);}*/
+{kw_return}	{ push(Token::Specifier::kw_return);}
+{comma}		{ push(Token::Specifier::comma);}
+{rparen_l}	{ push(Token::Specifier::rparen_l);}
+{rparen_r}	{ push(Token::Specifier::rparen_r);}
 {integerS64}	{ push(Token::Specifier::IntegerS64); }
 {integerU8} 	{ push(Token::Specifier::IntegerU8); }
 {integerU16} 	{ push(Token::Specifier::IntegerU16); }
@@ -116,5 +114,7 @@ comma		","
 {equal}   	{ push(Token::Specifier::Equal); }
 {ident}	  	{ push(Token::Specifier::Ident); }
 {semicln} 	{ push(Token::Specifier::Semicolon); }
+{brace_l}	{ push(Token::Specifier::brace_l); }
+{brace_r}	{ push(Token::Specifier::brace_r); }
 <<EOF>>   	{ push(Token::Specifier::Eof); return 0;}
 %%

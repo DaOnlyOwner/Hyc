@@ -10,8 +10,8 @@
 struct Token
 {
 	// TODO: make this enum class.
-	enum class Specifier{
-		IntegerU8, 
+	enum class Specifier {
+		IntegerU8,
 		IntegerU16,
 		IntegerU32,
 		IntegerU64,
@@ -30,7 +30,23 @@ struct Token
 		Ident,
 		Equal,
 		Decl,
-		Semicolon
+		Semicolon,
+		kw_u8,
+		kw_u16,
+		kw_u32,
+		kw_u64,
+		kw_s8,
+		kw_s16,
+		kw_s32,
+		kw_s64,
+		kw_float,
+		kw_double,
+		kw_return,
+		comma,
+		rparen_l,
+		rparen_r,
+		brace_l,
+		brace_r
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -115,6 +131,38 @@ struct Token
 			return "EOF";
 		case Specifier::Error:
 			return "Error";
+		case Specifier::kw_u8:
+			return "u8 (keyword)";
+		case Specifier::kw_u16:
+			return "u16 (keyword)";
+		case Specifier::kw_u32:
+			return "u32 (keyword)";
+		case Specifier::kw_u64:
+			return "u64 (keyword)";
+		case Specifier::kw_s8:
+			return "s8 (keyword)";
+		case Specifier::kw_s16:
+			return "s16 (keyword)";
+		case Specifier::kw_s32:
+			return "s32 (keyword)";
+		case Specifier::kw_s64:
+			return "s64 (keyword)";
+		case Specifier::kw_float:
+			return "float (keyword)";
+		case Specifier::kw_double:
+			return "kw_double";
+		case Specifier::comma:
+			return "Comma ','";
+		case Specifier::rparen_l:
+			return "Paren round, right ')'";
+		case Specifier::rparen_r:
+			return "Paren round, left '('";
+		case Specifier::kw_return:
+			return "kw_return";
+		case Specifier::brace_l:
+			return "brace_l";
+		case Specifier::brace_r:
+			return "brace_r";
 		}
 		return "Unknown";
 
