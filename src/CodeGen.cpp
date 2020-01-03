@@ -1,6 +1,14 @@
 #include "CodeGen.h"
 #include "SymbolTable.h"
 
+#ifndef NDEBUG
+#define DID(str) str
+#elif
+#define DID(str) ""
+#endif
+
+
+
 CodeGen::CodeGen()
 {
 }
@@ -11,44 +19,53 @@ void CodeGen::visit(FloatLiteralExpr& lit)
 
 void CodeGen::visit(IntegerLiteralExpr& lit)
 {
-	auto spec = Primitive::from_token_specifier(lit.integer_literal.type);
-	switch (spec)
-	{
-    case Primitive::Specifier::u8:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(8, lit.integer_literal.val, false);
-        break;
-    case Primitive::Specifier::u16:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(16, lit.integer_literal.val, false);
-        break;
-    case Primitive::Specifier::u32:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(32, lit.integer_literal.val, false);
-        break;
-    case Primitive::Specifier::u64:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(64, lit.integer_literal.val, false);
-        break;
-    case Primitive::Specifier::s8:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(8, lit.integer_literal.val, true);
-        break;
-    case Primitive::Specifier::s16:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(16, lit.integer_literal.val, true);
-        break;
-    case Primitive::Specifier::s32:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(32, lit.integer_literal.val, true);
-        break;
-    case Primitive::Specifier::s64:
-        ret(llvm::ConstantInt::get(m_context, llvm::APInt(64, lit.integer_literal.val, true);
-        break;
-    default:
-        abort();
-	}
+    ret(llvm::ConstantInt::get(m_context, llvm::APInt(lit.bits, lit.val)));
+	return;
 }
 
 void CodeGen::visit(BinOpExpr& bin_op)
 {
+	llvm::Value* lh = get(bin_op.lh);
+	llvm::Value* rh = get(bin_op.rh);
+
+	auto op_type = BinaryOperator::from_token_specifier(bin_op.op.type);
+	switch (op_type)
+	{
+	case BinaryOperator::Specifier::Plus:
+		ret(m_ir_builder.CreateAdd(lh, rh, DID("op_add")));
+		break;
+	case BinaryOperator::Specifier::Minus:
+		ret(m_ir_builder.CreateSub(lh, rh, DID("op_sub")));
+		break;
+	case BinaryOperator::Specifier::Multiplication:
+		ret(m_ir_builder.CreateMul(lh, rh, DID("op_mul")));
+		break;
+	case BinaryOperator::Specifier::Division:
+		ret(m_ir_builder.CreateUDiv(lh, rh, DID("op_div")));
+		break;
+	default:
+		Debug("Compilerbug");
+		abort();
+		break;
+	}
+
 }
 
 void CodeGen::visit(PrefixOpExpr& pre_op)
 {
+	llvm::Value* expr = get(pre_op.lh);
+	auto op_type = UnaryOperator::from_token_specifier(pre_op.op.type);
+	switch (op_type)
+	{
+	case UnaryOperator::Specifier::Plus:
+		ret(m_ir_builder.CreateFNeg())
+		break;
+	case UnaryOperator::Specifier::Minus:
+		break;
+	default:
+		Debug("Compilerbug");
+		abort();
+	}
 }
 
 void CodeGen::visit(PostfixOpExpr& post_op)

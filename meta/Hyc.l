@@ -53,7 +53,7 @@ kw_s64		"s64"
 kw_float	"float"
 kw_double	"double"*/
 ubin		0b[0-1]+
-uoct		0[0-7]+
+uoct		0c[0-7]+
 uhex		0x[:xdigit:]+	
 udec		[1-9]\d*
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 

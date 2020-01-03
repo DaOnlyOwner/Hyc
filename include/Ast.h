@@ -3,6 +3,8 @@
 #include "Token.h"
 #include <vector>
 #include <algorithm>
+#include <utility>
+#include "Primitive.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 
@@ -64,6 +66,10 @@ struct BinOpExpr : Expr
 		:op(op),lh(mv(lh)),rh(mv(rh)){}
 	Token op;
 	uptr<Expr> lh, rh;
+
+	// Semantic annotations
+	struct BinaryOperator* sem_bin_op = nullptr;
+
 	IMPL_VISITOR
 };
 
@@ -73,6 +79,10 @@ struct PrefixOpExpr : Expr
 		:op(op),lh(mv(lh)){}
 	Token op;
 	uptr<Expr> lh;
+
+	// Semantic annotations
+	struct UnaryOperator* sem_unary_op = nullptr;
+
 	IMPL_VISITOR
 };
 
@@ -85,17 +95,82 @@ struct PostfixOpExpr : Expr
 	IMPL_VISITOR
 };
 
-uint64_t eval_integer_val(const std::string& integer_text)
+std::pair<uint64_t,int> eval_integer_val(const Token& token)
 {
+	const std::string& integer_text = token.text;
+	int bits;
+	int radix;
+	const char* str_to_convert = integer_text.c_str()+2;
+	if (integer_text[0] == '0' && integer_text[1] == 'b') radix = 2; 
+	else if (integer_text[0] == '0' && integer_text[1] == 'x') radix = 16;
+	else if (integer_text[0] == '0' && integer_text[1] == 'c') radix = 8;
+	else
+	{
+		radix = 10;
+		str_to_convert = integer_text.c_str();
+	}
+	uint64_t val = std::strtoull(str_to_convert, nullptr, radix);
+	if (val == ULLONG_MAX)
+	{
+		Debug("Integer is too long"); abort();
+	}
+
+	auto spec = Primitive::from_token_specifier(token.type);
+	switch (spec)
+	{
+	case Primitive::Specifier::u8:
+	case Primitive::Specifier::s8:
+		bits = 8;
+		if (val > 255)
+		{
+			Debug("Integer is too long for an 8 bit integer");
+			abort();
+		}
+
+	case Primitive::Specifier::u16:
+	case Primitive::Specifier::s16:
+		bits = 16;
+		if (val > 65535)
+		{
+			Debug("Integer is too long for an 16 bit integer");
+			abort();
+		}
+
+	case Primitive::Specifier::u32:
+	case Primitive::Specifier::s32:
+		bits = 32;
+		if (val > 4294967295)
+		{
+			Debug("Integer is too long for an 32 bit integer");
+			abort();
+		}
+	default:
+		break;
+	}
+
+#ifndef NDEBUG
+	if (val == 0ULL)
+	{
+		Debug("Integer val couldn't be converted. Compilerbug");
+		abort();
+	}
+#endif
+	return std::make_pair(val, bits);
 
 }
 
 struct IntegerLiteralExpr : Expr
 {
 	IntegerLiteralExpr(const Token& token) 
-		: integer_literal(token),val(eval_integer_val(token.text)){}
+		: integer_literal(token)
+	{
+		auto val_bits = eval_integer_val(token);
+		val = val_bits.first;
+		bits = val_bits.second;
+	}
 	Token integer_literal;
 	uint64_t val;
+	int bits;
 	IMPL_VISITOR
 };
 
@@ -123,7 +198,7 @@ struct FuncCallExpr : Expr
 	std::vector<uptr<Expr>> arg_list;
 
 	// Semantic annotations:
-	struct Function* semantic_function = nullptr;
+	struct Function* sem_function = nullptr;
 
 
 	IMPL_VISITOR
@@ -164,7 +239,7 @@ struct FuncDefStmt : Stmt
 	std::vector<uptr<Stmt>> body;
 
 	// Semantic annotations:
-	struct Function* semantic_function = nullptr;
+	struct Function* sem_function = nullptr;
 
 	IMPL_VISITOR
 };
@@ -176,7 +251,7 @@ struct ExprStmt : Stmt
 	uptr<Expr> expr;
 
 	// Semantic annotations:
-	struct MetaType* semantic_type = nullptr;
+	struct MetaType* sem_type = nullptr;
 
 	IMPL_VISITOR
 };

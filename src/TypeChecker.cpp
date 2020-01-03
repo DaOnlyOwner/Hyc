@@ -132,7 +132,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 		abort();
 	}
 
-	func_call_expr.semantic_function = func;
+	func_call_expr.sem_function = func;
 
 	ret(func->return_type);
 	return;
@@ -140,13 +140,13 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 {
-	m_current_func_ret_type = func_def_stmt.semantic_function->return_type;
+	m_current_func_ret_type = func_def_stmt.sem_function->return_type;
 	m_scopes->descend_next();
 
 	for (int i = 0; i<func_def_stmt.arg_list_type_ident.size(); i++)
 	{
 		auto& func_arg = func_def_stmt.arg_list_type_ident[i];
-		auto* type_sem = func_def_stmt.semantic_function->arguments[i];
+		auto* type_sem = func_def_stmt.sem_function->arguments[i];
 		m_scopes->add(new Variable(func_arg.second.text, type_sem));
 	}
 

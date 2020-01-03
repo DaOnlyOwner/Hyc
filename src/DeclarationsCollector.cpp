@@ -34,7 +34,7 @@ void DeclarationsCollector::visit(FuncDefStmt& func_def_stmt)
 
 	auto func = new Function(func_def_stmt.name.text, std::move(args_semantic), ret_type);
 	bool success = m_scopes->add(func);
-	func_def_stmt.semantic_function = func;
+	func_def_stmt.sem_function = func;
 	if (!success) {
 		Debug("Function already present");  abort();
 	}
