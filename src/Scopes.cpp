@@ -56,7 +56,6 @@ MetaType* Scopes::get_meta_type(const std::string& name)
 void Scopes::ascend()
 {
 	t_entry& current = get_current_entry();
-	assert(current.father != 0);
 	m_current_index = current.father;
 }
 
@@ -104,5 +103,4 @@ void Scopes::descend(size_t nthChild)
 void Scopes::debug_print()
 {
 	int tmp_current_index = m_current_index;
-	
 }

@@ -23,14 +23,14 @@ MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType
 // TODO: Performance: define a function Scopes::get_primitive_type(Primitive::Specifier) which doesn't rely on lookup per string if the primitive type is clear.
 void TypeChecker::visit(FloatLiteralExpr& lit)
 {
-	Primitive* primitive = m_scopes.get_primitive_type(Primitive::Specifier::Double);
+	Primitive* primitive = m_scopes->get_primitive_type(Primitive::Specifier::Double);
 	assert(primitive != nullptr);
 	ret(static_cast<MetaType*>(primitive));
 }
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	Primitive* primitive = m_scopes.get_primitive_type(Primitive::from_token_specifier(lit.integer_literal.type));
+	Primitive* primitive = m_scopes->get_primitive_type(Primitive::from_token_specifier(lit.integer_literal.type));
 	assert(primitive!=nullptr);
 	ret(static_cast<MetaType*>(primitive));
 }
@@ -40,7 +40,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 	auto* typeLh = get(bin_op.lh);
 	auto* typeRh = get(bin_op.rh);
 
-	BinaryOperator* bin_operator = m_scopes.get_binary_operator(BinaryOperator::from_token_specifier(bin_op.op.type), [typeLh,typeRh](const BinaryOperator* bin) {
+	BinaryOperator* bin_operator = m_scopes->get_binary_operator(BinaryOperator::from_token_specifier(bin_op.op.type), [typeLh,typeRh](const BinaryOperator* bin) {
 		return bin->lh == typeLh && bin->rh == typeRh;
 	});
 
@@ -56,7 +56,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 void TypeChecker::visit(PrefixOpExpr& pre_op)
 {
 	auto* type = get(pre_op.lh);
-	UnaryOperator* unary_operator = m_scopes.get_unary_operator(UnaryOperator::from_token_specifier(pre_op.op.type), [type](const UnaryOperator* un) {
+	UnaryOperator* unary_operator = m_scopes->get_unary_operator(UnaryOperator::from_token_specifier(pre_op.op.type), [type](const UnaryOperator* un) {
 		return un->rh == type;
 		});
 
@@ -84,36 +84,38 @@ void TypeChecker::visit(InferredDeclStmt& decl_inferred)
 
 void TypeChecker::visit(IdentPattern& ident)
 {
-	bool success = m_scopes.add(new Variable(ident.ident.text,m_type_to_pattern_match));	
+	bool success = m_scopes->add(new Variable(ident.ident.text, m_type_to_pattern_match));
 	if (!success)
 	{
-		Debug("Variable already exists."); abort();
+		Debug("Usererror: Variable already exists");
+		abort();
 	}
 }
 
 void TypeChecker::visit(IdentExpr& ident)
 {
-	auto* var = m_scopes.get_var(ident.ident.text);
+	auto* var = m_scopes->get_var(ident.ident.text);
 	if (var == nullptr) { Debug("Userbug, ident not declared"); abort(); }
 	ret(static_cast<MetaType*>(var->type));
 }
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 {
-	m_scopes.expand();
+	m_scopes->descend_next();
 	for (int i = 0; i < namespace_stmt.stmts.size(); i++)
 	{
 		auto& stmt = namespace_stmt.stmts[i];
 		stmt->accept(*this);
 	}
-	m_scopes.ascend();
+	m_scopes->ascend();
 }
 
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
 {
-	Function* func = m_scopes.get_func(func_call_expr.name.text, [&](const Function* func)
+	Function* func = m_scopes->get_func(func_call_expr.name.text, [&](const Function* func)
 		{
 			bool succ = true;
+			if (func->arguments.size() != func_call_expr.arg_list.size()) return false;
 			for (int i = 0; i < func->arguments.size(); i++)
 			{
 				auto overload_type = func->arguments[i];
@@ -130,23 +132,35 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 		abort();
 	}
 
+	func_call_expr.semantic_function = func;
+
 	ret(func->return_type);
 	return;
 }
 
 void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 {
-	m_current_func_type = m_scopes.get_meta_type(func_def_stmt.type.text);
+	m_current_func_ret_type = func_def_stmt.semantic_function->return_type;
+	m_scopes->descend_next();
+
+	for (int i = 0; i<func_def_stmt.arg_list_type_ident.size(); i++)
+	{
+		auto& func_arg = func_def_stmt.arg_list_type_ident[i];
+		auto* type_sem = func_def_stmt.semantic_function->arguments[i];
+		m_scopes->add(new Variable(func_arg.second.text, type_sem));
+	}
+
 	for (auto& stmt : func_def_stmt.body)
 	{
 		stmt->accept(*this);
 	}
+	m_scopes->ascend();
 }
 
 void TypeChecker::visit(ReturnStmt& ret_stmt)
 {
 	auto expr_type = get(ret_stmt.returned_expr);
-	if (m_current_func_type != expr_type)
+	if (m_current_func_ret_type != expr_type)
 	{
 		Debug("return stmt has not the right type for function definition");
 		abort();

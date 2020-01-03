@@ -120,7 +120,7 @@ void GraphOutput::visit(FuncCallExpr& func_call_expr)
 void GraphOutput::visit(FuncDefStmt& func_call_def_stmt)
 {
 	int node_name = new_name();
-	out += label(node_name, "FuncDefStmt", "name: " + func_call_def_stmt.name.text + "| type: " + func_call_def_stmt.type.text);
+	out += label(node_name, "FuncDefStmt", "name: " + func_call_def_stmt.name.text + "| type: " + func_call_def_stmt.ret_type.text);
 	for (int i = 0; i < func_call_def_stmt.arg_list_type_ident.size(); i++)
 	{
 		auto& arg = func_call_def_stmt.arg_list_type_ident[i];

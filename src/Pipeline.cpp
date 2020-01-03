@@ -2,6 +2,7 @@
 #include "Parser.h"
 #include "GraphOutput.h"
 #include "TypeChecker.h"
+#include "DeclarationsCollector.h"
 
 void Pipeline::build(std::ifstream& input)
 {
@@ -14,14 +15,12 @@ void Pipeline::build(std::ifstream& input)
 
 	GraphOutput go;
 	parsed->accept(go);
+
+	DeclarationsCollector dc;
+
+	parsed->accept(dc);
+
+	TypeChecker tc{ dc.get_scopes() };
+	parsed->accept(tc);
 	go.write_to_file("go.dot");
-
-	//TypeChecker tc;
-	//parsed->accept(tc);
-	
-	//Scopes scopes = tc.get_scopes();
-	//scopes.debug_print();
-
-	//go.write_to_file("test.dot");
-
 }

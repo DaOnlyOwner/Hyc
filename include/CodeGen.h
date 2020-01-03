@@ -1,13 +1,21 @@
 #pragma once
 #include "Ast.h"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include "ValueStorage.h"
-#include "Scopes.h"
 
-class TypeChecker : public IAstVisitor, public ValueStorage<MetaType*>
+class CodeGen : public IAstVisitor, ValueStorage<llvm::Value*>
 {
-public:
-	TypeChecker(std::unique_ptr<Scopes> scopes)
-		:ValueStorage(this), m_scopes(std::move(scopes)){}
+	CodeGen();
 	// Geerbt über IAstVisitor
 	virtual void visit(FloatLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
@@ -23,15 +31,8 @@ public:
 	virtual void visit(ReturnStmt& ret_stmt) override;
 	virtual void visit(ExprStmt& expr_stmt) override;
 
-	std::unique_ptr<Scopes> get_scopes()
-	{
-		return std::move(m_scopes);
-	}
-
 private:
-	std::unique_ptr<Scopes> m_scopes;
-	MetaType* m_type_to_pattern_match = nullptr;
-	MetaType* m_current_func_ret_type = nullptr;
-
-
+	llvm::LLVMContext m_context;
+	llvm::IRBuilder<> m_ir_builder;
+	llvm::Module m_module;
 };

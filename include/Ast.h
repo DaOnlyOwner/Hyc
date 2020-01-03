@@ -85,11 +85,17 @@ struct PostfixOpExpr : Expr
 	IMPL_VISITOR
 };
 
+uint64_t eval_integer_val(const std::string& integer_text)
+{
+
+}
+
 struct IntegerLiteralExpr : Expr
 {
 	IntegerLiteralExpr(const Token& token) 
-		: integer_literal(token){}
+		: integer_literal(token),val(eval_integer_val(token.text)){}
 	Token integer_literal;
+	uint64_t val;
 	IMPL_VISITOR
 };
 
@@ -115,6 +121,11 @@ struct FuncCallExpr : Expr
 		: name(name), arg_list(std::move(arg_list)){}
 	Token name;
 	std::vector<uptr<Expr>> arg_list;
+
+	// Semantic annotations:
+	struct Function* semantic_function = nullptr;
+
+
 	IMPL_VISITOR
 };
 
@@ -145,12 +156,16 @@ struct NamespaceStmt : Stmt
 
 struct FuncDefStmt : Stmt
 {
-	FuncDefStmt(const Token& type, const Token& name, std::vector<std::pair<Token, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
-		: type(type), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
-	Token type;
+	FuncDefStmt(const Token& ret_type, const Token& name, std::vector<std::pair<Token, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
+		: ret_type(ret_type), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
+	Token ret_type;
 	Token name;
 	std::vector<std::pair<Token, Token>> arg_list_type_ident;
 	std::vector<uptr<Stmt>> body;
+
+	// Semantic annotations:
+	struct Function* semantic_function = nullptr;
+
 	IMPL_VISITOR
 };
 
@@ -159,6 +174,10 @@ struct ExprStmt : Stmt
 	ExprStmt(uptr<Expr>&& expr)
 		: expr(mv(expr)){}
 	uptr<Expr> expr;
+
+	// Semantic annotations:
+	struct MetaType* semantic_type = nullptr;
+
 	IMPL_VISITOR
 };
 

@@ -13,6 +13,7 @@
    {
 	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
+
 public:   
    const Token& eat()
    {
@@ -56,16 +57,16 @@ uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		[1-9]\d*
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
-integerS64	({uhex}|{uoct}|{ubin}|{udec})
-integerU8 	({uhex}|{uoct}|{ubin}|{udec})u8
-integerU16 	({uhex}|{uoct}|{ubin}|{udec})u16
-integerU32 	({uhex}|{uoct}|{ubin}|{udec})u32
-integerU64 	({uhex}|{uoct}|{ubin}|{udec})u64
-integerS8 	({uhex}|{uoct}|{ubin}|{udec})s8
-integerS16 	({uhex}|{uoct}|{ubin}|{udec})s16
-integerS32 	({uhex}|{uoct}|{ubin}|{udec})s32
-float		\d*\.\d+([Ee][-+]\d+)?f
-double		\d*\.\d+([Ee][-+]\d+)?
+integerU8 	({uhex}|{uoct}|{ubin}|{udec})_8
+integerU16 	({uhex}|{uoct}|{ubin}|{udec})_16
+integerU32 	({uhex}|{uoct}|{ubin}|{udec})_32
+integerU64 	({uhex}|{uoct}|{ubin}|{udec})_64
+integerS8 	-({uhex}|{uoct}|{ubin}|{udec})_8
+integerS16 	-({uhex}|{uoct}|{ubin}|{udec})_16
+integerS32 	-({uhex}|{uoct}|{ubin}|{udec})_32
+integerS64	-?({uhex}|{uoct}|{ubin}|{udec})(_64)?
+float		-?\d*\.\d+([Ee][-+]\d+)?f
+double		-?\d*\.\d+([Ee][-+]\d+)?
 plus    	"+"
 minus   	"-"
 asterix 	"*"

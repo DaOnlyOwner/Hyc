@@ -1,14 +1,13 @@
 #pragma once
+
 #include "Ast.h"
-#include "ValueStorage.h"
 #include "Scopes.h"
 
-class TypeChecker : public IAstVisitor, public ValueStorage<MetaType*>
+class DeclarationsCollector : public IAstVisitor
 {
 public:
-	TypeChecker(std::unique_ptr<Scopes> scopes)
-		:ValueStorage(this), m_scopes(std::move(scopes)){}
-	// Geerbt über IAstVisitor
+	DeclarationsCollector();
+
 	virtual void visit(FloatLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;
@@ -30,8 +29,4 @@ public:
 
 private:
 	std::unique_ptr<Scopes> m_scopes;
-	MetaType* m_type_to_pattern_match = nullptr;
-	MetaType* m_current_func_ret_type = nullptr;
-
-
 };

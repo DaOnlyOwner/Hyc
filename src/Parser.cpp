@@ -2,6 +2,7 @@
 #include "GenericPrattParser.h"
 #include "Precedence.h"
 #include "DebugPrint.h"
+#include <cstdlib>
 
 // Expressions
 
@@ -58,8 +59,6 @@ PrefixOperation<Expr> unary_operator{ (int)ExprPrecedence::unary_op, [](PrefixEx
 {
     return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
 } };
-
-PrefixOperation<Expr> function_call{  };
 
 // Patterns
 #define InfixPatternFnArgs PatternParser& parser, const Token& token, std::unique_ptr<Pattern> lh
@@ -134,7 +133,7 @@ std::unique_ptr<Stmt> Parser::parse_function_def_stmt()
 		auto arg_type = m_token_source.match_token(Token::Specifier::Ident); // Type
 		auto arg_name = m_token_source.match_token(Token::Specifier::Ident); // name
 		
-		param_list.push_back(std::make_pair(arg_name, arg_type));
+		param_list.push_back(std::make_pair(arg_type, arg_name));
 
 		if (m_token_source.lookahead(1).type == Token::Specifier::comma) m_token_source.eat();
 	}

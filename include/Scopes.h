@@ -50,7 +50,7 @@ public:
 		auto& ops = m_predefined_unary_ops.get(name);
 		auto it = std::find_if(ops.begin(), ops.end(), [pred](auto& op) {return pred(&op); });
 		if (it != ops.end()) return &*it; // Deref the iterator and take the reference of the object
-		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(i).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_unary_operator(name, pred);
@@ -65,7 +65,7 @@ public:
 		auto& ops = m_predefined_binary_ops.get(name);
 		auto it = std::find_if(ops.begin(), ops.end(), [pred](auto& op) {return pred(&op); });
 		if (it != ops.end()) return &*it;
-		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(i).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_binary_operator(name, pred);
@@ -79,7 +79,7 @@ public:
 	Function* get_func(const std::string& name, Pred pred)
 	{
 		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; i = get_entry(m_current_index).father)
+		for (int i = m_current_index; i >= 0; i = get_entry(i).father)
 		{
 			t_entry& e = get_entry(i);
 			auto elem = e.table.get_func(name, pred);

@@ -1,6 +1,6 @@
-int main()
+s64 main()
 {
-    return fac(10);
+    return add(10,11);
 }
 
 s64 add(s64 a, s64 b)
