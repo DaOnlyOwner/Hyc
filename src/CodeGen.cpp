@@ -27,6 +27,8 @@ void CodeGen::visit(BinOpExpr& bin_op)
 {
 	llvm::Value* lh = get(bin_op.lh);
 	llvm::Value* rh = get(bin_op.rh);
+	
+	bin_op
 
 	auto op_type = BinaryOperator::from_token_specifier(bin_op.op.type);
 	switch (op_type)
