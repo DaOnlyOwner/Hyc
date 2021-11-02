@@ -1,3 +1,4 @@
+#if 0
 #pragma once
 #include "Ast.h"
 #include "llvm/ADT/APFloat.h"
@@ -36,3 +37,4 @@ private:
 	llvm::IRBuilder<> m_ir_builder;
 	llvm::Module m_module;
 };
+#endif

@@ -3,7 +3,7 @@
 #include <string>
 #include "PerfectHashmap.h"
 #include "Hashmap.h"
-#include "MetaType.h"
+#include "Type.h"
 #include "Primitive.h"
 #include <algorithm>
 #include <optional>
@@ -13,22 +13,22 @@
 // TODO: Performance: Use move constructor for strings too.
 struct Function 
 {
-	Function(const std::string& name, std::vector<MetaType*>&& arguments, MetaType* return_type)
+	Function(const std::string& name, std::vector<Type*>&& arguments, Type* return_type)
 		: name(name), arguments(std::move(arguments)), return_type{ return_type }{}
 	Function() =default;
 	std::string name;
-	std::vector<MetaType*> arguments;
-	MetaType* return_type = nullptr;
+	std::vector<Type*> arguments;
+	Type* return_type = nullptr;
 	bool operator==(const Function& other) { return name == other.name && arguments == other.arguments; }
 	bool operator!=(const Function& other) { return !(*this == other); }
 };
 
 struct Variable
 {
-	Variable(const std::string& name, MetaType* type)
+	Variable(const std::string& name, Type* type)
 		:name(name), type(type){}
 	std::string name;
-	MetaType* type;
+	Type* type;
 	bool operator==(const Variable& other) { return name == other.name && type == other.type; }
 	bool operator!=(const Variable& other) { return !(*this == other); }
 };
@@ -40,14 +40,13 @@ struct UnaryOperator
 		Plus,Minus,Count
 	};
 
-	UnaryOperator(Specifier spec, MetaType* rh):
+	UnaryOperator(Specifier spec, Type* rh):
 		operation(spec),rh(rh),return_type(rh){}
 
 	static Specifier from_token_specifier(Token::Specifier spec)
 	{
 		switch (spec)
 		{
-		
 		case Token::Specifier::Plus:
 			return Specifier::Plus;
 		case Token::Specifier::Minus:
@@ -59,8 +58,8 @@ struct UnaryOperator
 	}
 
 	Specifier operation;
-	MetaType* rh;
-	MetaType* return_type;
+	Type* rh;
+	Type* return_type;
 };
 
 struct BinaryOperator
@@ -70,7 +69,7 @@ struct BinaryOperator
 		Plus,Minus,Multiplication,Division,Count
 	};
 
-	BinaryOperator(Specifier spec, MetaType* lh, MetaType* rh):
+	BinaryOperator(Specifier spec, Type* lh, Type* rh):
 		operation(spec),rh(rh),lh(lh),return_type(rh){}
 
 	
@@ -95,9 +94,9 @@ struct BinaryOperator
 	}
 
 	Specifier operation;
-	MetaType* lh;
-	MetaType* rh;
-	MetaType* return_type;
+	Type* lh;
+	Type* rh;
+	Type* return_type;
 
 };
 
@@ -118,14 +117,14 @@ public:
 
 	bool add(Variable* var) { return m_variables.insert(std::string(var->name), std::unique_ptr<Variable>(var)); }
 	bool add(Function* fn);
-	bool add(MetaType* mt) { return m_meta_types.insert(std::string(mt->get_name()), std::unique_ptr<MetaType>(mt)); }
+	bool add(Type* mt) { return m_meta_types.insert(std::string(mt->get_name()), std::unique_ptr<Type>(mt)); }
 
 	Variable* get_var(const std::string& name)
 	{
 		auto* elem = m_variables.get(name);
 		return elem == nullptr ? nullptr : elem->get();
 	}
-	MetaType* get_meta_type(const std::string& name)
+	Type* get_meta_type(const std::string& name)
 	{
 		auto* elem = m_meta_types.get(name);
 		return elem == nullptr ? nullptr : elem->get();
@@ -164,7 +163,7 @@ public:
 
 private:
 	Hashmap<std::string, std::unique_ptr<Variable>> m_variables;
-	Hashmap<std::string, std::unique_ptr<MetaType>> m_meta_types;
+	Hashmap<std::string, std::unique_ptr<Type>> m_meta_types;
 
 	// binary and unary operators are statically known at compile time, so we can store them in a perfect hashmap
 	PerfectHashmap<BinaryOperator::Specifier, std::vector<std::unique_ptr<BinaryOperator>>, static_cast<size_t>(BinaryOperator::Specifier::Count)> m_binary_operators;

@@ -7,7 +7,8 @@
 
 int main(int argc, char** argv)
 {
-	std::ifstream fileInput(ROOT + std::string("/meta/debug.txt"));
+	std::string filename = ROOT "/meta/debug.txt";
+	std::ifstream fileInput(filename);
 	if (fileInput.bad())
 	{
 		printf("Couldn't open file");
@@ -15,5 +16,5 @@ int main(int argc, char** argv)
 	}
 
 	Pipeline p;
-	p.build(fileInput);
+	p.build(fileInput,filename);
 }

@@ -6,7 +6,7 @@ int father = get_entry(m_current_index).father;\
 for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)\
 {\
 	t_entry& e = get_entry(i);\
-	auto* elem = e.table.##symbol_table_func##(name);\
+	auto* elem = e.table.symbol_table_func(name);\
 	if (elem != nullptr) return elem;\
 }\
 return nullptr;
@@ -23,7 +23,7 @@ Variable* Scopes::get_var(const std::string & name)
 }
 
 
-MetaType* Scopes::get_meta_type(const std::string& name)
+Type* Scopes::get_meta_type(const std::string& name)
 {
 	if (name[0] == 'u')
 	{

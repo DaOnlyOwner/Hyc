@@ -7,7 +7,7 @@ class Pipeline
 {
 public:
 	Pipeline() = default;
-	void build(std::ifstream& input);
+	void build(std::ifstream& input, const std::string& filename);
 };
 
 

@@ -1,6 +1,7 @@
 #include "DeclarationsCollector.h"
 #include <algorithm>
 #include "DebugPrint.h"
+#include <iterator>
 
 DeclarationsCollector::DeclarationsCollector()
 {
@@ -19,7 +20,7 @@ void DeclarationsCollector::visit(NamespaceStmt& namespace_stmt)
 
 void DeclarationsCollector::visit(FuncDefStmt& func_def_stmt)
 {
-	std::vector<MetaType*> args_semantic;
+	std::vector<Type*> args_semantic;
 	std::transform(func_def_stmt.arg_list_type_ident.begin(), func_def_stmt.arg_list_type_ident.end(), std::back_inserter(args_semantic), [&](const std::pair<Token, Token>& type_ident) {
 		auto* type = m_scopes->get_meta_type(type_ident.first.text);
 		if (type == nullptr) { Debug("WROOOONG, type is not known"); abort(); }

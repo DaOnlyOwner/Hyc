@@ -1,3 +1,4 @@
+#if 0
 #include "CodeGen.h"
 #include "SymbolTable.h"
 
@@ -105,3 +106,4 @@ void CodeGen::visit(ReturnStmt& ret_stmt)
 void CodeGen::visit(ExprStmt& expr_stmt)
 {
 }
+#endif

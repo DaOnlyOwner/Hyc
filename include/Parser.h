@@ -11,7 +11,7 @@ typedef GenericPrattParser<Pattern> PatternParser;
 class Parser
 {
 public:
-	Parser(Lexer& token_source);
+	Parser(Lexer& token_source, const std::string& filename);
 	std::unique_ptr<Stmt> parse();
 
 private:
@@ -25,6 +25,7 @@ private:
 	Lexer& m_token_source; 
 	ExprParser m_expr_parser;
 	PatternParser m_pattern_parser;	
+	std::string file;
 };
 
 

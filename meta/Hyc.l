@@ -9,12 +9,17 @@
 %class{
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
+   std::string file;
    void push(Token::Specifier ttype)
    {
-	m_tokens.emplace_back(ttype, str(), matcher().line(), lineno(), columno(), lineno_end(), columno_end());
+	m_tokens.emplace_back(ttype, str(), file, matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
 
 public:   
+   void set_filename(const std::string& filename)
+   {
+        file=filename;
+   }
    const Token& eat()
    {
       const Token& out = lookahead(1);
@@ -53,7 +58,7 @@ kw_s64		"s64"
 kw_float	"float"
 kw_double	"double"*/
 ubin		0b[0-1]+
-uoct		0c[0-7]+
+uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		[1-9]\d*
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
@@ -64,7 +69,7 @@ integerU64 	({uhex}|{uoct}|{ubin}|{udec})_64
 integerS8 	-({uhex}|{uoct}|{ubin}|{udec})_8
 integerS16 	-({uhex}|{uoct}|{ubin}|{udec})_16
 integerS32 	-({uhex}|{uoct}|{ubin}|{udec})_32
-integerS64	-?({uhex}|{uoct}|{ubin}|{udec})(_64)?
+integerS64	-({uhex}|{uoct}|{ubin}|{udec})_64
 float		-?\d*\.\d+([Ee][-+]\d+)?f
 double		-?\d*\.\d+([Ee][-+]\d+)?
 plus    	"+"

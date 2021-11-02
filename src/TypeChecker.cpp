@@ -3,7 +3,7 @@
 #include "DebugPrint.h"
 
 template<typename TPred>
-MetaType* determine_return_type(std::vector<Function>& fns, std::vector<MetaType*>& args_to_compare)
+Type* determine_return_type(std::vector<Function>& fns, std::vector<Type*>& args_to_compare)
 {
 	auto it = std::find_if(fns.begin(), fns.end(), [&](Function& fnComp) {
 		return fnComp.arguments == args_to_compare;
@@ -25,14 +25,14 @@ void TypeChecker::visit(FloatLiteralExpr& lit)
 {
 	Primitive* primitive = m_scopes->get_primitive_type(Primitive::Specifier::Double);
 	assert(primitive != nullptr);
-	ret(static_cast<MetaType*>(primitive));
+	ret(static_cast<Type*>(primitive));
 }
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
 	Primitive* primitive = m_scopes->get_primitive_type(Primitive::from_token_specifier(lit.integer_literal.type));
 	assert(primitive!=nullptr);
-	ret(static_cast<MetaType*>(primitive));
+	ret(static_cast<Type*>(primitive));
 }
 
 void TypeChecker::visit(BinOpExpr& bin_op)
@@ -96,7 +96,7 @@ void TypeChecker::visit(IdentExpr& ident)
 {
 	auto* var = m_scopes->get_var(ident.ident.text);
 	if (var == nullptr) { Debug("Userbug, ident not declared"); abort(); }
-	ret(static_cast<MetaType*>(var->type));
+	ret(static_cast<Type*>(var->type));
 }
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)

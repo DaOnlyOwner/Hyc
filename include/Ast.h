@@ -95,24 +95,14 @@ struct PostfixOpExpr : Expr
 	IMPL_VISITOR
 };
 
-std::pair<uint64_t,int> eval_integer_val(const Token& token)
+inline std::pair<uint64_t,int> eval_integer_val(const Token& token, bool& succ)
 {
 	const std::string& integer_text = token.text;
 	int bits;
-	int radix;
-	const char* str_to_convert = integer_text.c_str()+2;
-	if (integer_text[0] == '0' && integer_text[1] == 'b') radix = 2; 
-	else if (integer_text[0] == '0' && integer_text[1] == 'x') radix = 16;
-	else if (integer_text[0] == '0' && integer_text[1] == 'c') radix = 8;
-	else
-	{
-		radix = 10;
-		str_to_convert = integer_text.c_str();
-	}
-	uint64_t val = std::strtoull(str_to_convert, nullptr, radix);
+	uint64_t val = std::strtoull(integer_text.c_str(), nullptr, 0);
 	if (val == ULLONG_MAX)
 	{
-		Debug("Integer is too long"); abort();
+		succ = false;
 	}
 
 	auto spec = Primitive::from_token_specifier(token.type);
@@ -121,28 +111,25 @@ std::pair<uint64_t,int> eval_integer_val(const Token& token)
 	case Primitive::Specifier::u8:
 	case Primitive::Specifier::s8:
 		bits = 8;
-		if (val > 255)
+		if (val > (1<<8))
 		{
-			Debug("Integer is too long for an 8 bit integer");
-			abort();
+			succ = false;
 		}
 
 	case Primitive::Specifier::u16:
 	case Primitive::Specifier::s16:
 		bits = 16;
-		if (val > 65535)
+		if (val > (1<<16))
 		{
-			Debug("Integer is too long for an 16 bit integer");
-			abort();
+			succ = false;
 		}
 
 	case Primitive::Specifier::u32:
 	case Primitive::Specifier::s32:
 		bits = 32;
-		if (val > 4294967295)
+		if (val > (1<<32))
 		{
-			Debug("Integer is too long for an 32 bit integer");
-			abort();
+			succ = false;
 		}
 	default:
 		break;
@@ -164,9 +151,15 @@ struct IntegerLiteralExpr : Expr
 	IntegerLiteralExpr(const Token& token) 
 		: integer_literal(token)
 	{
-		auto val_bits = eval_integer_val(token);
+		bool succ;
+		auto val_bits = eval_integer_val(token,succ);
 		val = val_bits.first;
 		bits = val_bits.second;
+		if (!succ)
+		{
+			
+			
+		}
 	}
 	Token integer_literal;
 	uint64_t val;
@@ -251,7 +244,7 @@ struct ExprStmt : Stmt
 	uptr<Expr> expr;
 
 	// Semantic annotations:
-	struct MetaType* sem_type = nullptr;
+	struct Type* sem_type = nullptr;
 
 	IMPL_VISITOR
 };

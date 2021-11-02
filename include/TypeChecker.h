@@ -3,7 +3,7 @@
 #include "ValueStorage.h"
 #include "Scopes.h"
 
-class TypeChecker : public IAstVisitor, public ValueStorage<MetaType*>
+class TypeChecker : public IAstVisitor, public ValueStorage<Type*>
 {
 public:
 	TypeChecker(std::unique_ptr<Scopes> scopes)
@@ -30,8 +30,6 @@ public:
 
 private:
 	std::unique_ptr<Scopes> m_scopes;
-	MetaType* m_type_to_pattern_match = nullptr;
-	MetaType* m_current_func_ret_type = nullptr;
-
-
+	Type* m_type_to_pattern_match = nullptr;
+	Type* m_current_func_ret_type = nullptr;
 };

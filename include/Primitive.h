@@ -1,9 +1,9 @@
 #pragma once
-#include "MetaType.h"
+#include "Type.h"
 #include "Token.h"
 #include "DebugPrint.h"
 
-class Primitive : public MetaType
+class Primitive : public Type
 {
 public:
 	//TODO: Performance: To encode floating point, size and if it's signed or not, use a bitmap e.g. 1|0|bin(32)| means signed, not float, size==32. 
@@ -12,7 +12,7 @@ public:
 		u8, u16, u32, u64,s8,s16,s32,s64,Float,Double,Count
 	};
 	Primitive(const std::string& name, Specifier specifier)
-		:MetaType(name),m_specifier(specifier){}
+		:Type(name),m_specifier(specifier){}
 
 	Specifier get_type()
 	{
@@ -58,7 +58,6 @@ public:
 		}
 	}
 
-	IMPL_VISITOR_TYPE
 private:
 	Specifier m_specifier;
 };

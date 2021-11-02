@@ -1,3 +1,6 @@
 [submodule "lib/RE-flex"]
 	path = lib/RE-flex
 	url = https://github.com/Genivia/RE-flex.git
+[submodule "lib/fmt"]
+	path = lib/fmt
+	url = https://github.com/fmtlib/fmt.git

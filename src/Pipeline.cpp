@@ -4,13 +4,14 @@
 #include "TypeChecker.h"
 #include "DeclarationsCollector.h"
 
-void Pipeline::build(std::ifstream& input)
+void Pipeline::build(std::ifstream& input, const std::string& filename)
 {
 	reflex::Input lexerInput(input);
+
 	Lexer lexer(lexerInput);
 	lexer.lex();
 	
-	Parser parser(lexer);
+	Parser parser(lexer,filename);
 	auto parsed = parser.parse();
 
 	GraphOutput go;

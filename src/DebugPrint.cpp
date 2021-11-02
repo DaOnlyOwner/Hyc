@@ -3,7 +3,7 @@
 
 void Debug(const std::string& str)
 {
-    printf("DEBUG: < %s >", str.c_str());
+    printf("DEBUG: < %s >\n", str.c_str());
 }
 
 void SemanticError(const ErrorDescription& descr)
@@ -18,8 +18,8 @@ void SemanticError(const ErrorDescription& descr)
 		str += '~';
 	}
 
-	str += "\nMessage: " + descr.Message;
-	str += "\nHint: " + descr.Hint;
+	if(descr.Message != "") str += "\nMessage: " + descr.Message;
+	if(descr.Hint != "") str += "\nHint: " + descr.Hint;
 	str += "===== " + std::to_string(descr.From) + ", " + std::to_string(descr.To) + ", " + descr.File + "=====";
 	fprintf(stderr, str.c_str());
 }

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 project(Hyc VERSION 0.01 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Hyc)
@@ -45,14 +44,13 @@ set (HEADERS
     ${CMAKE_SOURCE_DIR}/include/PerfectHashmap.h
     ${CMAKE_SOURCE_DIR}/include/Primitive.h
     ${CMAKE_SOURCE_DIR}/include/ValueStorage.h
-    ${CMAKE_SOURCE_DIR}/include/MetaType.h
-    ${CMAKE_SOURCE_DIR}/include/ImplicitTypes.h
+    ${CMAKE_SOURCE_DIR}/include/Type.h
     ${CMAKE_SOURCE_DIR}/include/Precedence.h
     ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
     ${CMAKE_SOURCE_DIR}/include/CodeGen.h
 )
 
-file(GLOB_RECURSE REFLEX_SRC "lib/Re-flex/*.cpp") #Static sources
+file(GLOB_RECURSE REFLEX_SRC "lib/Re-flex/lib/*.cpp" "lib/Re-flex/unicode/*.cpp") #Static sources
 
 set(SYNTAX_HEADERS 
     ${CMAKE_SOURCE_DIR}/include/Lexer.h
@@ -108,11 +106,13 @@ set(CODE_GEN_HEADERS
 )
 
 add_subdirectory(tests)
+add_subdirectory(lib/fmt)
 
 add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 add_executable(Hyc ${SOURCES} ${REFLEX_SRC} ${HEADERS} src/main.cpp)
 
-
+set_property(TARGET Hyc PROPERTY CXX_STANDARD 17)
+set_property(TARGET Hyc PROPERTY CXX_STANDARD_REQUIRED ON)
 
 source_group("Syntactical Analysis\\Source Files" FILES ${SYNTAX_SOURCES})
 source_group("Syntactical Analysis\\Header Files" FILES ${SYNTAX_HEADERS})
@@ -123,7 +123,7 @@ source_group("Code Generation\\Header Files" FILES ${CODE_GEN_HEADERS})
 source_group("Main" FILES src/main.cpp include/Pipeline.h src/Pipeline.cpp)
 source_group("Tools\\Header Files" FILES ${TOOLS_HEADERS})
 source_group("Tools\\Source Files" FILES ${TOOLS_SOURCES})
-
-
 source_group("Embedded" FILES ${REFLEX_SRC})
+
 target_include_directories(Hyc PRIVATE include "lib/Re-flex/include")
+target_link_libraries(Hyc fmt)

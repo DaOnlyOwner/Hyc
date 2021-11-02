@@ -70,7 +70,7 @@ PrefixOperation<Pattern> ident_pattern{ 10, [](PrefixPatternFnArgs) {
 } };
 
 
-Parser::Parser(Lexer& token_source)
+Parser::Parser(Lexer& token_source, const std::string& filename)
 	:m_expr_parser(token_source),
 	m_token_source(token_source),
 	m_pattern_parser(token_source)
@@ -90,6 +90,8 @@ Parser::Parser(Lexer& token_source)
 	m_expr_parser.add_operation(Token::Specifier::Plus, unary_operator);
 	m_expr_parser.add_operation(Token::Specifier::Ident, ident_expr);
 	m_pattern_parser.add_operation(Token::Specifier::Ident, ident_pattern);
+
+	file = filename;
 }
 
 std::unique_ptr<Stmt> Parser::parse()
@@ -100,7 +102,7 @@ std::unique_ptr<Stmt> Parser::parse()
 // stmt*
 std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 {
-	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", "", 0, 0, 0, 0));
+	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", file, "", 0, 0, 0, 0));
 	while (m_token_source.lookahead(1).type != Token::Specifier::Eof)
 	{
 		nms->stmts.push_back(parse_stmt());

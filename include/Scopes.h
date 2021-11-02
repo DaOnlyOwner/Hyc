@@ -36,11 +36,11 @@ public:
 
 
 	bool add(Variable* v) { return get_current_entry().table.add(v); }
-	bool add(MetaType* mt) { return get_current_entry().table.add(mt); }
+	bool add(Type* mt) { return get_current_entry().table.add(mt); }
 	bool add(Function* fn) { return get_current_entry().table.add(fn); }
 
 	Variable* get_var(const std::string& name);
-	MetaType* get_meta_type(const std::string& name);
+	Type* get_meta_type(const std::string& name);
 
 	Primitive* get_primitive_type(Primitive::Specifier name) { return &m_predefined_types.get(name); }
 

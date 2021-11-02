@@ -49,7 +49,7 @@ struct Token
 		brace_r
 	};
 
-	Token(Specifier ttype, const std::string& text, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
+	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
 		:type(ttype),text(text),lineNo(lineNo),colNo(colNo),lineNoEnd(lineNoEnd),colNoEnd(colNoEnd)
 	{
 		
@@ -57,6 +57,7 @@ struct Token
 
 	Specifier type;
 	std::string text;
+	std::string file;
 	size_t lineNo;
 	size_t colNo;
 	size_t lineNoEnd;

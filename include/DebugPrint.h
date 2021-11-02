@@ -3,11 +3,11 @@
 
 struct ErrorDescription
 {
-	std::string Message;
+	std::string Message = "";
 	size_t Line;
 	size_t From;
 	size_t To;
-	std::string Hint;
+	std::string Hint = "";
 	std::string File;
 	std::string OffendingLine;
 };
