@@ -11,16 +11,12 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define REFLEX_OPTION_debug               true
 #define REFLEX_OPTION_fast                true
 #define REFLEX_OPTION_header_file         "../include/Lexer.h"
 #define REFLEX_OPTION_lex                 lex
 #define REFLEX_OPTION_lexer               Lexer
 #define REFLEX_OPTION_noline              true
 #define REFLEX_OPTION_outfile             "../src/Lexer.cpp"
-
-// --debug option enables ASSERT:
-#define ASSERT(c) assert(c)
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -30,6 +26,8 @@
 
 
 #include "Token.h"
+#include "DebugPrint.h"
+#include "fmt/core.h"
 #include <vector>
 #include <algorithm>
 
@@ -60,7 +58,7 @@ class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   std::string file;
+   std::string file="LOL";
    void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), file, matcher().line(), lineno(), columno(), lineno_end(), columno_end());
@@ -89,11 +87,15 @@ public:
       const Token& token = eat();
       if(token.type != type)
       {
-          printf("not possible to match: %s", token.text.c_str());
-	  abort();
+          auto descr = Error::FromToken(token);
+          descr.Message = fmt::format("Expected {}, but got {}",Token::Translate(type),Token::Translate(token.type));
+	  descr.Hint = fmt::format("The offending token is {}",token.text);
+          Error::SyntacticalError(descr);
       }
       return token;
     }
+
+
 
  public:
   typedef reflex::AbstractLexer<reflex::Matcher> AbstractBaseLexer;
@@ -103,7 +105,6 @@ public:
     :
       AbstractBaseLexer(input, os)
   {
-    set_debug(true);
   }
   static const int INITIAL = 0;
   virtual int lex(void);

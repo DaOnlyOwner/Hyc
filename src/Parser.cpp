@@ -10,65 +10,94 @@
 #define InfixExprFnArgs ExprParser& parser, const Token& token, std::unique_ptr<Expr> lh
 #define PrefixExprFnArgs ExprParser& parser, const Token& token
 
-					 // Precedence  Right assoc?  Parsing function
-InfixOperation<Expr> productGroup{(int)ExprPrecedence::productGroup, false, [](InfixExprFnArgs) {
-	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::productGroup));
-} };
 
-InfixOperation<Expr> sumGroup{(int)ExprPrecedence::sumGroup, false, [](InfixExprFnArgs) {
-	return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::sumGroup));
-} };
-
-
-// "Prefix" Operators
-
-PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::float_lit, [](PrefixExprFnArgs)
+namespace
 {
-	return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
-} };
+	// Precedence  Right assoc?  Parsing function
+	InfixOperation<Expr> productGroup{ (int)ExprPrecedence::productGroup, false, [](InfixExprFnArgs) {
+		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::productGroup));
+	} };
 
-PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
-{
-	return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token));
-} };
+	InfixOperation<Expr> sumGroup{ (int)ExprPrecedence::sumGroup, false, [](InfixExprFnArgs) {
+		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::sumGroup));
+	} };
 
-PrefixOperation<Expr> ident_expr{ (int)ExprPrecedence::ident_expr, [](PrefixExprFnArgs) {
-	// Function call
-	if (parser.get_token_source().lookahead(1).type == Token::Specifier::rparen_l)
+
+	// "Prefix" Operators
+
+	PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::float_lit, [](PrefixExprFnArgs)
 	{
-		parser.get_token_source().eat(); // '('
-		std::vector<uptr<Expr>> arg_list;
-		// Parse an argument list:
-		while (parser.get_token_source().lookahead(1).type != Token::Specifier::rparen_r)
+		return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
+	} };
+
+	std::pair<bool, Primitive::Specifier> eval_integer_val(const Token& token)
+	{
+		const std::string& integer_text = token.text;
+		errno = 0;
+		unsigned long long int val = std::strtoull(integer_text.c_str(), nullptr, 0);
+		if (errno != 0)
 		{
-			arg_list.push_back(parser.parse());
-			if (parser.get_token_source().lookahead(1).type == Token::Specifier::comma)
-				parser.get_token_source().eat();
-			
+			errno = 0;
+			long long int val2 = std::strtoll(integer_text.c_str(), nullptr, 0);
+			if (errno == 0)
+			{
+				return { true,Primitive::Specifier::s64 };
+			}
+			return { false,Primitive::Specifier::s64 };
 		}
-
-		parser.get_token_source().eat(); // ')'
-
-		return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(token, std::move(arg_list)));
+		return { true,Primitive::Specifier::u64 };
 	}
-	// Just an identifier.
-    return static_cast<uptr<Expr>>(std::make_unique<IdentExpr>(token));
-} };
 
-PrefixOperation<Expr> unary_operator{ (int)ExprPrecedence::unary_op, [](PrefixExprFnArgs)
-{
-    return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
-} };
+	PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
+	{
+			auto [succ,spec] = eval_integer_val(token);
+			if (!succ)
+			{
+				auto descr = Error::FromToken(token);
+				descr.Message = fmt::format("{} doesn't fit into an i64 or u64", token.text);
+				descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
+				Error::SyntacticalError(descr);
+			}
+		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,spec));
+	} };
 
-// Patterns
+	PrefixOperation<Expr> ident_expr{ (int)ExprPrecedence::ident_expr, [](PrefixExprFnArgs) {
+		// Function call
+		if (parser.get_token_source().lookahead(1).type == Token::Specifier::rparen_l)
+		{
+			parser.get_token_source().eat(); // '('
+			std::vector<uptr<Expr>> arg_list;
+			// Parse an argument list:
+			while (parser.get_token_source().lookahead(1).type != Token::Specifier::rparen_r)
+			{
+				arg_list.push_back(parser.parse());
+				if (parser.get_token_source().lookahead(1).type == Token::Specifier::comma)
+					parser.get_token_source().eat();
+
+			}
+
+			parser.get_token_source().eat(); // ')'
+
+			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(token, std::move(arg_list)));
+		}
+		// Just an identifier.
+		return static_cast<uptr<Expr>>(std::make_unique<IdentExpr>(token));
+	} };
+
+	PrefixOperation<Expr> unary_operator{ (int)ExprPrecedence::unary_op, [](PrefixExprFnArgs)
+	{
+		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
+	} };
+
+	// Patterns
 #define InfixPatternFnArgs PatternParser& parser, const Token& token, std::unique_ptr<Pattern> lh
 #define PrefixPatternFnArgs PatternParser& parser, const Token& token
 
 
-PrefixOperation<Pattern> ident_pattern{ 10, [](PrefixPatternFnArgs) {
-	return ast_as<Pattern>(std::make_unique<IdentPattern>(token));
-} };
-
+	PrefixOperation<Pattern> ident_pattern{ 10, [](PrefixPatternFnArgs) {
+		return ast_as<Pattern>(std::make_unique<IdentPattern>(token));
+	} };
+}
 
 Parser::Parser(Lexer& token_source, const std::string& filename)
 	:m_expr_parser(token_source),
@@ -78,14 +107,7 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	m_expr_parser.add_operation(Token::Specifier::Asterix, productGroup);
 	m_expr_parser.add_operation(Token::Specifier::Plus, sumGroup);
 	m_expr_parser.add_operation(Token::Specifier::Float, float_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerU8, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerU16, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerU32, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerU64, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerS8, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerS16, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerS32, integer_lit);
-	m_expr_parser.add_operation(Token::Specifier::IntegerS64, integer_lit);
+	m_expr_parser.add_operation(Token::Specifier::Integer, integer_lit);
 	m_expr_parser.add_operation(Token::Specifier::Minus, unary_operator);
 	m_expr_parser.add_operation(Token::Specifier::Plus, unary_operator);
 	m_expr_parser.add_operation(Token::Specifier::Ident, ident_expr);

@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <utility>
 #include "Primitive.h"
+#include <cerrno>
+#include "DebugPrint.h"
+#include "fmt/core.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 
@@ -95,75 +98,15 @@ struct PostfixOpExpr : Expr
 	IMPL_VISITOR
 };
 
-inline std::pair<uint64_t,int> eval_integer_val(const Token& token, bool& succ)
-{
-	const std::string& integer_text = token.text;
-	int bits;
-	uint64_t val = std::strtoull(integer_text.c_str(), nullptr, 0);
-	if (val == ULLONG_MAX)
-	{
-		succ = false;
-	}
-
-	auto spec = Primitive::from_token_specifier(token.type);
-	switch (spec)
-	{
-	case Primitive::Specifier::u8:
-	case Primitive::Specifier::s8:
-		bits = 8;
-		if (val > (1<<8))
-		{
-			succ = false;
-		}
-
-	case Primitive::Specifier::u16:
-	case Primitive::Specifier::s16:
-		bits = 16;
-		if (val > (1<<16))
-		{
-			succ = false;
-		}
-
-	case Primitive::Specifier::u32:
-	case Primitive::Specifier::s32:
-		bits = 32;
-		if (val > (1<<32))
-		{
-			succ = false;
-		}
-	default:
-		break;
-	}
-
-#ifndef NDEBUG
-	if (val == 0ULL)
-	{
-		Debug("Integer val couldn't be converted. Compilerbug");
-		abort();
-	}
-#endif
-	return std::make_pair(val, bits);
-
-}
-
 struct IntegerLiteralExpr : Expr
 {
-	IntegerLiteralExpr(const Token& token) 
-		: integer_literal(token)
+	IntegerLiteralExpr(const Token& token, Primitive::Specifier specifier) 
+		: integer_literal(token),specifier(specifier)
 	{
-		bool succ;
-		auto val_bits = eval_integer_val(token,succ);
-		val = val_bits.first;
-		bits = val_bits.second;
-		if (!succ)
-		{
-			
-			
-		}
+	
 	}
 	Token integer_literal;
-	uint64_t val;
-	int bits;
+	Primitive::Specifier specifier;
 	IMPL_VISITOR
 };
 

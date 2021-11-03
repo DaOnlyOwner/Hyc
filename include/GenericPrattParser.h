@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <functional>
 #include "Lexer.h"
-
+#include "DebugPrint.h"
 
 /*
 This file provides and implementation of a (probably mutated) "pratt" parser that can be extended at runtime
@@ -55,7 +55,11 @@ public:
 		const Token& prefix_token = m_token_source.eat();
 		// Let's parse a prefix
 		auto prefix_it = m_prefix_operation.find(prefix_token.type);
-		if (prefix_it == m_prefix_operation.end()) { printf("Cannot parse this"); assert(false); }
+		if (prefix_it == m_prefix_operation.end()) 
+		{
+			Error::Debug(fmt::format("Cannot parse this: {}",Token::Translate(prefix_token.type)));
+			throw Error::SyntaxErrorException();
+		}
 		PrefixOperation<TReturn>& prefix = prefix_it->second;
 		auto lh = prefix.operation(*this, prefix_token);
 		const Token* infix_token = &m_token_source.lookahead(1); // To reassign infix_token, use ptr.

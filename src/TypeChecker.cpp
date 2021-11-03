@@ -30,7 +30,7 @@ void TypeChecker::visit(FloatLiteralExpr& lit)
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	Primitive* primitive = m_scopes->get_primitive_type(Primitive::from_token_specifier(lit.integer_literal.type));
+	Primitive* primitive = m_scopes->get_primitive_type(lit.specifier);
 	assert(primitive!=nullptr);
 	ret(static_cast<Type*>(primitive));
 }
@@ -46,7 +46,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 
 	if (bin_operator == nullptr)
 	{
-		Debug("Binary operator not found, userbug or compilerbug");
+		Error::Debug("Binary operator not found, userbug or compilerbug");
 		abort();
 	}
 
@@ -62,7 +62,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 
 	if (unary_operator == nullptr)
 	{
-		Debug("Unary operator not found, userbug or compilerbug");
+		Error::Debug("Unary operator not found, userbug or compilerbug");
 		abort();
 	}
 
@@ -87,7 +87,7 @@ void TypeChecker::visit(IdentPattern& ident)
 	bool success = m_scopes->add(new Variable(ident.ident.text, m_type_to_pattern_match));
 	if (!success)
 	{
-		Debug("Usererror: Variable already exists");
+		Error::Debug("Usererror: Variable already exists");
 		abort();
 	}
 }
@@ -95,7 +95,7 @@ void TypeChecker::visit(IdentPattern& ident)
 void TypeChecker::visit(IdentExpr& ident)
 {
 	auto* var = m_scopes->get_var(ident.ident.text);
-	if (var == nullptr) { Debug("Userbug, ident not declared"); abort(); }
+	if (var == nullptr) { Error::Debug("Userbug, ident not declared"); abort(); }
 	ret(static_cast<Type*>(var->type));
 }
 
@@ -128,7 +128,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 	if (func == nullptr)
 	{
-		Debug("Cannot find function");
+		Error::Debug("Cannot find function");
 		abort();
 	}
 
@@ -162,7 +162,7 @@ void TypeChecker::visit(ReturnStmt& ret_stmt)
 	auto expr_type = get(ret_stmt.returned_expr);
 	if (m_current_func_ret_type != expr_type)
 	{
-		Debug("return stmt has not the right type for function definition");
+		Error::Debug("return stmt has not the right type for function definition");
 		abort();
 	}
 }

@@ -52,7 +52,7 @@ struct UnaryOperator
 		case Token::Specifier::Minus:
 			return Specifier::Minus;
 		default:
-			Debug("bad unary specifier from token specifier");
+			Error::Debug("bad unary specifier from token specifier");
 			abort();
 		}
 	}
@@ -88,7 +88,7 @@ struct BinaryOperator
 		case Token::Specifier::Asterix:
 			return Specifier::Multiplication;
 		default:
-			Debug("bad binary specifier from token specifier");
+			Error::Debug("bad binary specifier from token specifier");
 			abort();
 		}
 	}

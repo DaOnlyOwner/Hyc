@@ -23,13 +23,13 @@ void DeclarationsCollector::visit(FuncDefStmt& func_def_stmt)
 	std::vector<Type*> args_semantic;
 	std::transform(func_def_stmt.arg_list_type_ident.begin(), func_def_stmt.arg_list_type_ident.end(), std::back_inserter(args_semantic), [&](const std::pair<Token, Token>& type_ident) {
 		auto* type = m_scopes->get_meta_type(type_ident.first.text);
-		if (type == nullptr) { Debug("WROOOONG, type is not known"); abort(); }
+		if (type == nullptr) { Error::Debug("WROOOONG, type is not known"); abort(); }
 		return type;
 		});
 
 	auto ret_type = m_scopes->get_meta_type(func_def_stmt.ret_type.text);
 	if (ret_type == nullptr) {
-		Debug("Wrong return type");
+		Error::Debug("Wrong return type");
 		abort(); 
 	}
 
@@ -37,7 +37,7 @@ void DeclarationsCollector::visit(FuncDefStmt& func_def_stmt)
 	bool success = m_scopes->add(func);
 	func_def_stmt.sem_function = func;
 	if (!success) {
-		Debug("Function already present");  abort();
+		Error::Debug("Function already present");  abort();
 	}
 
 

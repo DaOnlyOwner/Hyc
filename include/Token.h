@@ -11,14 +11,7 @@ struct Token
 {
 	// TODO: make this enum class.
 	enum class Specifier {
-		IntegerU8,
-		IntegerU16,
-		IntegerU32,
-		IntegerU64,
-		IntegerS8,
-		IntegerS16,
-		IntegerS32,
-		IntegerS64,
+		Integer,
 		Float,
 		Double,
 		Slash,
@@ -26,7 +19,6 @@ struct Token
 		Minus,
 		Asterix,
 		Eof,
-		Error,
 		Ident,
 		Equal,
 		Decl,
@@ -50,7 +42,7 @@ struct Token
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
-		:type(ttype),text(text),lineNo(lineNo),colNo(colNo),lineNoEnd(lineNoEnd),colNoEnd(colNoEnd)
+		:type(ttype),text(text),file(file),lineNo(lineNo),colNo(colNo),lineNoEnd(lineNoEnd),colNoEnd(colNoEnd)
 	{
 		
 	}
@@ -63,75 +55,35 @@ struct Token
 	size_t lineNoEnd;
 	size_t colNoEnd;
 
-	static std::string IntegerTypeToSuffixStr(Specifier ttype)
-	{
-		switch (ttype)
-		{
-		case Specifier::IntegerU8:
-			return "u8";
-		case Specifier::IntegerU16:
-			return "u16";
-		case Specifier::IntegerU32:
-			return "u32";
-		case Specifier::IntegerU64:
-			return "u64";
-		case Specifier::IntegerS8:
-			return "s8";
-		case Specifier::IntegerS16:
-			return "s16";
-		case Specifier::IntegerS32:
-			return "s32";
-		case Specifier::IntegerS64:
-			return "s64";
-		default:
-			abort();
-		}
-	}
 
 	static std::string Translate(Specifier ttype)
 	{
 		switch (ttype)
 		{
-		case Specifier::IntegerU8:
-			return "Integer (U8)";
-		case Specifier::IntegerU16:
-			return "Integer (U16)";
-		case Specifier::IntegerU32:
-			return "Integer (U32)";
-		case Specifier::IntegerU64:
-			return "Integer (U64)";
-		case Specifier::IntegerS8:
-			return "Integer (S8)";
-		case Specifier::IntegerS16:
-			return "Integer (S16)";
-		case Specifier::IntegerS32:
-			return "Integer (S32)";
-		case Specifier::IntegerS64:
-			return "Integer (S64)";
+		case Specifier::Integer:
+			return "Integer";
 		case Specifier::Float:
 			return "Float";
 		case Specifier::Double:
 			return "Double";
 		case Specifier::Slash:
-			return "Slash";
+			return "/";
 		case Specifier::Plus:
-			return "Plus";
+			return "+";
 		case Specifier::Minus:
-			return "Minus";
+			return "-";
 		case Specifier::Asterix:
-			return "Asterix";
+			return "*";
 		case Specifier::Decl:
-			return "DeclSign";  // :=
+			return ":=";  // :=
 		case Specifier::Ident:
 			return "Identifier";
 		case Specifier::Equal:
-			return "EqualSign"; // =
+			return "="; // =
 		case Specifier::Semicolon:
 			return ";";
 		case Specifier::Eof:
 			return "EOF";
-		case Specifier::Error:
-			return "Error";
 		case Specifier::kw_u8:
 			return "u8 (keyword)";
 		case Specifier::kw_u16:
@@ -151,19 +103,19 @@ struct Token
 		case Specifier::kw_float:
 			return "float (keyword)";
 		case Specifier::kw_double:
-			return "kw_double";
+			return "double (keyword)";
 		case Specifier::comma:
-			return "Comma ','";
+			return ",";
 		case Specifier::rparen_l:
-			return "Paren round, right ')'";
+			return ")";
 		case Specifier::rparen_r:
-			return "Paren round, left '('";
+			return "(";
 		case Specifier::kw_return:
-			return "kw_return";
+			return "return";
 		case Specifier::brace_l:
-			return "brace_l";
+			return "{";
 		case Specifier::brace_r:
-			return "brace_r";
+			return "}";
 		}
 		return "Unknown";
 
