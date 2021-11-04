@@ -4,12 +4,15 @@
 #include <fstream>
 #include <string>
 #include "DebugPrint.h"
+#include "DeclarationsCollector.h"
+#include "TypeChecker.h"
 
 int main()
 {
 	std::string filename = ROOT "/meta/debug.txt";
 	std::ifstream fileInput(filename);
 	reflex::Input lexerInput(fileInput);
+	Scopes::init();
 
 	Lexer lexer(lexerInput);
 	lexer.set_filename(filename);
@@ -28,6 +31,11 @@ int main()
 
 	GraphOutput go;
 	parsed->accept(go);
+	DeclarationsCollector collector;
+	parsed->accept(collector);
+
+	TypeChecker tc(collector.get_scopes());
+	parsed->accept(tc);
 
 	go.write_to_file("go.dot");
 }

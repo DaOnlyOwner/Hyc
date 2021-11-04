@@ -68,23 +68,39 @@ void GraphOutput::visit(PostfixOpExpr& post_op)
 	out += connect(my_node_name, node_fst_child);
 }
 
-void GraphOutput::visit(InferredDeclStmt& decl_inferred)
+void GraphOutput::visit(InferredDefStmt& decl)
 {
 	int my_node_name = new_name();
-	int fst_child = node + 1;
-	out += label(my_node_name, "Declaration Statement (inferred)", ":=");
-	decl_inferred.bind_to->accept(*this);
-	out += connect(my_node_name, fst_child);
+	out += label(my_node_name, "Definition Statement (inferred)", ":=");
+	
+	int child_name = new_name();
+	out += label(child_name, "Name", decl.name.text);
+
+	out += connect(my_node_name, child_name);
 	int snd_child = node + 1;
-	decl_inferred.expr->accept(*this);
+	decl.expr->accept(*this);
 	out += connect(my_node_name, snd_child);
 }
 
-void GraphOutput::visit(IdentPattern& ident)
+void GraphOutput::visit(DefStmt& def_stmt)
 {
 	int node_name = new_name();
-	out += label(node_name, "Identifier Pattern", ident.ident.text);
+	int child1 = node + 1;
+	out += label(node_name, "Definition Statement", "=");
+
+	int cn2 = new_name();
+	out += label(cn2, "Type", def_stmt.type_tkn.text);
+	out += connect(node_name, cn2);
+
+	int child_name = new_name();
+	out += label(child_name, "Name", def_stmt.name.text);
+	out += connect(node_name, child_name);
+
+	int expr_child = node + 1;
+	def_stmt.expr->accept(*this);
+	out += connect(node_name, expr_child);
 }
+
 
 void GraphOutput::visit(IdentExpr& ident)
 {
@@ -114,6 +130,7 @@ void GraphOutput::visit(FuncCallExpr& func_call_expr)
 		auto& arg = func_call_expr.arg_list[i];
 		arg->accept(*this);
 		out += connect(node_name, child_name);
+		child_name = node + 1;
 	}
 }
 
@@ -164,3 +181,4 @@ int GraphOutput::new_name()
 	node++;
 	return node;
 }
+

@@ -57,8 +57,10 @@ public:
 		auto prefix_it = m_prefix_operation.find(prefix_token.type);
 		if (prefix_it == m_prefix_operation.end()) 
 		{
-			Error::Debug(fmt::format("Cannot parse this: {}",Token::Translate(prefix_token.type)));
-			throw Error::SyntaxErrorException();
+			auto descr = Error::FromToken(prefix_token);
+			descr.Message = fmt::format("Expected an indentifier or a prefix operator, but got {}", Token::Translate(prefix_token.type));
+			descr.Hint = fmt::format("The offending token is '{}'", prefix_token.text);
+			Error::SyntacticalError(descr);
 		}
 		PrefixOperation<TReturn>& prefix = prefix_it->second;
 		auto lh = prefix.operation(*this, prefix_token);

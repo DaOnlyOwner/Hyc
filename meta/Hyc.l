@@ -11,7 +11,7 @@
 %class{
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   std::string file="LOL";
+   std::string file;
    void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), file, matcher().line(), lineno(), columno(), lineno_end(), columno_end());
@@ -42,7 +42,7 @@ public:
       {
           auto descr = Error::FromToken(token);
           descr.Message = fmt::format("Expected {}, but got {}",Token::Translate(type),Token::Translate(token.type));
-	  descr.Hint = fmt::format("The offending token is {}",token.text);
+	  descr.Hint = fmt::format("The offending token is '{}'",token.text);
           Error::SyntacticalError(descr);
       }
       return token;
@@ -54,11 +54,11 @@ kw_return 	"return"
 kw_u8		"u8"
 kw_u16		"u16"
 kw_u32		"u32"
-kw_u64		"u64"|"uint"
+kw_uint		"uint"
 kw_s8		"i8"
 kw_s16		"i16"
 kw_s32		"i32"
-kw_s64		"i64"|"int"
+kw_int		"int"
 kw_float	"float"
 kw_double	"double"
 ubin		0b[0-1]+
@@ -66,7 +66,7 @@ uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		[1-9]\d*
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
-integer 	{uhex}|{uoct}|{ubin}|{udec}
+integer 	-?({uhex}|{uoct}|{ubin}|{udec})
 float		-?\d*\.\d+([Ee][-+]\d+)?f
 double		-?\d*\.\d+([Ee][-+]\d+)?
 plus    	"+"
@@ -88,11 +88,11 @@ comma		","
 /*{kw_u8}		{ push(Token::Specifier::kw_u8);}
 {kw_u16}	{ push(Token::Specifier::kw_s16);}
 {kw_u32}	{ push(Token::Specifier::kw_s32);}
-{kw_u64}	{ push(Token::Specifier::kw_s64);}
+{kw_uint}	{ push(Token::Specifier::kw_uint);}
 {kw_s8}		{ push(Token::Specifier::kw_s8);}
 {kw_s16}	{ push(Token::Specifier::kw_s16);}
 {kw_s32}	{ push(Token::Specifier::kw_s32);}
-{kw_s64}	{ push(Token::Specifier::kw_s64);}
+{kw_int}	{ push(Token::Specifier::kw_int);}
 {kw_float}	{ push(Token::Specifier::kw_float);}
 {kw_double}	{ push(Token::Specifier::kw_double);}*/
 {kw_return}	{ push(Token::Specifier::kw_return);}

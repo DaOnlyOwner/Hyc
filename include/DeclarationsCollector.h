@@ -13,8 +13,7 @@ public:
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
-	virtual void visit(InferredDeclStmt& decl_inferred) override;
-	virtual void visit(IdentPattern& ident) override;
+	virtual void visit(InferredDefStmt& decl_inferred) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
 	virtual void visit(FuncCallExpr& func_call_expr) override;
@@ -29,4 +28,7 @@ public:
 
 private:
 	std::unique_ptr<Scopes> m_scopes;
+
+	// Geerbt über IAstVisitor
+	virtual void visit(DefStmt& def_stmt) override;
 };

@@ -30,33 +30,20 @@ struct IAstVisitor
 	virtual void visit(struct BinOpExpr& bin_op) = 0;
 	virtual void visit(struct PrefixOpExpr& pre_op) = 0;
 	virtual void visit(struct PostfixOpExpr& post_op) = 0;
-	virtual void visit(struct InferredDeclStmt& decl_inferred) = 0;
-	virtual void visit(struct IdentPattern& ident) = 0;
+	virtual void visit(struct InferredDefStmt& decl_inferred) = 0;
 	virtual void visit(struct IdentExpr& ident) = 0;
 	virtual void visit(struct NamespaceStmt& namespace_stmt) = 0;
 	virtual void visit(struct FuncCallExpr& func_call_expr) = 0;
 	virtual void visit(struct FuncDefStmt& func_call_def_stmt) = 0;
 	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
 	virtual void visit(struct ExprStmt& expr_stmt) = 0;
-
+	virtual void visit(struct DefStmt& def_stmt) = 0;
 };
 
 struct Node
 {
 	virtual void accept(IAstVisitor& visitor) = 0;
 	virtual ~Node() = default;
-};
-
-// Patterns
-
-struct Pattern : Node {};
-
-struct IdentPattern : Pattern
-{
-	IdentPattern(const Token& ident)
-		:ident(ident){}
-	Token ident;
-	IMPL_VISITOR
 };
 
 // Expressions
@@ -145,14 +132,29 @@ struct FuncCallExpr : Expr
 
 struct Stmt : Node {};
 
-struct InferredDeclStmt : Stmt
+struct InferredDefStmt : Stmt
 {
-	InferredDeclStmt(uptr<Pattern> bind_to, uptr<Expr> expr)
-		:bind_to(mv(bind_to)), expr(mv(expr)) {}
-	uptr<Pattern> bind_to;
+	InferredDefStmt(const Token& name, uptr<Expr> expr)
+		:name(name), expr(mv(expr)) {}
+	Token name;
+	
+	Type* type=nullptr; // Semantic annotation
 	uptr<Expr> expr;
 	IMPL_VISITOR
 };
+
+struct DefStmt : Stmt
+{
+	DefStmt(const Token& type, const Token& name, uptr<Expr> expr)
+		:type_tkn(type),name(name),expr(mv(expr)){}
+
+	Token name;
+	Token type_tkn;
+	uptr<Expr> expr;
+	Type* type = nullptr;
+	IMPL_VISITOR
+};
+
 
 struct NamespaceStmt : Stmt
 {
@@ -194,9 +196,10 @@ struct ExprStmt : Stmt
 
 struct ReturnStmt : Stmt
 {
-	ReturnStmt(uptr<Expr>&& returned_expr)
-		: returned_expr(mv(returned_expr)){}
+	ReturnStmt(uptr<Expr>&& returned_expr, const Token& return_kw)
+		: returned_expr(mv(returned_expr)),return_kw(return_kw){}
 	uptr<Expr> returned_expr;
+	Token return_kw;
 	IMPL_VISITOR
 };
 

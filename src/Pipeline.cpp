@@ -21,7 +21,7 @@ void Pipeline::build(std::ifstream& input, const std::string& filename)
 
 	parsed->accept(dc);
 
-	TypeChecker tc{ dc.get_scopes() };
-	parsed->accept(tc);
-	go.write_to_file("go.dot");
+	//TypeChecker tc{ dc.get_scopes() };
+	//parsed->accept(tc);
+	//go.write_to_file("go.dot");
 }

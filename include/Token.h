@@ -26,11 +26,11 @@ struct Token
 		kw_u8,
 		kw_u16,
 		kw_u32,
-		kw_u64,
+		kw_uint,
 		kw_s8,
 		kw_s16,
 		kw_s32,
-		kw_s64,
+		kw_int,
 		kw_float,
 		kw_double,
 		kw_return,
@@ -90,16 +90,16 @@ struct Token
 			return "u16 (keyword)";
 		case Specifier::kw_u32:
 			return "u32 (keyword)";
-		case Specifier::kw_u64:
-			return "u64 (keyword)";
+		case Specifier::kw_uint:
+			return "uint (keyword)";
 		case Specifier::kw_s8:
 			return "s8 (keyword)";
 		case Specifier::kw_s16:
 			return "s16 (keyword)";
 		case Specifier::kw_s32:
 			return "s32 (keyword)";
-		case Specifier::kw_s64:
-			return "s64 (keyword)";
+		case Specifier::kw_int:
+			return "int (keyword)";
 		case Specifier::kw_float:
 			return "float (keyword)";
 		case Specifier::kw_double:

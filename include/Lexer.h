@@ -58,7 +58,7 @@ class Lexer : public reflex::AbstractLexer<reflex::Matcher> {
 
    std::vector<Token> m_tokens;
    size_t m_current_token = -1; // Start before the actual token
-   std::string file="LOL";
+   std::string file;
    void push(Token::Specifier ttype)
    {
 	m_tokens.emplace_back(ttype, str(), file, matcher().line(), lineno(), columno(), lineno_end(), columno_end());
@@ -89,7 +89,7 @@ public:
       {
           auto descr = Error::FromToken(token);
           descr.Message = fmt::format("Expected {}, but got {}",Token::Translate(type),Token::Translate(token.type));
-	  descr.Hint = fmt::format("The offending token is {}",token.text);
+	  descr.Hint = fmt::format("The offending token is '{}'",token.text);
           Error::SyntacticalError(descr);
       }
       return token;

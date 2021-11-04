@@ -26,6 +26,7 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
     ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
     ${CMAKE_SOURCE_DIR}/src/CodeGen.cpp
+    ${CMAKE_SOURCE_DIR}/src/Type.cpp
 )
 
 set (HEADERS
@@ -74,6 +75,7 @@ set(SEMANTIC_SOURCES
     ${CMAKE_SOURCE_DIR}/src/SymbolTable.cpp
     ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
     ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
+    ${CMAKE_SOURCE_DIR}/src/Type.cpp
 )
 
 set(SEMANTIC_HEADERS
@@ -81,8 +83,7 @@ set(SEMANTIC_HEADERS
     ${CMAKE_SOURCE_DIR}/include/SymbolTable.h
     ${CMAKE_SOURCE_DIR}/include/Scopes.h
     ${CMAKE_SOURCE_DIR}/include/Primitive.h
-    ${CMAKE_SOURCE_DIR}/include/MetaType.h
-    ${CMAKE_SOURCE_DIR}/include/ImplicitTypes.h
+    ${CMAKE_SOURCE_DIR}/include/Type.h
     ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
 )
 

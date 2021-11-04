@@ -15,23 +15,29 @@ struct Function
 {
 	Function(const std::string& name, std::vector<Type*>&& arguments, Type* return_type)
 		: name(name), arguments(std::move(arguments)), return_type{ return_type }{}
-	Function() =default;
-	std::string name;
-	std::vector<Type*> arguments;
-	Type* return_type = nullptr;
+	Function() = default;
+		//:name(""),arguments(),return_type(nullptr){}
+	std::string name = "";
+	std::vector<Type*> arguments{};
+	Type* return_type = &error_type;
 	bool operator==(const Function& other) { return name == other.name && arguments == other.arguments; }
-	bool operator!=(const Function& other) { return !(*this == other); }
 };
+
+extern Function error_function;
 
 struct Variable
 {
 	Variable(const std::string& name, Type* type)
 		:name(name), type(type){}
-	std::string name;
-	Type* type;
+	Variable() = default;
+		//:name(""),type(nullptr){}
+	std::string name ="";
+	Type* type = &error_type;
 	bool operator==(const Variable& other) { return name == other.name && type == other.type; }
 	bool operator!=(const Variable& other) { return !(*this == other); }
 };
+
+extern Variable error_variable;
 
 struct UnaryOperator
 {
@@ -42,6 +48,9 @@ struct UnaryOperator
 
 	UnaryOperator(Specifier spec, Type* rh):
 		operation(spec),rh(rh),return_type(rh){}
+
+	UnaryOperator() = default;
+		//:operation(Specifier::Count), rh(nullptr), return_type(nullptr) {}
 
 	static Specifier from_token_specifier(Token::Specifier spec)
 	{
@@ -57,9 +66,9 @@ struct UnaryOperator
 		}
 	}
 
-	Specifier operation;
-	Type* rh;
-	Type* return_type;
+	Specifier operation = Specifier::Count;
+	Type* rh = nullptr;
+	Type* return_type = nullptr;
 };
 
 struct BinaryOperator
@@ -71,8 +80,9 @@ struct BinaryOperator
 
 	BinaryOperator(Specifier spec, Type* lh, Type* rh):
 		operation(spec),rh(rh),lh(lh),return_type(rh){}
-
 	
+	BinaryOperator()
+		:operation(Specifier::Count), rh(nullptr), lh(nullptr), return_type(nullptr) {};
 
 	static Specifier from_token_specifier(Token::Specifier spec)
 	{
@@ -110,24 +120,24 @@ public:
 	SymbolTable(const SymbolTable& other) = delete;
 	SymbolTable& operator=(const SymbolTable& other) = delete;
 
-	SymbolTable(SymbolTable&& other) = default;
+	SymbolTable(SymbolTable&& other) noexcept= default;
 	SymbolTable& operator=(SymbolTable&& other) = default;
 
 
 
-	bool add(Variable* var) { return m_variables.insert(std::string(var->name), std::unique_ptr<Variable>(var)); }
-	bool add(Function* fn);
-	bool add(Type* mt) { return m_meta_types.insert(std::string(mt->get_name()), std::unique_ptr<Type>(mt)); }
+	Variable* add(Variable&& var) { return m_variables.insert(var.name, std::move(var)); }
+	Function* add(Function&& fn);
+	Type* add(Type&& mt) { return m_meta_types.insert(mt.get_name(), std::move(mt)); }
 
 	Variable* get_var(const std::string& name)
 	{
 		auto* elem = m_variables.get(name);
-		return elem == nullptr ? nullptr : elem->get();
+		return elem == nullptr ? nullptr : elem;
 	}
 	Type* get_meta_type(const std::string& name)
 	{
 		auto* elem = m_meta_types.get(name);
-		return elem == nullptr ? nullptr : elem->get();
+		return elem == nullptr ? nullptr : elem;
 	}
 
 	template<typename Pred>
@@ -137,38 +147,52 @@ public:
 		auto* vars = m_functions.get(name);
 		if (vars != nullptr)
 		{
-			auto& it = std::find_if(vars->begin(), vars->end(), [pred](const std::unique_ptr<Function>& func) {return pred(func.get()); });
-			if (it != vars->end()) return it->get();
+			auto& it = std::find_if(vars->begin(), vars->end(), [pred](const Function& func) {return pred(func); });
+			if (it != vars->end()) return &*it;
 		}
 		return nullptr;
 	}
 
-	template<typename Pred>
-	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name, Pred pred)
+	std::vector<Function*> get_funcs(const std::string& name)
+	{
+		auto* vars = m_functions.get(name);
+		if (vars == nullptr) return {};
+		// TODO: Continue
+		error;
+	}
+
+	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name, const Type& lh)
 	{
 		auto& vars = m_unary_operators.get(name);
-		auto it = std::find_if(vars.begin(), vars.end(), [pred](const std::unique_ptr<UnaryOperator>& func) {return pred(func.get()); });
-		if (it != vars.end()) return it->get();
+		auto it = vars.find(lh.get_name());
+		if (it != vars.end()) return &(*it).second;
 		return nullptr;
 	}
 
-	template<typename Pred>
-	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name, Pred pred) {
+	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name, const Type& lh, const Type& rh) {
 
 		auto& vars = m_binary_operators.get(name);
-		auto it = std::find_if(vars.begin(), vars.end(), [pred](const std::unique_ptr<BinaryOperator>& func) {return pred(func.get()); });
-		if (it != vars.end()) return it->get();
+		auto it_rh = vars.find(lh.get_name());
+		if (it_rh != vars.end())
+		{
+			auto& rh_table = (*it_rh).second;
+			auto it_lh = rh_table.find(rh.get_name());
+			if (it_lh != rh_table.end())
+			{
+				return &(*it_lh).second;
+			}
+		}
 		return nullptr;
 	}
 
 private:
-	Hashmap<std::string, std::unique_ptr<Variable>> m_variables;
-	Hashmap<std::string, std::unique_ptr<Type>> m_meta_types;
+	Hashmap<std::string, Variable> m_variables;
+	Hashmap<std::string, Type> m_meta_types;
 
 	// binary and unary operators are statically known at compile time, so we can store them in a perfect hashmap
-	PerfectHashmap<BinaryOperator::Specifier, std::vector<std::unique_ptr<BinaryOperator>>, static_cast<size_t>(BinaryOperator::Specifier::Count)> m_binary_operators;
-	PerfectHashmap<UnaryOperator::Specifier, std::vector<std::unique_ptr<UnaryOperator>>, static_cast<size_t>(UnaryOperator::Specifier::Count)> m_unary_operators;
+	PerfectHashmap<BinaryOperator::Specifier, std::unordered_map<std::string,std::unordered_map<std::string,BinaryOperator>>, static_cast<size_t>(BinaryOperator::Specifier::Count)> m_binary_operators;
+	PerfectHashmap<UnaryOperator::Specifier, std::unordered_map<std::string,UnaryOperator>, static_cast<size_t>(UnaryOperator::Specifier::Count)> m_unary_operators;
 
 	// Functions need a hashmap to lookup the name.
-	Hashmap<std::string, std::vector<std::unique_ptr<Function>>> m_functions;
+	Hashmap<std::string, std::vector<Function>> m_functions;
 };

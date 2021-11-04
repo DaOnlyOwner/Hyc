@@ -14,13 +14,19 @@ public:
 		:m_container(val){}
 	PerfectHashmap() = default;
 
-	PerfectHashmap(PerfectHashmap&&) = default;
+	PerfectHashmap(PerfectHashmap&&) noexcept = default;
 	PerfectHashmap(const PerfectHashmap&) = default;
 	PerfectHashmap& operator=(PerfectHashmap&&) = default;
 	PerfectHashmap& operator=(const PerfectHashmap&) = default;
 
 	static_assert(std::is_enum<TKey>::value,
 		"Error: TKey must be an enum that can be converted to size_t (each element has to be mapped to a unique index)");
+	
+	TValue& operator[](TKey index)
+	{
+		return get(index);
+	}
+	
 	TValue& get(TKey index)
 	{
 		return m_container[static_cast<size_t>(index)];

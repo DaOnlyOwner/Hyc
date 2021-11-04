@@ -14,7 +14,7 @@ public:
 	Hashmap(std::unordered_map<TKey,TValue> val)
 		:m_container(val){}
 
-	Hashmap(Hashmap&&) = default;
+	Hashmap(Hashmap&&) noexcept = default;
 	Hashmap(const Hashmap&) = default;
 	Hashmap& operator=(Hashmap&&) = default;
 	Hashmap& operator=(const Hashmap&) = default;
@@ -30,16 +30,24 @@ public:
 
 		return nullptr;
 	}
-	bool insert(const TKey& key, const TValue& value)
+	TValue* insert(const TKey& key, const TValue& value)
 	{
 		auto iteratorSucceed = m_container.insert(std::make_pair(key,value));
-		return iteratorSucceed.second;
+		if (iteratorSucceed.second)
+		{
+			return &m_container[key];
+		}
+		else return nullptr;
 	}
 
-	bool insert(TKey&& key, TValue&& value)
+	TValue* insert(TKey&& key, TValue&& value)
 	{
 		auto iteratorSucceed = m_container.insert(std::make_pair( std::move(key),std::move(value) ));
-		return iteratorSucceed.second;
+		if (iteratorSucceed.second)
+		{
+			return &iteratorSucceed.first->second;
+		}
+		else return nullptr;
 	}
 	size_t size()
 	{

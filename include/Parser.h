@@ -5,7 +5,6 @@
 
 
 typedef GenericPrattParser<Expr> ExprParser;
-typedef GenericPrattParser<Pattern> PatternParser;
 
 // TODO: Correctness: Check if an integer / float token is of valid length
 class Parser
@@ -16,7 +15,8 @@ public:
 
 private:
 	std::unique_ptr<Stmt> parse_compilation_unit();
-	std::unique_ptr<Stmt> parse_inferred_decl_stmt();
+	std::unique_ptr<Stmt> parse_inferred_def_stmt(); // Also parses definition
+	std::unique_ptr<Stmt> parse_def_stmt();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_stmt();
 	std::unique_ptr<Stmt> parse_expr_stmt();
@@ -24,7 +24,6 @@ private:
 
 	Lexer& m_token_source; 
 	ExprParser m_expr_parser;
-	PatternParser m_pattern_parser;	
 	std::string file;
 };
 

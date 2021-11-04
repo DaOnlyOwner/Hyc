@@ -34,18 +34,26 @@ namespace
 	{
 		const std::string& integer_text = token.text;
 		errno = 0;
-		unsigned long long int val = std::strtoull(integer_text.c_str(), nullptr, 0);
-		if (errno != 0)
+		if (token.text[0] == '-')
+		{
+			auto val = strtoll(token.text.c_str(), nullptr, 0);
+			if (errno != 0)
+			{
+				return { false,Primitive::Specifier::Count };
+			}
+			return { true,Primitive::Specifier::int_ };
+		}
+
+		else
 		{
 			errno = 0;
-			long long int val2 = std::strtoll(integer_text.c_str(), nullptr, 0);
-			if (errno == 0)
+			auto val= strtoull(token.text.c_str(), nullptr, 0);
+			if (errno != 0)
 			{
-				return { true,Primitive::Specifier::s64 };
+				return { false,Primitive::Specifier::Count };
 			}
-			return { false,Primitive::Specifier::s64 };
+			return { true,Primitive::Specifier::uint };
 		}
-		return { true,Primitive::Specifier::u64 };
 	}
 
 	PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
@@ -88,21 +96,11 @@ namespace
 	{
 		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
 	} };
-
-	// Patterns
-#define InfixPatternFnArgs PatternParser& parser, const Token& token, std::unique_ptr<Pattern> lh
-#define PrefixPatternFnArgs PatternParser& parser, const Token& token
-
-
-	PrefixOperation<Pattern> ident_pattern{ 10, [](PrefixPatternFnArgs) {
-		return ast_as<Pattern>(std::make_unique<IdentPattern>(token));
-	} };
 }
 
 Parser::Parser(Lexer& token_source, const std::string& filename)
 	:m_expr_parser(token_source),
-	m_token_source(token_source),
-	m_pattern_parser(token_source)
+	m_token_source(token_source)
 {
 	m_expr_parser.add_operation(Token::Specifier::Asterix, productGroup);
 	m_expr_parser.add_operation(Token::Specifier::Plus, sumGroup);
@@ -111,7 +109,6 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	m_expr_parser.add_operation(Token::Specifier::Minus, unary_operator);
 	m_expr_parser.add_operation(Token::Specifier::Plus, unary_operator);
 	m_expr_parser.add_operation(Token::Specifier::Ident, ident_expr);
-	m_pattern_parser.add_operation(Token::Specifier::Ident, ident_pattern);
 
 	file = filename;
 }
@@ -132,14 +129,14 @@ std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 	return mv(nms);
 }
 
-// pattern := expr ;
-std::unique_ptr<Stmt> Parser::parse_inferred_decl_stmt()
+// ident := expr ;
+std::unique_ptr<Stmt> Parser::parse_inferred_def_stmt()
 {
-	auto lh = m_pattern_parser.parse();
+	auto lh = m_token_source.match_token(Token::Specifier::Ident);
 	m_token_source.match_token(Token::Specifier::Decl);
 	auto rh = m_expr_parser.parse();
 	m_token_source.match_token(Token::Specifier::Semicolon);
-	return std::make_unique<InferredDeclStmt>(mv(lh),mv(rh));
+	return std::make_unique<InferredDefStmt>(mv(lh),mv(rh));
 }
 
 // type ident (type ident1, type ident2,...,){stmts}
@@ -176,12 +173,25 @@ std::unique_ptr<Stmt> Parser::parse_function_def_stmt()
 	return std::make_unique<FuncDefStmt>(type,name,std::move(param_list), std::move(body));
 }
 
+// type ident '=' expr
+std::unique_ptr<Stmt> Parser::parse_def_stmt()
+{
+	auto type = m_token_source.match_token(Token::Specifier::Ident); // Type
+	auto name = m_token_source.match_token(Token::Specifier::Ident); // Ident
+	m_token_source.match_token(Token::Specifier::Equal); // =
+	auto rh = m_expr_parser.parse(); // expr
+	m_token_source.match_token(Token::Specifier::Semicolon);
+	return std::make_unique<DefStmt>(type, name, std::move(rh));
+}
+
 std::unique_ptr<Stmt> Parser::parse_stmt()
 {
 	if (m_token_source.lookahead(1).type == Token::Specifier::kw_return)
 		return parse_return_stmt();
 	else if (m_token_source.lookahead(2).type == Token::Specifier::Decl)
-		return parse_inferred_decl_stmt();
+		return parse_inferred_def_stmt();
+	else if (m_token_source.lookahead(1).type == Token::Specifier::Ident && m_token_source.lookahead(2).type == Token::Specifier::Ident && m_token_source.lookahead(3).type == Token::Specifier::Equal)
+		return parse_def_stmt();
 	else if (m_token_source.lookahead(3).type == Token::Specifier::rparen_l)
 		return parse_function_def_stmt();
 	else return parse_expr_stmt();
@@ -196,8 +206,8 @@ std::unique_ptr<Stmt> Parser::parse_expr_stmt()
 
 std::unique_ptr<Stmt> Parser::parse_return_stmt()
 {
-	m_token_source.match_token(Token::Specifier::kw_return);
-	auto out = std::make_unique<ReturnStmt>(m_expr_parser.parse());
+	auto rk = m_token_source.match_token(Token::Specifier::kw_return);
+	auto out = std::make_unique<ReturnStmt>(m_expr_parser.parse(),rk);
 	m_token_source.match_token(Token::Specifier::Semicolon);
 	return out;
 }
