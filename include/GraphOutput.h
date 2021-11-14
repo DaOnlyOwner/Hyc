@@ -20,6 +20,10 @@ private:
 	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
 	virtual void visit(ReturnStmt& ret_stmt) override;
 	virtual void visit(ExprStmt& expr_stmt) override;
+	virtual void visit(PointerTypeSpec& pt_spec) override;
+	virtual void visit(BaseTypeSpec& bt_spec) override;
+	virtual void visit(ArrayTypeSpec& at_spec) override;
+	virtual void visit(ImplicitCastExpr& ice) override;
 
 	std::string out = "digraph AST {";
 	int node = 0;
@@ -27,4 +31,5 @@ private:
 
 	// Geerbt über IAstVisitor
 	virtual void visit(DefStmt& def_stmt) override;
+
 };

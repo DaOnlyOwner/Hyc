@@ -3,6 +3,9 @@
 #include "Precedence.h"
 #include "DebugPrint.h"
 #include <cstdlib>
+#include "Ast.h"
+#include <memory>
+
 
 // Expressions
 
@@ -30,7 +33,7 @@ namespace
 		return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
 	} };
 
-	std::pair<bool, Primitive::Specifier> eval_integer_val(const Token& token)
+	std::pair<bool,EvalIntegerResult> eval_integer_val(const Token& token)
 	{
 		const std::string& integer_text = token.text;
 		errno = 0;
@@ -39,9 +42,9 @@ namespace
 			auto val = strtoll(token.text.c_str(), nullptr, 0);
 			if (errno != 0)
 			{
-				return { false,Primitive::Specifier::Count };
+				return { false,{Primitive::Specifier::Count,0,0 } };
 			}
-			return { true,Primitive::Specifier::int_ };
+			return { true,{Primitive::Specifier::int_,0,val} };
 		}
 
 		else
@@ -50,15 +53,15 @@ namespace
 			auto val= strtoull(token.text.c_str(), nullptr, 0);
 			if (errno != 0)
 			{
-				return { false,Primitive::Specifier::Count };
+				return { false,{Primitive::Specifier::Count,0,0 } };
 			}
-			return { true,Primitive::Specifier::uint };
+			return { true,{Primitive::Specifier::uint,val,0 } };
 		}
 	}
 
 	PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
 	{
-			auto [succ,spec] = eval_integer_val(token);
+			auto [succ,eval_res] = eval_integer_val(token);
 			if (!succ)
 			{
 				auto descr = Error::FromToken(token);
@@ -66,7 +69,7 @@ namespace
 				descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
 				Error::SyntacticalError(descr);
 			}
-		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,spec));
+		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res));
 	} };
 
 	PrefixOperation<Expr> ident_expr{ (int)ExprPrecedence::ident_expr, [](PrefixExprFnArgs) {
@@ -182,6 +185,12 @@ std::unique_ptr<Stmt> Parser::parse_def_stmt()
 	auto rh = m_expr_parser.parse(); // expr
 	m_token_source.match_token(Token::Specifier::Semicolon);
 	return std::make_unique<DefStmt>(type, name, std::move(rh));
+}
+
+// type_spec := (ident | "*" | "[integer_literal]") type_spec
+std::unique_ptr<TypeSpec> Parser::parse_type_spec()
+{
+	// TODO:
 }
 
 std::unique_ptr<Stmt> Parser::parse_stmt()

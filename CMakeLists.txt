@@ -26,7 +26,9 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
     ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
     ${CMAKE_SOURCE_DIR}/src/CodeGen.cpp
-    ${CMAKE_SOURCE_DIR}/src/Type.cpp
+    ${CMAKE_SOURCE_DIR}/src/AtomicType.cpp
+    ${CMAKE_SOURCE_DIR}/src/PointerType.cpp
+    ${CMAKE_SOURCE_DIR}/src/Operators.cpp
 )
 
 set (HEADERS
@@ -45,10 +47,12 @@ set (HEADERS
     ${CMAKE_SOURCE_DIR}/include/PerfectHashmap.h
     ${CMAKE_SOURCE_DIR}/include/Primitive.h
     ${CMAKE_SOURCE_DIR}/include/ValueStorage.h
-    ${CMAKE_SOURCE_DIR}/include/Type.h
+    ${CMAKE_SOURCE_DIR}/include/AtomicType.h
     ${CMAKE_SOURCE_DIR}/include/Precedence.h
     ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
     ${CMAKE_SOURCE_DIR}/include/CodeGen.h
+    ${CMAKE_SOURCE_DIR}/include/PointerType.h
+    ${CMAKE_SOURCE_DIR}/include/Operators.h
 )
 
 file(GLOB_RECURSE REFLEX_SRC "lib/Re-flex/lib/*.cpp" "lib/Re-flex/unicode/*.cpp") #Static sources
@@ -75,7 +79,8 @@ set(SEMANTIC_SOURCES
     ${CMAKE_SOURCE_DIR}/src/SymbolTable.cpp
     ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
     ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
-    ${CMAKE_SOURCE_DIR}/src/Type.cpp
+    ${CMAKE_SOURCE_DIR}/src/AtomicType.cpp
+    ${CMAKE_SOURCE_DIR}/src/Operators.cpp
 )
 
 set(SEMANTIC_HEADERS
@@ -83,8 +88,9 @@ set(SEMANTIC_HEADERS
     ${CMAKE_SOURCE_DIR}/include/SymbolTable.h
     ${CMAKE_SOURCE_DIR}/include/Scopes.h
     ${CMAKE_SOURCE_DIR}/include/Primitive.h
-    ${CMAKE_SOURCE_DIR}/include/Type.h
+    ${CMAKE_SOURCE_DIR}/include/AtomicType.h
     ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
+    ${CMAKE_SOURCE_DIR}/include/Operators.h
 )
 
 set (TOOLS_HEADERS

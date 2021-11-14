@@ -101,6 +101,22 @@ void GraphOutput::visit(DefStmt& def_stmt)
 	out += connect(node_name, expr_child);
 }
 
+void GraphOutput::visit(PointerTypeSpec& pt_spec)
+{
+}
+
+void GraphOutput::visit(BaseTypeSpec& bt_spec)
+{
+}
+
+void GraphOutput::visit(ArrayTypeSpec& at_spec)
+{
+}
+
+void GraphOutput::visit(ImplicitCastExpr& ice)
+{
+}
+
 
 void GraphOutput::visit(IdentExpr& ident)
 {
@@ -137,12 +153,12 @@ void GraphOutput::visit(FuncCallExpr& func_call_expr)
 void GraphOutput::visit(FuncDefStmt& func_call_def_stmt)
 {
 	int node_name = new_name();
-	out += label(node_name, "FuncDefStmt", "name: " + func_call_def_stmt.name.text + "| type: " + func_call_def_stmt.ret_type.text);
+	out += label(node_name, "FuncDefStmt", "name: " + func_call_def_stmt.name.text + "| type: " + func_call_def_stmt.ret_type->as_str());
 	for (int i = 0; i < func_call_def_stmt.arg_list_type_ident.size(); i++)
 	{
 		auto& arg = func_call_def_stmt.arg_list_type_ident[i];
 		int child_name = new_name();
-		out += label(child_name, "TypeIdentPair (parameter)", "name: " + arg.first.text + "| type: " + arg.second.text);
+		out += label(child_name, "TypeIdentPair (parameter)", "name: " + arg.first->as_str() + "| type: " + arg.second.text);
 		out += connect(node_name, child_name);
 	}
 

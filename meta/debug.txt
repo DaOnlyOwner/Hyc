@@ -5,7 +5,12 @@ uint main()
 
 uint add(uint a, uint b)
 {
-    uint a = a + b;
+    result := a + b;
+    return result;   
+}
+
+uint add(uint a, int b)
+{
     result := a + b;
     return result;   
 }

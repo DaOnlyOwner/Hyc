@@ -28,7 +28,7 @@ return nullptr;
 class Scopes
 {
 public:
-	Scopes() = default;
+	Scopes();
 	Scopes(const Scopes&) = delete;
 	Scopes& operator=(const Scopes&) = delete;
 
@@ -36,22 +36,17 @@ public:
 	Scopes& operator=(Scopes&&) noexcept = default;
 
 
-	Variable* add(Variable&& v) { return get_current_entry().table.add(std::move(v)); }
-	Type* add(Type&& mt) { return get_current_entry().table.add(std::move(mt)); }
-	Function* add(Function&& fn) { return get_current_entry().table.add(std::move(fn)); }
+	Variable* add(Variable* v) { return get_current_entry().table.add(v); }
+	Type* add(Type* mt) { return get_current_entry().table.add(mt); }
+	Function* add(Function* fn) { return get_current_entry().table.add(fn); }
 
 	Variable* get_var(const std::string& name);
-	Type* get_meta_type(const std::string& name);
+	Type* get_type(const std::string& name);
+	bool is_type_defined(const Type& t);
+	bool is_type_primitive(const Type& t);
 
-	static Primitive* get_primitive_type(Primitive::Specifier name) { return &m_predefined_types.get(name); }
-
-	UnaryOperator* get_predef_unary_operator(UnaryOperator::Specifier name, const Type& lh);
-
-	BinaryOperator* get_predef_binary_operator(BinaryOperator::Specifier name, const Type& lh, const Type& rh);
-
-	UnaryOperator* get_unary_operator(UnaryOperator::Specifier name, const Type& lh);
-
-	BinaryOperator* get_binary_operator(BinaryOperator::Specifier name, const Type& lh, const Type& rh);
+	static const Type& get_primitive_type(const std::string name) { return m_predefined_types[name]; };
+	static const Type& get_primitive_type(Primitive::Specifier primitive) { return m_predefined_types[Primitive::Translate(primitive)]; }
 
 	template<typename Pred>
 	Function* get_func(const std::string& name, Pred pred)
@@ -66,18 +61,7 @@ public:
 		return nullptr;
 	}
 
-	std::vector<Function*> get_all_funcs(const std::string& name)
-	{
-		std::vector<Function*> out;
-		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; i = get_entry(i).father)
-		{
-			t_entry& e = get_entry(i);
-			auto elem = e.table.get_func(name, [](auto& func) {return true; });
-			if (elem != nullptr) return elem;
-		}
-		return nullptr;
-	}
+	std::vector<Function> get_all_funcs(const std::string& name);
 
 
 	void ascend();
@@ -91,10 +75,6 @@ public:
 	void go_to_root() { m_current_index = 0; }
 
 	void descend(size_t nthChild);
-
-	void debug_print();
-
-	static void init();
 
 private:
 	struct t_entry
@@ -118,10 +98,7 @@ private:
 	}
 
 
-	static PerfectHashmap<Primitive::Specifier, Primitive, (size_t)Primitive::Specifier::Count> m_predefined_types;
-
-	static PerfectHashmap<UnaryOperator::Specifier, std::unordered_map<std::string, UnaryOperator>, (size_t)UnaryOperator::Specifier::Count> m_predefined_unary_ops;
-	static PerfectHashmap<BinaryOperator::Specifier, std::unordered_map<std::string, std::unordered_map<std::string, BinaryOperator>>, (size_t)BinaryOperator::Specifier::Count> m_predefined_binary_ops;
+	static std::unordered_map<std::string, Type> m_predefined_types;
 };
 
 

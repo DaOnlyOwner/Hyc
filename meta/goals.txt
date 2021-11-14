@@ -1,0 +1,82 @@
+TODO:
+- pointer types: a# -> pointer symbol = # (no ugly lexer hack: https://en.wikipedia.org/wiki/Lexer_hack) -> Better idea: keep a*, but cast with e.g. (1 as float), keyword "as"
+- Generics like List<List<int>>
+- No definition of member functions. 
+  -> if you want to call something like this: foo.bar();
+  -> then the declaration should look like this:
+  struct foo
+  {
+  }
+  void bar(foo# this); // This is basically like an extension method 
+  then:
+  foo f = foo::new();
+    or 
+  f := foo::new();
+  f.bar() 
+  becomes desugared: bar(&f);
+  this: foo# f = heap foo::new();
+  can be called with f->bar();
+- constructors,destructors.
+  special methods that look like this:
+  struct foo {}
+	- constructor: foo::new(){} 
+ 		       foo::new(int x){}
+	- destructor   del(foo# f){}
+        - if you don't want to init the memory: foo::_
+   Note the "::".
+   -> foo::new() is automatically implemented by recursively calling new() on the members
+   -> same with del
+   looks like this: f := foo::new(); f := foo::_
+   or on the heap: f := heap foo::new(); f := heap foo::_
+- operators:
+  int operator+(foo# f, bar# b){}
+  -> int a = f + b;	
+- casts
+  (int)3;
+- moving and copying:
+  copying looks like this
+  a := b; <- uses the default copy operator
+  same here: foo a = b;
+  copy operator can be overloaded 
+  foo# operator=(foo# a, foo#b){}
+  moving looks like this:
+  a <| b; foo a <| b; is default defined
+  overloaded:
+  foo# operator<|(foo# a, foo# b){}
+  
+- global type inference, at least inside a function -> version 2.
+- tuple types: -> in version 2.
+  a,b,c := (int,int,int)::new(0,0,0);
+- variant types: -> in version 2.
+  a := (int?uint)::new(-1);
+  switch_type a
+  {
+    case int: break;
+    case uint: break;
+  }
+- contracts:
+contract foo
+{
+    int bar();
+    int bar2;
+}
+
+struct a : foo
+{
+    int bar2 = 0; // Definition
+}
+int bar(a# this){}
+
+struct b : foo
+{
+    int bar2 = 1;
+}
+int bar(b# this){}
+
+
+creation: foo f = heap b::new();
+Call: f.bar(); // Basically calls b.bar()
+with vtables
+- function pointers: fptr(args type;return_type)
+- array decl: int[] a;
+- desugar typedefs before typechecking!

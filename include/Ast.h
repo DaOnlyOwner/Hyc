@@ -8,6 +8,8 @@
 #include <cerrno>
 #include "DebugPrint.h"
 #include "fmt/core.h"
+#include <stdexcept>
+#include "AtomicType.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 
@@ -22,6 +24,14 @@ using uptr = std::unique_ptr<T>;
 
 // Couldn't get std::move alias to work, so now here is a macro
 #define mv(arg) std::move(arg)
+
+struct EvalIntegerResult
+{
+	Primitive::Specifier Spec;
+	uint64_t amount_uint;
+	int64_t amount_int;
+};
+
 
 struct IAstVisitor
 {
@@ -38,6 +48,10 @@ struct IAstVisitor
 	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
 	virtual void visit(struct ExprStmt& expr_stmt) = 0;
 	virtual void visit(struct DefStmt& def_stmt) = 0;
+	virtual void visit(struct PointerTypeSpec& pt_spec) = 0;
+	virtual void visit(struct BaseTypeSpec& bt_spec) = 0;
+	virtual void visit(struct ArrayTypeSpec& at_spec) = 0;
+	virtual void visit(struct ImplicitCastExpr& ice) = 0;
 };
 
 struct Node
@@ -46,9 +60,15 @@ struct Node
 	virtual ~Node() = default;
 };
 
+
+
 // Expressions
 
-struct Expr : Node{};
+struct Expr : Node
+{
+	// Semantic annotations:
+	Type sem_type;
+};
 
 struct BinOpExpr : Expr
 {
@@ -58,7 +78,7 @@ struct BinOpExpr : Expr
 	uptr<Expr> lh, rh;
 
 	// Semantic annotations
-	struct BinaryOperator* sem_bin_op = nullptr;
+	struct Function* sem_bin_op = nullptr;
 
 	IMPL_VISITOR
 };
@@ -71,7 +91,7 @@ struct PrefixOpExpr : Expr
 	uptr<Expr> lh;
 
 	// Semantic annotations
-	struct UnaryOperator* sem_unary_op = nullptr;
+	struct Function* sem_unary_op = nullptr;
 
 	IMPL_VISITOR
 };
@@ -87,13 +107,13 @@ struct PostfixOpExpr : Expr
 
 struct IntegerLiteralExpr : Expr
 {
-	IntegerLiteralExpr(const Token& token, Primitive::Specifier specifier) 
-		: integer_literal(token),specifier(specifier)
+	IntegerLiteralExpr(const Token& token, const EvalIntegerResult& res) 
+		: integer_literal(token),eval_res(res)
 	{
 	
 	}
 	Token integer_literal;
-	Primitive::Specifier specifier;
+	EvalIntegerResult eval_res;
 	IMPL_VISITOR
 };
 
@@ -127,23 +147,80 @@ struct FuncCallExpr : Expr
 	IMPL_VISITOR
 };
 
+struct ImplicitCastExpr : Expr
+{
+	ImplicitCastExpr(uptr<Expr> expr, Type&& t)
+		:expr(mv(expr))
+	{
+		sem_type = mv(t);
+	}
+	uptr<Expr> expr;
+
+	IMPL_VISITOR
+};
+
+
+// Types
+
+
+struct TypeSpec : Node
+{
+	virtual const Token& get_ident_token() const { throw std::runtime_error("Compiler bug, cannot get token"); };
+	virtual std::string as_str() const = 0;
+};
+
+struct PointerTypeSpec : TypeSpec
+{
+	PointerTypeSpec(uptr<TypeSpec> inner)
+		:inner(mv(inner)) {}
+
+	uptr<TypeSpec> inner = nullptr;
+	virtual std::string as_str() const override { return "*" + (inner ? inner->as_str() : std::string()); }
+	IMPL_VISITOR
+};
+
+struct BaseTypeSpec : TypeSpec
+{
+	BaseTypeSpec(const Token& name, uptr<TypeSpec> inner)
+		:name(name), inner(mv(inner)) {}
+	Token name;
+	uptr<TypeSpec> inner;
+	virtual const Token& get_ident_token() const override { return name; }
+	virtual std::string as_str() const override { return name.text + (inner ? inner->as_str() : std::string()); }
+	IMPL_VISITOR
+};
+
+struct ArrayTypeSpec : TypeSpec
+{
+	ArrayTypeSpec(uptr<struct IntegerLiteralExpr> amount, uptr<TypeSpec> inner)
+		:amount(mv(amount)), inner(mv(inner)) {}
+	uptr<IntegerLiteralExpr> amount;
+	uptr<TypeSpec> inner;
+	virtual std::string as_str() const override { return fmt::format("[{}]", amount->integer_literal.text) + (inner ? inner->as_str() : std::string()); }
+	IMPL_VISITOR
+};
+
 
 // Statements
 
 struct Stmt : Node {};
 
-struct InferredDefStmt : Stmt
+struct TypedStmt : Stmt
+{
+	Type type;
+};
+
+struct InferredDefStmt : TypedStmt
 {
 	InferredDefStmt(const Token& name, uptr<Expr> expr)
 		:name(name), expr(mv(expr)) {}
 	Token name;
 	
-	Type* type=nullptr; // Semantic annotation
 	uptr<Expr> expr;
 	IMPL_VISITOR
 };
 
-struct DefStmt : Stmt
+struct DefStmt : TypedStmt
 {
 	DefStmt(const Token& type, const Token& name, uptr<Expr> expr)
 		:type_tkn(type),name(name),expr(mv(expr)){}
@@ -151,7 +228,6 @@ struct DefStmt : Stmt
 	Token name;
 	Token type_tkn;
 	uptr<Expr> expr;
-	Type* type = nullptr;
 	IMPL_VISITOR
 };
 
@@ -169,11 +245,11 @@ struct NamespaceStmt : Stmt
 
 struct FuncDefStmt : Stmt
 {
-	FuncDefStmt(const Token& ret_type, const Token& name, std::vector<std::pair<Token, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
-		: ret_type(ret_type), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
-	Token ret_type;
+	FuncDefStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
+		: ret_type(mv(ret_type)), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
+	uptr<TypeSpec> ret_type;
 	Token name;
-	std::vector<std::pair<Token, Token>> arg_list_type_ident;
+	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_type_ident;
 	std::vector<uptr<Stmt>> body;
 
 	// Semantic annotations:
@@ -187,9 +263,6 @@ struct ExprStmt : Stmt
 	ExprStmt(uptr<Expr>&& expr)
 		: expr(mv(expr)){}
 	uptr<Expr> expr;
-
-	// Semantic annotations:
-	struct Type* sem_type = nullptr;
 
 	IMPL_VISITOR
 };

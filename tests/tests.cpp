@@ -12,7 +12,6 @@ int main()
 	std::string filename = ROOT "/meta/debug.txt";
 	std::ifstream fileInput(filename);
 	reflex::Input lexerInput(fileInput);
-	Scopes::init();
 
 	Lexer lexer(lexerInput);
 	lexer.set_filename(filename);

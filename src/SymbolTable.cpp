@@ -1,24 +1,25 @@
 #include "SymbolTable.h"
 
-extern Function error_function{};
-extern Variable error_variable{};
+Function error_function{};
+Variable error_variable{};
 
-Function* SymbolTable::add(Function&& fn)
+Function* SymbolTable::add(Function* fn)
 {
-	auto maybe_fns = m_functions.get(fn.name);
-	if (maybe_fns == nullptr)
+	auto it = m_functions.find(fn->name);
+	auto managed = std::unique_ptr<Function>(fn);
+	if (it == m_functions.end())
 	{
-		auto name = fn.name;
-		return &(*m_functions.insert(std::move(name), { std::move(fn) }))[0];
+		std::vector<std::unique_ptr<Function>> vec;
+		vec.push_back(std::move(managed));
+		m_functions[fn->name] = std::move(vec);
+		return fn;
 	}
-	// Might be an overload
 
-	auto& fns = *maybe_fns;
-	if (std::find_if(fns.begin(), fns.end(), [&](const auto& fn_) {return fn == fn_; }) == fns.end())
+	auto& vec = it->second;
+	if (std::find_if(vec.begin(), vec.end(), [&](auto& fn_) {return *fn == *fn_; }) == vec.end())
 	{
-		fns.push_back(std::move(fn));
-		return &fns[fns.size() - 1];
+		vec.push_back(std::move(managed));
+		return fn;
 	}
 	return nullptr;
-
 }
