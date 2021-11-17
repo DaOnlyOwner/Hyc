@@ -1,0 +1,35 @@
+#pragma once
+#include "Ast.h"
+
+class TerminalOutput : public IAstVisitor
+{
+	// Geerbt über IAstVisitor
+	virtual void visit(FloatLiteralExpr& lit) override;
+	virtual void visit(IntegerLiteralExpr& lit) override;
+	virtual void visit(BinOpExpr& bin_op) override;
+	virtual void visit(PrefixOpExpr& pre_op) override;
+	virtual void visit(PostfixOpExpr& post_op) override;
+	virtual void visit(DeclCpyStmt& decl_cpy) override;
+	virtual void visit(DeclMvStmt& decl_mv) override;
+	virtual void visit(DeclInitStmt& decl_init) override;
+	virtual void visit(IdentExpr& ident) override;
+	virtual void visit(NamespaceStmt& namespace_stmt) override;
+	virtual void visit(FuncCallExpr& func_call_expr) override;
+	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
+	virtual void visit(ReturnStmt& ret_stmt) override;
+	virtual void visit(ExprStmt& expr_stmt) override;
+	virtual void visit(DeclStmt& def_stmt) override;
+	virtual void visit(PointerTypeSpec& pt_spec) override;
+	virtual void visit(BaseTypeSpec& bt_spec) override;
+	virtual void visit(ArrayTypeSpec& at_spec) override;
+	virtual void visit(ImplicitCastExpr& ice) override;
+	virtual void visit(IfStmt& if_stmt) override;
+	virtual void visit(WhileStmt& while_stmt) override;
+	virtual void visit(ContractDefStmt& contract_def_stmt) override;
+	virtual void visit(ContractImplStmt& contract_impl_stmt) override;
+	virtual void visit(ForStmt& for_stmt) override;
+	int indent = 0;
+	void make_indent();
+};
+
+

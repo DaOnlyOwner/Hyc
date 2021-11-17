@@ -39,7 +39,7 @@ class GenericPrattParser
 {
 public:
 	GenericPrattParser(Lexer& token_source)
-		: m_token_source(token_source){}
+		: tkns(token_source){}
 	bool add_operation(Token::Specifier ttype, const InfixOperation<TReturn>& left)
 	{
 		return m_infix_operation.emplace(ttype,left).second;
@@ -52,7 +52,7 @@ public:
 
 	std::unique_ptr<TReturn> parse_internal(int precedence)
 	{
-		const Token& prefix_token = m_token_source.eat();
+		const Token& prefix_token = tkns.eat();
 		// Let's parse a prefix
 		auto prefix_it = m_prefix_operation.find(prefix_token.type);
 		if (prefix_it == m_prefix_operation.end()) 
@@ -64,7 +64,7 @@ public:
 		}
 		PrefixOperation<TReturn>& prefix = prefix_it->second;
 		auto lh = prefix.operation(*this, prefix_token);
-		const Token* infix_token = &m_token_source.lookahead(1); // To reassign infix_token, use ptr.
+		const Token* infix_token = &tkns.lookahead(1); // To reassign infix_token, use ptr.
 		auto infix_it = m_infix_operation.find(infix_token->type);
 		int infix_precedence = infix_it == m_infix_operation.end() 
 			? -1 
@@ -72,9 +72,9 @@ public:
 			: infix_it->second.precedence + infix_it->second.right_assoc; 
 		while (precedence <= infix_precedence)
 		{
-			m_token_source.eat();
+			tkns.eat();
 			lh = infix_it->second.operation(*this, *infix_token, std::move(lh));
-			infix_token = &m_token_source.lookahead(1);
+			infix_token = &tkns.lookahead(1);
 			infix_it = m_infix_operation.find(infix_token->type);
 			infix_precedence = infix_it == m_infix_operation.end() 
 				? -1 
@@ -94,11 +94,11 @@ public:
 
 	Lexer& get_token_source()
 	{
-		return m_token_source;
+		return tkns;
 	}
 	   
 private:
-	Lexer& m_token_source;
+	Lexer& tkns;
 	std::unordered_map<Token::Specifier, InfixOperation<TReturn>> m_infix_operation;
 	std::unordered_map<Token::Specifier, PrefixOperation<TReturn>> m_prefix_operation;
 };

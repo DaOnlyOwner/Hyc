@@ -40,18 +40,25 @@ struct IAstVisitor
 	virtual void visit(struct BinOpExpr& bin_op) = 0;
 	virtual void visit(struct PrefixOpExpr& pre_op) = 0;
 	virtual void visit(struct PostfixOpExpr& post_op) = 0;
-	virtual void visit(struct InferredDefStmt& decl_inferred) = 0;
+	virtual void visit(struct DeclCpyStmt& decl_cpy) = 0;
+	virtual void visit(struct DeclMvStmt& decl_mv) = 0;
+	virtual void visit(struct DeclInitStmt& decl_init) = 0;
 	virtual void visit(struct IdentExpr& ident) = 0;
 	virtual void visit(struct NamespaceStmt& namespace_stmt) = 0;
 	virtual void visit(struct FuncCallExpr& func_call_expr) = 0;
 	virtual void visit(struct FuncDefStmt& func_call_def_stmt) = 0;
 	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
 	virtual void visit(struct ExprStmt& expr_stmt) = 0;
-	virtual void visit(struct DefStmt& def_stmt) = 0;
+	virtual void visit(struct DeclStmt& def_stmt) = 0;
 	virtual void visit(struct PointerTypeSpec& pt_spec) = 0;
 	virtual void visit(struct BaseTypeSpec& bt_spec) = 0;
 	virtual void visit(struct ArrayTypeSpec& at_spec) = 0;
 	virtual void visit(struct ImplicitCastExpr& ice) = 0;
+	virtual void visit(struct IfStmt& if_stmt) = 0;
+	virtual void visit(struct WhileStmt& while_stmt) = 0;
+	virtual void visit(struct ContractDefStmt& contract_def_stmt) = 0;
+	virtual void visit(struct ContractImplStmt& contract_impl_stmt) = 0;
+	virtual void visit(struct ForStmt& for_stmt) = 0;
 };
 
 struct Node
@@ -162,6 +169,11 @@ struct ImplicitCastExpr : Expr
 
 // Types
 
+struct GenericInfo
+{
+	Token name;
+	std::vector<Token> needed_contracts;
+};
 
 struct TypeSpec : Node
 {
@@ -181,10 +193,11 @@ struct PointerTypeSpec : TypeSpec
 
 struct BaseTypeSpec : TypeSpec
 {
-	BaseTypeSpec(const Token& name, uptr<TypeSpec> inner)
-		:name(name), inner(mv(inner)) {}
+	BaseTypeSpec(const Token& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
+		:name(name), inner(mv(inner)),generic_list(mv(generic_list)) {}
 	Token name;
 	uptr<TypeSpec> inner;
+	std::vector<uptr<TypeSpec>> generic_list;
 	virtual const Token& get_ident_token() const override { return name; }
 	virtual std::string as_str() const override { return name.text + (inner ? inner->as_str() : std::string()); }
 	IMPL_VISITOR
@@ -210,32 +223,59 @@ struct TypedStmt : Stmt
 	Type type;
 };
 
-struct InferredDefStmt : TypedStmt
+struct DeclOpStmt : TypedStmt
 {
-	InferredDefStmt(const Token& name, uptr<Expr> expr)
-		:name(name), expr(mv(expr)) {}
+	DeclOpStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
+		: type(mv(type)), name(mv(name)), expr(mv(expr)) {}
 	Token name;
-	
+	uptr<TypeSpec> type;
 	uptr<Expr> expr;
+};
+
+struct DeclCpyStmt : DeclOpStmt
+{
+	DeclCpyStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type),mv(name),mv(expr)) {}
 	IMPL_VISITOR
 };
 
-struct DefStmt : TypedStmt
+struct DeclMvStmt : DeclOpStmt
 {
-	DefStmt(const Token& type, const Token& name, uptr<Expr> expr)
-		:type_tkn(type),name(name),expr(mv(expr)){}
-
-	Token name;
-	Token type_tkn;
-	uptr<Expr> expr;
+	DeclMvStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
 	IMPL_VISITOR
 };
 
+struct DeclInitStmt : DeclOpStmt
+{
+	DeclInitStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
+	IMPL_VISITOR
+};
+
+
+struct DeclStmt : TypedStmt
+{
+	DeclStmt(uptr<TypeSpec> type, Token&& name)
+		:type_spec(mv(type)),name(mv(name)){}
+
+	Token name;
+	uptr<TypeSpec> type_spec;
+	IMPL_VISITOR
+};
+
+struct StructDefStmt : Stmt
+{
+	StructDefStmt(Token&& name, std::vector<uptr<Stmt>>&& stmts)
+		:name(mv(name)),stmts(mv(stmts)){}
+	Token name;
+	std::vector<uptr<Stmt>> stmts;
+};
 
 struct NamespaceStmt : Stmt
 {
-	NamespaceStmt(std::vector<uptr<Stmt>>&& stmts, const Token& name)
-		:stmts(mv(stmts)),name(name) {}
+	NamespaceStmt(std::vector<uptr<Stmt>>&& stmts, Token&& name)
+		:stmts(mv(stmts)),name(mv(name)) {}
 	NamespaceStmt(const Token& name)
 		:name(name){}
 	std::vector<uptr<Stmt>> stmts;
@@ -243,13 +283,70 @@ struct NamespaceStmt : Stmt
 	IMPL_VISITOR
 };
 
+struct ContractDefStmt : Stmt
+{
+	ContractDefStmt(Token&& name, std::vector<Token>&& inherited_contracts, std::vector<uptr<Stmt>>&& stmts)
+		:name(mv(name)),inherited_contracts(mv(inherited_contracts)),stmts(mv(stmts)){}
+	Token name;
+	std::vector<Token> inherited_contracts;
+	std::vector<uptr<Stmt>> stmts;
+	IMPL_VISITOR
+};
+
+struct ContractImplStmt : Stmt
+{
+	ContractImplStmt(Token&& contr_name, Token&& for_name, std::vector<uptr<Stmt>>&& func_defs)
+		:contr_name(mv(contr_name)), for_name(mv(for_name)), func_defs(mv(func_defs)) {}
+	Token contr_name;
+	Token for_name;
+	std::vector<uptr<Stmt>> func_defs;
+	IMPL_VISITOR
+};
+
+struct WhileStmt : Stmt
+{
+	WhileStmt(uptr<Expr>&& expr, std::vector<uptr<Stmt>>&& stmts)
+		:expr(mv(expr)),stmts(mv(stmts)){}
+	uptr<Expr> expr;
+	std::vector<uptr<Stmt>> stmts;
+	IMPL_VISITOR
+};
+
+struct ForStmt : Stmt
+{
+	ForStmt(uptr<Stmt> decl_stmt, uptr<Expr> fst_expr, uptr<Expr> snd_expr)
+		:decl_stmt(mv(decl_stmt)),fst_expr(mv(fst_expr)),snd_expr(mv(snd_expr)){}
+	uptr<Stmt> decl_stmt;
+	uptr<Expr> fst_expr;
+	uptr<Expr> snd_expr;
+	IMPL_VISITOR
+};
+
+struct IfStmt : Stmt
+{
+	IfStmt(uptr<Expr>&& if_expr,
+	std::vector<uptr<Stmt>>&& if_stmts,
+	std::vector<uptr<Expr>>&& elif_exprs,
+	std::vector<std::vector<uptr<Stmt>>>&& all_elif_stmts,
+	std::vector<uptr<Stmt>>&& else_stmts) 
+		:if_expr(mv(if_expr)),if_stmts(mv(if_stmts)),elif_exprs(mv(elif_exprs)),all_elif_stmts(mv(all_elif_stmts)),else_stmts(mv(else_stmts))
+	{}
+	uptr<Expr> if_expr;
+	std::vector<uptr<Stmt>> if_stmts;
+	std::vector<uptr<Expr>> elif_exprs;
+	std::vector<std::vector<uptr<Stmt>>> all_elif_stmts;
+	std::vector<uptr<Stmt>> else_stmts;
+	IMPL_VISITOR
+};
+
 struct FuncDefStmt : Stmt
 {
-	FuncDefStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
-		: ret_type(mv(ret_type)), name(name), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
+	FuncDefStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
+		: ret_type(mv(ret_type)), name(mv(name)), generic_list(mv(generic_list)), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
 	uptr<TypeSpec> ret_type;
 	Token name;
 	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_type_ident;
+	std::vector<GenericInfo> generic_list;
 	std::vector<uptr<Stmt>> body;
 
 	// Semantic annotations:

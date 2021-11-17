@@ -21,7 +21,7 @@ struct Token
 		Eof,
 		Ident,
 		Equal,
-		Decl,
+		DeclCpy,
 		Semicolon,
 		kw_u8,
 		kw_u16,
@@ -34,11 +34,26 @@ struct Token
 		kw_float,
 		kw_double,
 		kw_return,
-		comma,
+		Comma,
 		rparen_l,
 		rparen_r,
 		brace_l,
-		brace_r
+		brace_r,
+		bracket_l,
+		bracket_r,
+		Colon,
+		Less,
+		Greater,
+		DeclMv,
+		KwStruct,
+		KwNamespace,
+		KwContract,
+		KwFulfill,
+		KwFor,
+		KwWhile,
+		KwIf,
+		KwElif,
+		KwElse
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -46,6 +61,8 @@ struct Token
 	{
 		
 	}
+
+	Token() = default;
 
 	Specifier type;
 	std::string text;
@@ -74,7 +91,7 @@ struct Token
 			return "-";
 		case Specifier::Asterix:
 			return "*";
-		case Specifier::Decl:
+		case Specifier::DeclCpy:
 			return ":=";  // :=
 		case Specifier::Ident:
 			return "Identifier";
@@ -104,7 +121,7 @@ struct Token
 			return "float (keyword)";
 		case Specifier::kw_double:
 			return "double (keyword)";
-		case Specifier::comma:
+		case Specifier::Comma:
 			return ",";
 		case Specifier::rparen_l:
 			return ")";
@@ -115,6 +132,10 @@ struct Token
 		case Specifier::brace_l:
 			return "{";
 		case Specifier::brace_r:
+			return "}";
+		case Specifier::bracket_l:
+			return "{";
+		case Specifier::bracket_r:
 			return "}";
 		}
 		return "Unknown";

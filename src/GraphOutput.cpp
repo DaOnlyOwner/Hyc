@@ -68,7 +68,7 @@ void GraphOutput::visit(PostfixOpExpr& post_op)
 	out += connect(my_node_name, node_fst_child);
 }
 
-void GraphOutput::visit(InferredDefStmt& decl)
+void GraphOutput::visit(DeclCpyStmt& decl)
 {
 	int my_node_name = new_name();
 	out += label(my_node_name, "Definition Statement (inferred)", ":=");
@@ -89,7 +89,7 @@ void GraphOutput::visit(DefStmt& def_stmt)
 	out += label(node_name, "Definition Statement", "=");
 
 	int cn2 = new_name();
-	out += label(cn2, "Type", def_stmt.type_tkn.text);
+	out += label(cn2, "Type", def_stmt.type_spec->as_str());
 	out += connect(node_name, cn2);
 
 	int child_name = new_name();

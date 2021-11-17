@@ -28,13 +28,13 @@ int main()
 		return -1;
 	}
 
-	GraphOutput go;
-	parsed->accept(go);
-	DeclarationsCollector collector;
-	parsed->accept(collector);
+	//GraphOutput go;
+	//parsed->accept(go);
+	//DeclarationsCollector collector;
+	//parsed->accept(collector);
 
-	TypeChecker tc(collector.get_scopes());
-	parsed->accept(tc);
+	//TypeChecker tc(collector.get_scopes());
+	//parsed->accept(tc);
 
-	go.write_to_file("go.dot");
+	//go.write_to_file("go.dot");
 }

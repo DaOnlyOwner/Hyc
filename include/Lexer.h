@@ -69,9 +69,9 @@ public:
    {
         file=filename;
    }
-   const Token& eat()
+   Token& eat()
    {
-      const Token& out = lookahead(1);
+      Token& out = lookahead(1);
       m_current_token++;
       return out;
    }
@@ -82,9 +82,15 @@ public:
       return m_tokens[minIndex];
    }
 
-   const Token& match_token(Token::Specifier type)
+   Token& lookahead(size_t amount)
    {
-      const Token& token = eat();
+       auto minIndex = std::min(m_current_token + amount, m_tokens.size() - 1);
+       return m_tokens[minIndex];
+   }
+
+   Token& match_token(Token::Specifier type)
+   {
+      Token& token = eat();
       if(token.type != type)
       {
           auto descr = Error::FromToken(token);

@@ -17,17 +17,17 @@
 	m_tokens.emplace_back(ttype, str(), file, matcher().line(), lineno(), columno(), lineno_end(), columno_end());
    }
 
-public:   
+public:
    void set_filename(const std::string& filename)
    {
         file=filename;
    }
-   const Token& eat()
+   Token& eat()
    {
-      const Token& out = lookahead(1);
+      Token& out = lookahead(1);
       m_current_token++;
       return out;
-   }    
+   }
 
    const Token& lookahead(size_t amount) const
    {
@@ -35,9 +35,15 @@ public:
       return m_tokens[minIndex];
    }
 
-   const Token& match_token(Token::Specifier type)
-   {    
-      const Token& token = eat();
+   Token& lookahead(size_t amount)
+   {
+       auto minIndex = std::min(m_current_token + amount, m_tokens.size() - 1);
+       return m_tokens[minIndex];
+   }
+
+   Token& match_token(Token::Specifier type)
+   {
+      Token& token = eat();
       if(token.type != type)
       {
           auto descr = Error::FromToken(token);
@@ -73,13 +79,19 @@ plus    	"+"
 minus   	"-"
 asterix 	"*"
 slash   	"/"
-decl		":="
+decl_cpy	":="
+decl_mv		":#"
+colon		":"
+less		"<"
+greater		">"
 equal		"="
 semicln 	";"
 rparen_l	"("
 rparen_r	")"
 brace_l		"{"
 brace_r		"}"
+bracket_r	"]"
+bracket_l	"["
 comma		","
 
 
@@ -96,7 +108,7 @@ comma		","
 {kw_float}	{ push(Token::Specifier::kw_float);}
 {kw_double}	{ push(Token::Specifier::kw_double);}*/
 {kw_return}	{ push(Token::Specifier::kw_return);}
-{comma}		{ push(Token::Specifier::comma);}
+{comma}		{ push(Token::Specifier::Comma);}
 {rparen_l}	{ push(Token::Specifier::rparen_l);}
 {rparen_r}	{ push(Token::Specifier::rparen_r);}
 {integer}	{ push(Token::Specifier::Integer); }
@@ -106,11 +118,17 @@ comma		","
 {minus}   	{ push(Token::Specifier::Minus); }
 {asterix} 	{ push(Token::Specifier::Asterix); }
 {slash}   	{ push(Token::Specifier::Slash); }
-{decl}	  	{ push(Token::Specifier::Decl); }
+{decl_cpy}  	{ push(Token::Specifier::DeclCpy); }
+{decl_mv}	{ push(Token::Specifier::DeclMv);  }
+{colon}		{ push(Token::Specifier::Colon); }
 {equal}   	{ push(Token::Specifier::Equal); }
 {ident}	  	{ push(Token::Specifier::Ident); }
 {semicln} 	{ push(Token::Specifier::Semicolon); }
 {brace_l}	{ push(Token::Specifier::brace_l); }
 {brace_r}	{ push(Token::Specifier::brace_r); }
+{bracket_r}	{ push(Token::Specifier::bracket_r); }
+{bracket_l}	{ push(Token::Specifier::bracket_l}; }
+{less}		{ push(Token::Specifier::Less); }
+{greater}	{ push(Token::Specifier::Greater); }
 <<EOF>>   	{ push(Token::Specifier::Eof); return 0;}
 %%

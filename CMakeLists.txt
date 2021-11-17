@@ -29,6 +29,7 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/AtomicType.cpp
     ${CMAKE_SOURCE_DIR}/src/PointerType.cpp
     ${CMAKE_SOURCE_DIR}/src/Operators.cpp
+    ${CMAKE_SOURCE_DIR}/src/TerminalOutput.cpp
 )
 
 set (HEADERS
@@ -53,6 +54,7 @@ set (HEADERS
     ${CMAKE_SOURCE_DIR}/include/CodeGen.h
     ${CMAKE_SOURCE_DIR}/include/PointerType.h
     ${CMAKE_SOURCE_DIR}/include/Operators.h
+    ${CMAKE_SOURCE_DIR}/include/TerminalOutput.h
 )
 
 file(GLOB_RECURSE REFLEX_SRC "lib/Re-flex/lib/*.cpp" "lib/Re-flex/unicode/*.cpp") #Static sources
@@ -66,12 +68,14 @@ set(SYNTAX_HEADERS
     ${CMAKE_SOURCE_DIR}/include/Ast.h
     ${CMAKE_SOURCE_DIR}/include/GraphOutput.h
     ${CMAKE_SOURCE_DIR}/include/Precedence.h
+    ${CMAKE_SOURCE_DIR}/include/TerminalOutput.h
 )
 
 set(SYNTAX_SOURCES
     ${CMAKE_SOURCE_DIR}/src/Lexer.cpp
     ${CMAKE_SOURCE_DIR}/src/Parser.cpp
     ${CMAKE_SOURCE_DIR}/src/GraphOutput.cpp
+    ${CMAKE_SOURCE_DIR}/src/TerminalOutput.cpp
 )
     
 set(SEMANTIC_SOURCES
