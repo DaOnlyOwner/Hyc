@@ -1,4 +1,16 @@
-uint main()
+struct A
+{
+   int a;
+   A* b;
+}
+
+struct B<T,T2 = int, T3 = B<int>*,T4=T3>
+{
+   T a;
+   B<int>*[23]**[5] b;
+}
+
+int main()
 {
     return add(-10,11);
 }

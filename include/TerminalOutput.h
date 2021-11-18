@@ -15,10 +15,10 @@ class TerminalOutput : public IAstVisitor
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
 	virtual void visit(FuncCallExpr& func_call_expr) override;
-	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
+	virtual void visit(FuncDefStmt& func_def_stmt) override;
 	virtual void visit(ReturnStmt& ret_stmt) override;
 	virtual void visit(ExprStmt& expr_stmt) override;
-	virtual void visit(DeclStmt& def_stmt) override;
+	virtual void visit(DeclStmt& decl_stmt) override;
 	virtual void visit(PointerTypeSpec& pt_spec) override;
 	virtual void visit(BaseTypeSpec& bt_spec) override;
 	virtual void visit(ArrayTypeSpec& at_spec) override;
@@ -28,8 +28,10 @@ class TerminalOutput : public IAstVisitor
 	virtual void visit(ContractDefStmt& contract_def_stmt) override;
 	virtual void visit(ContractImplStmt& contract_impl_stmt) override;
 	virtual void visit(ForStmt& for_stmt) override;
+	virtual void visit(StructDefStmt& struct_def_stmt) override;
 	int indent = 0;
 	void make_indent();
+
 };
 
 

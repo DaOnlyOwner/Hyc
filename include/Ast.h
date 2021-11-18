@@ -46,10 +46,11 @@ struct IAstVisitor
 	virtual void visit(struct IdentExpr& ident) = 0;
 	virtual void visit(struct NamespaceStmt& namespace_stmt) = 0;
 	virtual void visit(struct FuncCallExpr& func_call_expr) = 0;
-	virtual void visit(struct FuncDefStmt& func_call_def_stmt) = 0;
+	virtual void visit(struct FuncDefStmt& func_def_stmt) = 0;
+	virtual void visit(struct StructDefStmt& struct_def_stmt) = 0;
 	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
 	virtual void visit(struct ExprStmt& expr_stmt) = 0;
-	virtual void visit(struct DeclStmt& def_stmt) = 0;
+	virtual void visit(struct DeclStmt& decl_stmt) = 0;
 	virtual void visit(struct PointerTypeSpec& pt_spec) = 0;
 	virtual void visit(struct BaseTypeSpec& bt_spec) = 0;
 	virtual void visit(struct ArrayTypeSpec& at_spec) = 0;
@@ -142,9 +143,10 @@ struct IdentExpr : Expr
 
 struct FuncCallExpr : Expr
 {
-	FuncCallExpr(const Token& name, std::vector<uptr<Expr>> arg_list)
-		: name(name), arg_list(std::move(arg_list)){}
+	FuncCallExpr(Token&& name, std::vector<uptr<struct TypeSpec>> generic_params, std::vector<uptr<Expr>>&& arg_list)
+		: name(mv(name)), generic_params(mv(generic_params)), arg_list(mv(arg_list)){}
 	Token name;
+	std::vector<uptr<TypeSpec>> generic_params;
 	std::vector<uptr<Expr>> arg_list;
 
 	// Semantic annotations:
@@ -173,6 +175,7 @@ struct GenericInfo
 {
 	Token name;
 	std::vector<Token> needed_contracts;
+	uptr<struct TypeSpec> default_type;
 };
 
 struct TypeSpec : Node
@@ -199,7 +202,22 @@ struct BaseTypeSpec : TypeSpec
 	uptr<TypeSpec> inner;
 	std::vector<uptr<TypeSpec>> generic_list;
 	virtual const Token& get_ident_token() const override { return name; }
-	virtual std::string as_str() const override { return name.text + (inner ? inner->as_str() : std::string()); }
+	virtual std::string as_str() const override { 
+		
+		std::string gl = "<";
+		if (!generic_list.empty())
+		{
+			gl += generic_list[0]->as_str();
+		}
+
+		for (int i = 1; i<generic_list.size(); i++)
+		{
+			auto& ts = generic_list[i];
+			gl += "," + ts->as_str();
+		}
+		gl += ">";
+		return fmt::format("{}{}{}",name.text,generic_list.empty() ? "" : gl, inner ? inner->as_str() : std::string()); 
+	}
 	IMPL_VISITOR
 };
 
@@ -266,10 +284,12 @@ struct DeclStmt : TypedStmt
 
 struct StructDefStmt : Stmt
 {
-	StructDefStmt(Token&& name, std::vector<uptr<Stmt>>&& stmts)
-		:name(mv(name)),stmts(mv(stmts)){}
+	StructDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
+		:name(mv(name)),generic_params(mv(generic_params)), stmts(mv(stmts)){}
 	Token name;
 	std::vector<uptr<Stmt>> stmts;
+	std::vector<GenericInfo> generic_params;
+	IMPL_VISITOR
 };
 
 struct NamespaceStmt : Stmt
@@ -314,11 +334,12 @@ struct WhileStmt : Stmt
 
 struct ForStmt : Stmt
 {
-	ForStmt(uptr<Stmt> decl_stmt, uptr<Expr> fst_expr, uptr<Expr> snd_expr)
-		:decl_stmt(mv(decl_stmt)),fst_expr(mv(fst_expr)),snd_expr(mv(snd_expr)){}
+	ForStmt(uptr<Stmt> decl_stmt, uptr<Expr> fst_expr, uptr<Expr> snd_expr, std::vector<uptr<Stmt>>&& stmts)
+		:decl_stmt(mv(decl_stmt)),fst_expr(mv(fst_expr)),snd_expr(mv(snd_expr)),stmts(mv(stmts)){}
 	uptr<Stmt> decl_stmt;
 	uptr<Expr> fst_expr;
 	uptr<Expr> snd_expr;
+	std::vector<uptr<Stmt>> stmts;
 	IMPL_VISITOR
 };
 
@@ -342,7 +363,7 @@ struct IfStmt : Stmt
 struct FuncDefStmt : Stmt
 {
 	FuncDefStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list_type_ident, std::vector<uptr<Stmt>>&& body)
-		: ret_type(mv(ret_type)), name(mv(name)), generic_list(mv(generic_list)), arg_list_type_ident(mv(arg_list_type_ident)), body(mv(body)){}
+		: ret_type(mv(ret_type)), name(mv(name)), arg_list_type_ident(mv(arg_list_type_ident)), generic_list(mv(generic_list)), body(mv(body)){}
 	uptr<TypeSpec> ret_type;
 	Token name;
 	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_type_ident;

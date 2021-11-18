@@ -97,8 +97,8 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 			}
 			else
 			{
-				bool contains = std::find(primitives.begin(), primitives.end(), bt) != primitives.end();
-				bool ocontains = std::find(primitives.begin(), primitives.end(), obt) != primitives.end();
+				bool contains = std::find(primitives.begin(), primitives.end(), bt.name) != primitives.end();
+				bool ocontains = std::find(primitives.begin(), primitives.end(), obt.name) != primitives.end();
 				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
 			}
 		}

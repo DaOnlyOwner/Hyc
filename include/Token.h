@@ -23,24 +23,13 @@ struct Token
 		Equal,
 		DeclCpy,
 		Semicolon,
-		kw_u8,
-		kw_u16,
-		kw_u32,
-		kw_uint,
-		kw_s8,
-		kw_s16,
-		kw_s32,
-		kw_int,
-		kw_float,
-		kw_double,
-		kw_return,
 		Comma,
-		rparen_l,
-		rparen_r,
-		brace_l,
-		brace_r,
-		bracket_l,
-		bracket_r,
+		RParenL,
+		RParenR,
+		BraceL,
+		BraceR,
+		BracketL,
+		BracketR,
 		Colon,
 		Less,
 		Greater,
@@ -53,6 +42,7 @@ struct Token
 		KwWhile,
 		KwIf,
 		KwElif,
+		KwReturn,
 		KwElse
 	};
 
@@ -101,42 +91,48 @@ struct Token
 			return ";";
 		case Specifier::Eof:
 			return "EOF";
-		case Specifier::kw_u8:
-			return "u8 (keyword)";
-		case Specifier::kw_u16:
-			return "u16 (keyword)";
-		case Specifier::kw_u32:
-			return "u32 (keyword)";
-		case Specifier::kw_uint:
-			return "uint (keyword)";
-		case Specifier::kw_s8:
-			return "s8 (keyword)";
-		case Specifier::kw_s16:
-			return "s16 (keyword)";
-		case Specifier::kw_s32:
-			return "s32 (keyword)";
-		case Specifier::kw_int:
-			return "int (keyword)";
-		case Specifier::kw_float:
-			return "float (keyword)";
-		case Specifier::kw_double:
-			return "double (keyword)";
 		case Specifier::Comma:
 			return ",";
-		case Specifier::rparen_l:
-			return ")";
-		case Specifier::rparen_r:
+		case Specifier::RParenL:
 			return "(";
-		case Specifier::kw_return:
-			return "return";
-		case Specifier::brace_l:
+		case Specifier::RParenR:
+			return ")";
+		case Specifier::KwReturn:
+			return "return (keyword)";
+		case Specifier::BraceL:
 			return "{";
-		case Specifier::brace_r:
+		case Specifier::BraceR:
 			return "}";
-		case Specifier::bracket_l:
-			return "{";
-		case Specifier::bracket_r:
-			return "}";
+		case Specifier::BracketL:
+			return "[";
+		case Specifier::BracketR:
+			return "]";
+		case Specifier::KwIf:
+			return "if (keyword)";
+		case Specifier::KwElif:
+			return "elif (keyword)";
+		case Specifier::KwElse:
+			return "else (keyword)";
+		case Specifier::KwContract:
+			return "contract (keyword)";
+		case Specifier::KwFor:
+			return "for (keyword)";
+		case Specifier::KwFulfill:
+			return "fulfill (keyword)";
+		case Specifier::KwNamespace:
+			return "namespace (keyword)";
+		case Specifier::KwStruct:
+			return "struct (keyword)";
+		case Specifier::KwWhile:
+			return "while (keyword)";
+		case Specifier::Less:
+			return "<";
+		case Specifier::Greater:
+			return ">";
+		case Specifier::DeclMv:
+			return ":#";
+		case Specifier::Colon:
+			return ":";
 		}
 		return "Unknown";
 

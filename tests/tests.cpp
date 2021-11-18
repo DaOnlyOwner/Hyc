@@ -1,6 +1,6 @@
 #include "Lexer.h"
 #include "Parser.h"
-#include "GraphOutput.h"
+#include "TerminalOutput.h"
 #include <fstream>
 #include <string>
 #include "DebugPrint.h"
@@ -9,7 +9,7 @@
 
 int main()
 {
-	std::string filename = ROOT "/meta/debug.txt";
+	std::string filename = ROOT "/tests/test_input_parser_stmts.txt";
 	std::ifstream fileInput(filename);
 	reflex::Input lexerInput(fileInput);
 
@@ -27,6 +27,9 @@ int main()
 	{
 		return -1;
 	}
+
+	TerminalOutput to;
+	parsed->accept(to);
 
 	//GraphOutput go;
 	//parsed->accept(go);

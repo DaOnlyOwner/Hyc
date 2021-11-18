@@ -10,6 +10,8 @@
 This file provides and implementation of a (probably mutated) "pratt" parser that can be extended at runtime
 */
 
+class Parser;
+
 template<typename TReturn>
 class GenericPrattParser;
 
@@ -38,8 +40,8 @@ template<typename TReturn>
 class GenericPrattParser
 {
 public:
-	GenericPrattParser(Lexer& token_source)
-		: tkns(token_source){}
+	GenericPrattParser(Parser* overall_parser, Lexer& tkns)
+		: overall_parser(overall_parser),tkns(tkns){}
 	bool add_operation(Token::Specifier ttype, const InfixOperation<TReturn>& left)
 	{
 		return m_infix_operation.emplace(ttype,left).second;
@@ -58,7 +60,7 @@ public:
 		if (prefix_it == m_prefix_operation.end()) 
 		{
 			auto descr = Error::FromToken(prefix_token);
-			descr.Message = fmt::format("Expected an indentifier or a prefix operator, but got {}", Token::Translate(prefix_token.type));
+			descr.Message = fmt::format("Expected an expression, but got {}", Token::Translate(prefix_token.type));
 			descr.Hint = fmt::format("The offending token is '{}'", prefix_token.text);
 			Error::SyntacticalError(descr);
 		}
@@ -92,11 +94,7 @@ public:
 		return parse_internal(0);
 	}
 
-	Lexer& get_token_source()
-	{
-		return tkns;
-	}
-	   
+	Parser* overall_parser;
 private:
 	Lexer& tkns;
 	std::unordered_map<Token::Specifier, InfixOperation<TReturn>> m_infix_operation;

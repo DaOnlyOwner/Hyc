@@ -6,22 +6,22 @@
 
 void Pipeline::build(std::ifstream& input, const std::string& filename)
 {
-	reflex::Input lexerInput(input);
+	//reflex::Input lexerInput(input);
 
-	Lexer lexer(lexerInput);
-	lexer.lex();
-	
-	Parser parser(lexer,filename);
-	auto parsed = parser.parse();
+	//Lexer lexer(lexerInput);
+	//lexer.lex();
+	//
+	//Parser parser(lexer,filename);
+	//auto parsed = parser.parse();
 
-	GraphOutput go;
-	parsed->accept(go);
+	//GraphOutput go;
+	//parsed->accept(go);
 
-	DeclarationsCollector dc;
+	//DeclarationsCollector dc;
 
-	parsed->accept(dc);
+	//parsed->accept(dc);
 
-	//TypeChecker tc{ dc.get_scopes() };
-	//parsed->accept(tc);
-	//go.write_to_file("go.dot");
+	////TypeChecker tc{ dc.get_scopes() };
+	////parsed->accept(tc);
+	////go.write_to_file("go.dot");
 }

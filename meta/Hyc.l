@@ -35,6 +35,11 @@ public:
       return m_tokens[minIndex];
    }
 
+   bool is_at(Token::Specifier spec, size_t amount) const
+   {
+	return spec == lookahead(1).type;
+   }
+
    Token& lookahead(size_t amount)
    {
        auto minIndex = std::min(m_current_token + amount, m_tokens.size() - 1);
@@ -57,20 +62,19 @@ public:
 
 %}
 kw_return 	"return"
-kw_u8		"u8"
-kw_u16		"u16"
-kw_u32		"u32"
-kw_uint		"uint"
-kw_s8		"i8"
-kw_s16		"i16"
-kw_s32		"i32"
-kw_int		"int"
-kw_float	"float"
-kw_double	"double"
+kw_for		"for"
+kw_fulfill	"fulfill"
+kw_if		"if"
+kw_while	"while"
+kw_elif		"elif"
+kw_else		"else"
+kw_struct	"struct"
+kw_contract	"contract"
+kw_namespace	"namespace"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
-udec		[1-9]\d*
+udec		0|([1-9]\d*)
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
 integer 	-?({uhex}|{uoct}|{ubin}|{udec})
 float		-?\d*\.\d+([Ee][-+]\d+)?f
@@ -97,20 +101,18 @@ comma		","
 
 %%
 \s+
-/*{kw_u8}		{ push(Token::Specifier::kw_u8);}
-{kw_u16}	{ push(Token::Specifier::kw_s16);}
-{kw_u32}	{ push(Token::Specifier::kw_s32);}
-{kw_uint}	{ push(Token::Specifier::kw_uint);}
-{kw_s8}		{ push(Token::Specifier::kw_s8);}
-{kw_s16}	{ push(Token::Specifier::kw_s16);}
-{kw_s32}	{ push(Token::Specifier::kw_s32);}
-{kw_int}	{ push(Token::Specifier::kw_int);}
-{kw_float}	{ push(Token::Specifier::kw_float);}
-{kw_double}	{ push(Token::Specifier::kw_double);}*/
-{kw_return}	{ push(Token::Specifier::kw_return);}
+{kw_return}	{ push(Token::Specifier::KwReturn);}
+{kw_for}	{ push(Token::Specifier::KwFor);}
+{kw_while}	{ push(Token::Specifier::KwWhile);}
+{kw_contract}	{ push(Token::Specifier::KwContract);}
+{kw_fulfill}	{ push(Token::Specifier::KwFulfill);}
+{kw_if}		{ push(Token::Specifier::KwFulfill);}
+{kw_elif}	{ push(Token::Specifier::KwElif);}
+{kw_else}	{ push(Token::Specifier::KwElse);}
+{kw_struct}	{ push(Token::Specifier::KwStruct);}
 {comma}		{ push(Token::Specifier::Comma);}
-{rparen_l}	{ push(Token::Specifier::rparen_l);}
-{rparen_r}	{ push(Token::Specifier::rparen_r);}
+{rparen_l}	{ push(Token::Specifier::RParenL);}
+{rparen_r}	{ push(Token::Specifier::RParenR);}
 {integer}	{ push(Token::Specifier::Integer); }
 {float}   	{ push(Token::Specifier::Float); }
 {double}	{ push(Token::Specifier::Double); }
@@ -124,10 +126,10 @@ comma		","
 {equal}   	{ push(Token::Specifier::Equal); }
 {ident}	  	{ push(Token::Specifier::Ident); }
 {semicln} 	{ push(Token::Specifier::Semicolon); }
-{brace_l}	{ push(Token::Specifier::brace_l); }
-{brace_r}	{ push(Token::Specifier::brace_r); }
-{bracket_r}	{ push(Token::Specifier::bracket_r); }
-{bracket_l}	{ push(Token::Specifier::bracket_l}; }
+{brace_l}	{ push(Token::Specifier::BraceL); }
+{brace_r}	{ push(Token::Specifier::BraceR); }
+{bracket_r}	{ push(Token::Specifier::BracketR); }
+{bracket_l}	{ push(Token::Specifier::BracketL);}
 {less}		{ push(Token::Specifier::Less); }
 {greater}	{ push(Token::Specifier::Greater); }
 <<EOF>>   	{ push(Token::Specifier::Eof); return 0;}

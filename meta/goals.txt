@@ -75,20 +75,22 @@ Call: f.bar(); // Basically calls b.bar()
 int[3] a {0,1,2}; 
 f(int[3]{0,1,2});
 A a {.first{"" },.second{""}};
+void a(int a{0},int b)
 - Implementation note: Save a unique pointer to BaseType in Scopes and let Type struct have a pointer to BaseType, so we don't need to compare strings.
 - Add foreach loop later
+- infer generic type parameters at function call.
 
 Implementation order:
 - implement parsing of structs (struct decls inside struct decls are allowed also for unions),functions,generics,contracts,expressions,statements(also switch),namespaces,operators
   -> don't go for all operator types, just the basic ones
 - implement code generation for that (C)
   -> implement all operator types and predefined functions.
-- import statements
 - quality of life updates: incremental
   -> unions
   -> enums
-  -> switch stmts
+  -> switch stmtsk
   -> initialization lists
+- import statements
 - Implement a standard library
 - Implement type deduction for function generics
 - Implement LLVM Backend

@@ -9,7 +9,8 @@ namespace Primitive
 		u8=0, u16, u32, uint,s8,s16,s32,int_,Float,Double,Count
 	};
 
-	std::string Translate(Specifier spec)
+	// TODO: Move to cpp file
+	inline std::string Translate(Specifier spec)
 	{
 		switch (spec)
 		{

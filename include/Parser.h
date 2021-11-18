@@ -12,8 +12,8 @@ class Parser
 public:
 	Parser(Lexer& token_source, const std::string& filename);
 	std::unique_ptr<Stmt> parse();
-
-private:
+	Lexer& get_lexer() { return tkns; }
+	const Lexer& get_lexer() const { return tkns; }
 	std::unique_ptr<Stmt> parse_compilation_unit();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_function_decl_stmt();
@@ -38,8 +38,10 @@ private:
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
 	std::vector<GenericInfo>  parse_generic_list();
 	std::unique_ptr<TypeSpec> parse_type_spec();
-
-
+	GenericInfo parse_generic_param();
+	std::unique_ptr<TypeSpec> Parser::parse_type_spec_part();
+	std::vector<GenericInfo> parse_comma_separated_ident_list();
+private:
 	Lexer& tkns; 
 	ExprParser expr_parser;
 	std::string file;

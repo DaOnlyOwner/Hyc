@@ -82,6 +82,11 @@ public:
       return m_tokens[minIndex];
    }
 
+   bool is_at(Token::Specifier spec, size_t amount) const
+   {
+	return spec == lookahead(1).type;
+   }
+
    Token& lookahead(size_t amount)
    {
        auto minIndex = std::min(m_current_token + amount, m_tokens.size() - 1);
