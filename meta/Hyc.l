@@ -71,6 +71,8 @@ kw_else		"else"
 kw_struct	"struct"
 kw_contract	"contract"
 kw_namespace	"namespace"
+kw_continue	"continue"
+kw_fptr		"fptr"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -106,10 +108,12 @@ comma		","
 {kw_while}	{ push(Token::Specifier::KwWhile);}
 {kw_contract}	{ push(Token::Specifier::KwContract);}
 {kw_fulfill}	{ push(Token::Specifier::KwFulfill);}
-{kw_if}		{ push(Token::Specifier::KwFulfill);}
+{kw_if}		{ push(Token::Specifier::KwIf);}
 {kw_elif}	{ push(Token::Specifier::KwElif);}
 {kw_else}	{ push(Token::Specifier::KwElse);}
 {kw_struct}	{ push(Token::Specifier::KwStruct);}
+{kw_continue}	{ push(Token::Specifier::KwContinue);}
+{kw_fptr}	{ push(Token::Specifier::KwFptr);}
 {comma}		{ push(Token::Specifier::Comma);}
 {rparen_l}	{ push(Token::Specifier::RParenL);}
 {rparen_r}	{ push(Token::Specifier::RParenR);}

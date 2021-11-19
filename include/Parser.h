@@ -17,6 +17,7 @@ public:
 	std::unique_ptr<Stmt> parse_compilation_unit();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_function_decl_stmt();
+	std::unique_ptr<Stmt> parse_continue_stmt();
 	std::unique_ptr<FuncDefStmt> parse_function_decl_stmt_part();
 	std::unique_ptr<Stmt> parse_expr_stmt();
 	std::unique_ptr<Stmt> parse_return_stmt();
@@ -34,6 +35,8 @@ public:
 	std::unique_ptr<Stmt> parse_allowed_namespace_stmt();
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_contract_stmts();
 	std::vector<std::unique_ptr<Stmt>> parse_func_def_list();
+	std::unique_ptr<Stmt> parse_allowed_loop_stmt();
+	std::vector<std::unique_ptr<Stmt>> parse_allowed_loop_stmts();
 	std::unique_ptr<Stmt> parse_allowed_func_stmt();
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
 	std::vector<GenericInfo>  parse_generic_list();

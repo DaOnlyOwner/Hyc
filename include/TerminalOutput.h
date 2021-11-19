@@ -3,6 +3,10 @@
 
 class TerminalOutput : public IAstVisitor
 {
+public:
+	const std::string& get_format_str() const { return out; }
+	std::string& get_format_str() { return out; }
+private:
 	// Geerbt über IAstVisitor
 	virtual void visit(FloatLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
@@ -31,6 +35,14 @@ class TerminalOutput : public IAstVisitor
 	virtual void visit(StructDefStmt& struct_def_stmt) override;
 	int indent = 0;
 	void make_indent();
+	std::string out = "";
+
+	// Geerbt über IAstVisitor
+	virtual void visit(ContinueStmt& cont_stmt) override;
+
+
+	// Geerbt über IAstVisitor
+	virtual void visit(FptrTypeSpec& fptr) override;
 
 };
 

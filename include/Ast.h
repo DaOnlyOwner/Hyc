@@ -60,6 +60,8 @@ struct IAstVisitor
 	virtual void visit(struct ContractDefStmt& contract_def_stmt) = 0;
 	virtual void visit(struct ContractImplStmt& contract_impl_stmt) = 0;
 	virtual void visit(struct ForStmt& for_stmt) = 0;
+	virtual void visit(struct ContinueStmt& cont_stmt) = 0;
+	virtual void visit(struct FptrTypeSpec& fptr) = 0;
 };
 
 struct Node
@@ -221,6 +223,30 @@ struct BaseTypeSpec : TypeSpec
 	IMPL_VISITOR
 };
 
+struct FptrTypeSpec : TypeSpec
+{
+	FptrTypeSpec(std::vector<uptr<TypeSpec>>&& args, uptr<TypeSpec>&& ret_type)
+		:args(mv(args)), ret_type(mv(ret_type)) {}
+	std::vector<uptr<TypeSpec>> args;
+	uptr<TypeSpec> ret_type;
+	virtual std::string as_str() const override {
+		std::string args_str = "";
+		if (!args.empty())
+		{
+			args_str += args[0]->as_str();
+		}
+		for (int i = 1; i < args.size(); i++)
+		{
+			auto& arg = args[i];
+			args_str += "," + arg->as_str();
+		}
+		return fmt::format("fptr({};{})", args_str, ret_type->as_str());
+	}
+
+	IMPL_VISITOR
+
+};
+
 struct ArrayTypeSpec : TypeSpec
 {
 	ArrayTypeSpec(uptr<struct IntegerLiteralExpr> amount, uptr<TypeSpec> inner)
@@ -271,6 +297,10 @@ struct DeclInitStmt : DeclOpStmt
 	IMPL_VISITOR
 };
 
+struct ContinueStmt : Stmt
+{
+	IMPL_VISITOR
+};
 
 struct DeclStmt : TypedStmt
 {

@@ -4,6 +4,8 @@ struct A
    A* b;
 }
 
+int outer_decl;
+
 struct B<T,T2 = int, T3 = B<int>*,T4=T3>
 {
    T a;
@@ -14,9 +16,12 @@ int test1<T:A+B,T2:A+B+C=int*[10]>(int a, int b)
 {
 }
 
-int test2()
+int type_test()
 {
    A<B<C<D<E,F,G<H,I,J<K>**[324]>[2234]**>[23]*>>> a;
+   fptr(fptr(A<int,float>;int);B<int>*) b;
+   fptr(;int) c;
+   fptr(int;int) c;
 }
 
 int for_loop()
@@ -28,7 +33,32 @@ int for_loop()
    for(i := 0; i; i){}
    for(i :# 0; i; i){}
    for(i : 0; i;i){}
+   for(i:0;i;i){continue;}
 }
+
+int while_loop()
+{
+   while(i){}
+   while(i){continue;}
+}
+
+int if_stmt()
+{
+   if(a){}
+   
+   if(a){}
+   elif(b){}
+
+   if(a){}
+   elif(b){}
+   else{}
+
+   if(a){}
+   elif(b){}
+   elif(c){}
+   else{}
+}
+
 
 uint stmts(uint a, uint b)
 {

@@ -30,6 +30,7 @@ int main()
 
 	TerminalOutput to;
 	parsed->accept(to);
+	fmt::print("{}",to.get_format_str());
 
 	//GraphOutput go;
 	//parsed->accept(go);

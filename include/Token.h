@@ -43,7 +43,9 @@ struct Token
 		KwIf,
 		KwElif,
 		KwReturn,
-		KwElse
+		KwElse,
+		KwContinue,
+		KwFptr
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -133,6 +135,10 @@ struct Token
 			return ":#";
 		case Specifier::Colon:
 			return ":";
+		case Specifier::KwContinue:
+			return "continue (keyword)";
+		case Specifier::KwFptr:
+			return "fptr (keyword)";
 		}
 		return "Unknown";
 
