@@ -10,6 +10,40 @@ void TerminalOutput::make_indent()
 	}
 }
 
+void TerminalOutput::visit(FuncDeclStmt& func_decl)
+{
+	make_indent();
+	std::string args = "";
+	for (int i = 0; i < func_decl.arg_list_type_ident.size(); i++)
+	{
+		auto& arg = func_decl.arg_list_type_ident[i];
+		args += fmt::format("{} {}, ", arg.first->as_str(), arg.second.text);
+	}
+	std::string generic_params = "";
+	for (auto& gi : func_decl.generic_list)
+	{
+		generic_params += fmt::format("{}{},", gi.name.text, gi.default_type ? "=" + gi.default_type->as_str() : "");
+	}
+	out += fmt::format("FuncDefStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n", func_decl.name.text, generic_params, func_decl.ret_type->as_str(), args);
+}
+
+void TerminalOutput::visit(UnionDefStmt& union_def)
+{
+	make_indent();
+	std::string gp = "";
+	for (auto& param : union_def.generic_params)
+	{
+		gp += fmt::format("{}{}, ", param.name.text, param.default_type != nullptr ? "="+param.default_type->as_str() : "");
+	}
+	out += fmt::format("UnionDefStmt: name='{}', generic_params='{}'\n", union_def.name.text, gp);
+	indent++;
+	for (auto& stmt : union_def.stmts)
+	{
+		stmt->accept(*this);
+	}
+	indent--;
+}
+
 void TerminalOutput::visit(ContinueStmt& cont_stmt)
 {
 	make_indent();
@@ -18,6 +52,36 @@ void TerminalOutput::visit(ContinueStmt& cont_stmt)
 
 void TerminalOutput::visit(FptrTypeSpec& fptr)
 {
+	assert(false);
+}
+
+void TerminalOutput::visit(ArraySubscriptExpr& subs)
+{
+	make_indent();
+	out += "ArraySubscriptExpr\nInner Expr:\n";
+	indent++;
+	subs.inner->accept(*this);
+	subs.from->accept(*this);
+	indent--;
+}
+
+void TerminalOutput::visit(TernaryExpr& tern)
+{
+	make_indent();
+	out += "TernaryExpr\nFirst Expr:\n";
+	indent++;
+	tern.fst->accept(*this);
+	indent--;
+	make_indent();
+	out += "Second Expr:\n";
+	indent++;
+	tern.snd->accept(*this);
+	indent--;
+	make_indent();
+	out += "Third Expr:\n";
+	indent++;
+	tern.trd->accept(*this);
+	indent--;
 }
 
 void TerminalOutput::visit(StructDefStmt& struct_def_stmt)
@@ -26,9 +90,9 @@ void TerminalOutput::visit(StructDefStmt& struct_def_stmt)
 	std::string gp = "";
 	for (auto& param : struct_def_stmt.generic_params)
 	{
-		gp += fmt::format("{}={}, ", param.name.text, param.default_type != nullptr ? param.default_type->as_str() : "");
+		gp += fmt::format("{}{}, ", param.name.text, param.default_type != nullptr ? "=" + param.default_type->as_str() : "");
 	}
-	out += "StructDefStmt: name='{}', generic_params='{}'\n",struct_def_stmt.name.text,gp;
+	out += fmt::format("UnionDefStmt: name='{}', generic_params='{}'\n", struct_def_stmt.name.text, gp);
 	indent++;
 	for (auto& stmt : struct_def_stmt.stmts)
 	{
@@ -124,7 +188,12 @@ void TerminalOutput::visit(NamespaceStmt& namespace_stmt)
 void TerminalOutput::visit(FuncCallExpr& func_call_expr)
 {
 	make_indent();
-	out+=fmt::format("FuncCallExpr: name='{}'\n", func_call_expr.name.text);
+	out+=fmt::format("FuncCallExpr\n");
+	indent++;
+	func_call_expr.from->accept(*this);
+	indent--;
+	make_indent();
+	out += fmt::format("Args:\n");
 	indent++;
 	for (int i = 0; i < func_call_expr.arg_list.size(); i++)
 	{
@@ -136,24 +205,9 @@ void TerminalOutput::visit(FuncCallExpr& func_call_expr)
 void TerminalOutput::visit(FuncDefStmt& func_def_stmt)
 {
 	make_indent();
-	std::string args = "";
-	for (int i = 0; i < func_def_stmt.arg_list_type_ident.size(); i++)
-	{
-		auto& arg = func_def_stmt.arg_list_type_ident[i];
-		args += fmt::format("{} {}, ", arg.first->as_str(), arg.second.text);
-	}
-	std::string generic_params = "";
-	for (auto& gi : func_def_stmt.generic_list)
-	{
-		std::string needed_ctrcts = "";
-		for (auto& contr : gi.needed_contracts)
-		{
-			needed_ctrcts += fmt::format("{}+", contr.text);
-		}
-		generic_params += fmt::format("{}:{}={},", gi.name.text, needed_ctrcts, gi.default_type->as_str());
-	}
-	out += fmt::format("FuncDefStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n",func_def_stmt.name.text, generic_params, func_def_stmt.ret_type->as_str(), args);
+	out += "FuncDefStmt\n";
 	indent++;
+	func_def_stmt.decl->accept(*this);
 	for (auto& stmt : func_def_stmt.body)
 	{
 		stmt->accept(*this);
@@ -256,35 +310,6 @@ void TerminalOutput::visit(WhileStmt& while_stmt)
 	indent++;
 	while_stmt.expr->accept(*this);
 	for (auto& stmt : while_stmt.stmts)
-	{
-		stmt->accept(*this);
-	}
-	indent--;
-}
-
-void TerminalOutput::visit(ContractDefStmt& contract_def_stmt)
-{
-	make_indent();
-	std::string inh = "";
-	for (int i = 0; i < contract_def_stmt.inherited_contracts.size(); i++)
-	{
-		inh += contract_def_stmt.inherited_contracts[i].text;
-	}
-	out += fmt::format("ContractDefStmt: name='{}', inherited_contracts='{}'\n", contract_def_stmt.name.text,inh);
-	indent++;
-	for (auto& stmt : contract_def_stmt.stmts)
-	{
-		stmt->accept(*this);
-	}
-	indent--;
-}
-
-void TerminalOutput::visit(ContractImplStmt& contract_impl_stmt)
-{
-	make_indent();
-	out += fmt::format("ContractImplStmt: for='{}', contract_name='{}'\n", contract_impl_stmt.for_name.text, contract_impl_stmt.contr_name.text);
-	indent++;
-	for (auto& stmt : contract_impl_stmt.func_defs)
 	{
 		stmt->accept(*this);
 	}

@@ -3,17 +3,17 @@ TODO:
 - Generics like List<List<int>>
   -> functions: u64 fn<T>();
 - No definition of member functions. 
-  -> if you want to call something like this: foo.bar();
+  -> if you want to call something like this: foo->bar();
   -> then the declaration should look like this:
   struct foo
   {
   }
-  void bar(foo# this); // This is basically like an extension method 
+  void bar(foo* this); // This is basically like an extension method 
   then:
-  f.bar() 
+  f->bar() 
   becomes desugared: bar(&f);
-  this: foo* f;
-  can be called with f->bar();
+  char* to_str(int);
+  -> 5.to_str() ---> calls to_str(5);
 - constructors,destructors.
   there are no constructors, but something that looks like this:
   int a : init() -> desugared: int a; a.init();
@@ -49,24 +49,43 @@ TODO:
     case uint: break;
   }
 - default value init in structs. MAYBE
-- contracts:
-contract foo
+- unions:
+union A
 {
-    int bar();
-    int bar2;
+   int a;
+   float b;
 }
+typesafe:
+A foo;
+foo.a = 4; 
+foo.type == 0 // type is readonly and is of type int
+foo.b = 4.0;
+foo.type == 1
+match(foo)
+{
+case int as i // i has the same address as foo.a.
+{} // Note the braces, they are needed here, no break
+case float as f // f has the same address as foo.f
+{}
+}
+void a(int* i);
+void a(float* f);
+foo..a(); 
+Desugared:
+match(foo)
+{
+case int as i // i has the same address as foo.a.
+{
+  i.a();
+} // Note the braces, they are needed here, no break
+case float as f // f has the same address as foo.f
+{
+  f.a();
+}
+}
+foo->>a(); for pointer
+However foo.a() calls a(foo*); 
 
-struct a
-{
-    int bar2; // Definition
-}
-impl foo for a
-{
-    int bar(a* this){}
-}
-
-creation: foo* f : new()->init();
-Call: f.bar(); // Basically calls b.bar()
 - function pointers: fptr(args type;return_type)
 - array decl: int[5] a;
 - desugar typedefs before typechecking!
@@ -79,18 +98,15 @@ void a(int a{0},int b)
 - Implementation note: Save a unique pointer to BaseType in Scopes and let Type struct have a pointer to BaseType, so we don't need to compare strings.
 - Add foreach loop later
 - infer generic type parameters at function call.
+- default is moving when calling a function e.g. a(b); b is moved into the argument
+  -> copying: a(=b);
 
 Implementation order:
-- implement parsing of structs (struct decls inside struct decls are allowed also for unions),functions,generics,contracts,expressions,statements(also switch),namespaces,operators
-  -> don't go for all operator types, just the basic ones
-- implement code generation for that (C)
-  -> implement all operator types and predefined functions.
+- implement parsing of structs,functions,generics,expressions,statements(also switch, match),namespaces,operators,unions,type deduction for function generics
 - quality of life updates: incremental
-  -> unions
   -> enums
-  -> switch stmtsk
   -> initialization lists
+  -> try catch
 - import statements
+- Implement meta programming
 - Implement a standard library
-- Implement type deduction for function generics
-- Implement LLVM Backend

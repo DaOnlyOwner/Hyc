@@ -29,20 +29,21 @@ private:
 	virtual void visit(ImplicitCastExpr& ice) override;
 	virtual void visit(IfStmt& if_stmt) override;
 	virtual void visit(WhileStmt& while_stmt) override;
-	virtual void visit(ContractDefStmt& contract_def_stmt) override;
-	virtual void visit(ContractImplStmt& contract_impl_stmt) override;
 	virtual void visit(ForStmt& for_stmt) override;
 	virtual void visit(StructDefStmt& struct_def_stmt) override;
+	virtual void visit(ContinueStmt& cont_stmt) override;
+	virtual void visit(FptrTypeSpec& fptr) override;
+	virtual void visit(ArraySubscriptExpr& subs) override;
+	virtual void visit(TernaryExpr& tern) override;
+	virtual void visit(FuncDeclStmt& func_decl) override;
+	virtual void visit(UnionDefStmt& union_def) override;
+
 	int indent = 0;
 	void make_indent();
 	std::string out = "";
 
-	// Geerbt über IAstVisitor
-	virtual void visit(ContinueStmt& cont_stmt) override;
 
 
-	// Geerbt über IAstVisitor
-	virtual void visit(FptrTypeSpec& fptr) override;
 
 };
 

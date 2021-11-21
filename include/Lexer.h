@@ -30,6 +30,7 @@
 #include "fmt/core.h"
 #include <vector>
 #include <algorithm>
+#define PUSH(name) push(Token::Specifier::name)
 
 
 ////////////////////////////////////////////////////////////////////////////////

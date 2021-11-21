@@ -9,31 +9,27 @@
 
 // Expressions
 
-// Infix Operators
-#define InfixExprFnArgs ExprParser& parser, const Token& token, std::unique_ptr<Expr> lh
-#define PrefixExprFnArgs ExprParser& parser, const Token& token
+#define DEF_POSTFIX_OP(name,group,right)\
+InfixOperation<Expr> name{ (int)ExprPrecedence::group, right, [](InfixExprFnArgs) {\
+		return std::make_unique<PostfixOpExpr>(token,mv(lh));} }
 
+#define DEF_BIN_OP(name, group, right)\
+InfixOperation<Expr> name{(int)ExprPrecedence::group, right, [](InfixExprFnArgs){\
+		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::group));\
+}}
+
+#define DEF_PREFIX_OP(name, group)\
+PrefixOperation<Expr> name{(int)ExprPrecedence::group, [](PrefixExprFnArgs)\
+	{\
+		return static_cast<uptr<Expr>>(std::make_unique<PrefixOpExpr>(Token(token),parser.parse_internal((int)ExprPrecedence::group)));\
+	} }
+
+#define ADD_OP(op,name) expr_parser.add_operation(op,name)
 
 namespace
 {
-	// Precedence  Right assoc?  Parsing function
-	InfixOperation<Expr> productGroup{ (int)ExprPrecedence::productGroup, false, [](InfixExprFnArgs) {
-		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::productGroup));
-	} };
 
-	InfixOperation<Expr> sumGroup{ (int)ExprPrecedence::sumGroup, false, [](InfixExprFnArgs) {
-		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::sumGroup));
-	} };
-
-
-	// "Prefix" Operators
-
-	PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::float_lit, [](PrefixExprFnArgs)
-	{
-		return ast_as<Expr>(std::make_unique<FloatLiteralExpr>(token));
-	} };
-
-	std::pair<bool,EvalIntegerResult> eval_integer_val(const Token& token)
+	std::pair<bool, EvalIntegerResult> eval_integer_val(const Token& token)
 	{
 		const std::string& integer_text = token.text;
 		errno = 0;
@@ -50,7 +46,7 @@ namespace
 		else
 		{
 			errno = 0;
-			auto val= strtoull(token.text.c_str(), nullptr, 0);
+			auto val = strtoull(token.text.c_str(), nullptr, 0);
 			if (errno != 0)
 			{
 				return { false,{Primitive::Specifier::Count,0,0 } };
@@ -59,7 +55,7 @@ namespace
 		}
 	}
 
-	PrefixOperation<Expr> integer_lit{ (int)ExprPrecedence::integer_lit, [](PrefixExprFnArgs)
+	PrefixOperation<Expr> integer_lit{(int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 	{
 			auto [succ,eval_res] = eval_integer_val(token);
 			if (!succ)
@@ -72,14 +68,14 @@ namespace
 		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res));
 	} };
 
-	PrefixOperation<Expr> ident_expr{ (int)ExprPrecedence::ident_expr, [](PrefixExprFnArgs) {
-		// Function call
-		Lexer& l = parser.overall_parser->get_lexer();
-		if (l.lookahead(1).type == Token::Specifier::RParenL || l.lookahead(1).type == Token::Specifier::Less)
-		{
+	PrefixOperation<Expr> ident{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+	{
 			std::vector<uptr<TypeSpec>> generic_params;
 			// Parse generic parameters
-			if (l.lookahead(1).type == Token::Specifier::Less)
+			// When the ident is a function call like a<int>(1);
+			// In the semantic checker I check, if a is acutally a generic function.
+			auto& l = parser.overall_parser->get_lexer();
+			if (token.type == Token::Specifier::Less)
 			{
 				l.eat(); // <
 				auto fst = parser.overall_parser->parse_type_spec();
@@ -90,7 +86,17 @@ namespace
 				}
 				l.match_token(Token::Specifier::Greater); // >
 			}
-			l.eat(); // '('
+			return std::make_unique<IdentExpr>(Token(token), mv(generic_params));
+	} };
+
+	// Precedence  right_assoc?  Parsing function
+	DEF_BIN_OP(scope, Group1, false);
+	DEF_POSTFIX_OP(incr_decr, Group2, false);
+	InfixOperation<Expr> func_call_array_sub{(int)ExprPrecedence::Group2, false, [](InfixExprFnArgs) {
+		// Function call
+		Lexer& l = parser.overall_parser->get_lexer();
+		if(token.type == Token::Specifier::RParenL)
+		{
 			std::vector<uptr<Expr>> arg_list;
 			// Parse an argument list:
 			while (l.lookahead(1).type != Token::Specifier::RParenR && l.lookahead(1).type != Token::Specifier::Eof)
@@ -102,29 +108,97 @@ namespace
 
 			l.match_token(Token::Specifier::RParenR); // ')'
 
-			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(Token(token), mv(generic_params), mv(arg_list)));
+			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(lh), mv(arg_list)));
 		}
-		// Just an identifier.
-		return static_cast<uptr<Expr>>(std::make_unique<IdentExpr>(token));
+
+		else if (token.type == Token::Specifier::BracketL)
+		{
+			return static_cast<uptr<Expr>>(std::make_unique<ArraySubscriptExpr>(mv(lh), parser.parse()));
+		}
+	} };
+	DEF_BIN_OP(member, Group2, false);
+	DEF_PREFIX_OP(unary, Group3);
+	DEF_BIN_OP(cast, Group3, false);
+	DEF_BIN_OP(ind_addr_of, Group3, true);
+	DEF_BIN_OP(mult, Group5, false);
+	DEF_BIN_OP(add, Group6, false);
+	DEF_BIN_OP(shift, Group7, false);
+	DEF_BIN_OP(threeway, Group8, false);
+	DEF_BIN_OP(rel, Group9, false);
+	DEF_BIN_OP(comp, Group10, false);
+	DEF_BIN_OP(and, Group11, false);
+	DEF_BIN_OP(xor, Group12, false);
+	DEF_BIN_OP(or , Group13, false);
+	DEF_BIN_OP(land, Group14, false);
+	DEF_BIN_OP(lor, Group15, false);
+
+	InfixOperation<Expr> if_expr{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArgs) {
+		auto snd = parser.parse();
+		parser.overall_parser->get_lexer().match_token(Token::Specifier::Colon);
+		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);
+		return std::make_unique<TernaryExpr>(mv(lh), mv(snd), mv(trd));
 	} };
 
-	PrefixOperation<Expr> unary_operator{ (int)ExprPrecedence::unary_op, [](PrefixExprFnArgs)
-	{
-		return ast_as<Expr>(std::make_unique<PrefixOpExpr>(token, parser.parse_internal((int)ExprPrecedence::unary_op)));
-	} };
+	DEF_BIN_OP(assignment_move_etc, Group16, true);
+	DEF_PREFIX_OP(throw_, Group16);
+	DEF_BIN_OP(comma, Group17, false);
+	
 }
 
 Parser::Parser(Lexer& token_source, const std::string& filename)
 	:expr_parser(this,token_source),
 	tkns(token_source)
 {
-	expr_parser.add_operation(Token::Specifier::Asterix, productGroup);
-	expr_parser.add_operation(Token::Specifier::Plus, sumGroup);
-	expr_parser.add_operation(Token::Specifier::Float, float_lit);
-	expr_parser.add_operation(Token::Specifier::Integer, integer_lit);
-	expr_parser.add_operation(Token::Specifier::Minus, unary_operator);
-	expr_parser.add_operation(Token::Specifier::Plus, unary_operator);
-	expr_parser.add_operation(Token::Specifier::Ident, ident_expr);
+	expr_parser.add_operation(Token::Specifier::DoubleColon, scope);
+	expr_parser.add_operation(Token::Specifier::DoublePlus, incr_decr);
+	ADD_OP(Token::Specifier::DoubleMinus, incr_decr);
+	ADD_OP(Token::Specifier::RParenL, func_call_array_sub);
+	ADD_OP(Token::Specifier::Dot, member);
+	ADD_OP(Token::Specifier::MemAccess, member);
+	ADD_OP(Token::Specifier::Minus, unary);
+	ADD_OP(Token::Specifier::Plus, unary);
+	ADD_OP(Token::Specifier::ExclMark, unary);
+	ADD_OP(Token::Specifier::Tilde, unary);
+	ADD_OP(Token::Specifier::KwAs, cast);
+	ADD_OP(Token::Specifier::Asterix, unary);
+	ADD_OP(Token::Specifier::Ampersand, unary);
+	ADD_OP(Token::Specifier::Percent, unary);
+	ADD_OP(Token::Specifier::Asterix, mult);
+	ADD_OP(Token::Specifier::Slash, mult);
+	ADD_OP(Token::Specifier::Percent, mult);
+	ADD_OP(Token::Specifier::Plus, add);
+	ADD_OP(Token::Specifier::Minus, add);
+	ADD_OP(Token::Specifier::ShiftLeft, shift);
+	ADD_OP(Token::Specifier::ShiftRight, shift);
+	ADD_OP(Token::Specifier::ThreeWay, threeway);
+	ADD_OP(Token::Specifier::Less, rel);
+	ADD_OP(Token::Specifier::Greater, rel);
+	ADD_OP(Token::Specifier::LessEql, rel);
+	ADD_OP(Token::Specifier::GreaterEql, rel);
+	ADD_OP(Token::Specifier::DoubleEqual, comp);
+	ADD_OP(Token::Specifier::NotEqual, comp);
+	ADD_OP(Token::Specifier::Ampersand, and);
+	ADD_OP(Token::Specifier::Caret, xor);
+	ADD_OP(Token::Specifier::Or, or);
+	ADD_OP(Token::Specifier::DoubleAmpersand, land);
+	ADD_OP(Token::Specifier::DoubleOr, lor);
+	ADD_OP(Token::Specifier::QuestionMark, if_expr);
+	ADD_OP(Token::Specifier::Equal, assignment_move_etc);
+	ADD_OP(Token::Specifier::PlusEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::MinusEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::AsterixEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::SlashEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::SlEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::SrEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::PercentEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::AmpersandEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::CaretEqual, assignment_move_etc);
+	ADD_OP(Token::Specifier::OrEqual, assignment_move_etc);
+	// TODO: Add #*, #/, #+ etc.
+	ADD_OP(Token::Specifier::KwThrow, throw_);
+	ADD_OP(Token::Specifier::Comma, comma);
+	ADD_OP(Token::Specifier::Ident, ident);
+	ADD_OP(Token::Specifier::Integer, integer_lit);
 
 	file = filename;
 }
@@ -191,18 +265,7 @@ std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 std::unique_ptr<Stmt> Parser::parse_function_def_stmt()
 {
 	auto func_decl = parse_function_decl_stmt_part();
-
-	std::vector<uptr<Stmt>> body;
-	
-	tkns.match_token(Token::Specifier::BraceL); // '{'
-	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
-	{
-		body.push_back(parse_allowed_func_stmt());
-	}
-
-	tkns.match_token(Token::Specifier::BraceR); // '}'
-	func_decl->body = mv(body);
-	return func_decl;
+	return std::make_unique<FuncDefStmt>(mv(func_decl), parse_function_body());
 }
 
 std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
@@ -281,42 +344,6 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 	return nullptr;
 }
 
-GenericInfo Parser::parse_generic_param()
-{
-	GenericInfo gi;
-	gi.name = mv(tkns.match_token(Token::Specifier::Ident));
-	if (tkns.lookahead(1).type == Token::Specifier::Colon)
-	{
-		tkns.eat(); // :
-		gi.needed_contracts.push_back(tkns.match_token(Token::Specifier::Ident)); // ident
-		while (tkns.lookahead(1).type == Token::Specifier::Plus)
-		{
-			tkns.eat(); // +
-			gi.needed_contracts.push_back(std::move(tkns.match_token(Token::Specifier::Ident))); // Do I need to std::move here?
-		}
-	}
-	if (tkns.lookahead(1).type == Token::Specifier::Equal) 
-	{
-		tkns.eat(); // =
-		gi.default_type = parse_type_spec();
-	}
-	return gi;
-}
-
-// ident ( : ident "+" (ident)* )?
-// T : a + b, C:a
-std::vector<GenericInfo> Parser::parse_generic_list()
-{
-	std::vector<GenericInfo> gi_lst;
-	GenericInfo fst = parse_generic_param();
-	while (tkns.lookahead(1).type == Token::Specifier::Comma)
-	{
-		tkns.eat();
-		gi_lst.push_back(parse_generic_param());
-	}
-	return gi_lst;
-}
-
 // type ident ;
 std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 {
@@ -327,7 +354,7 @@ std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 }
 
 
-// ident ("=" ident)? (","(ident ("=" ident)? ",")*)?
+// ident ("=" type)? (","(ident ("=" type)? ",")*)?
 std::vector<GenericInfo> Parser::parse_comma_separated_ident_list()
 {
 	std::vector<GenericInfo> vec;
@@ -362,23 +389,12 @@ std::vector<GenericInfo> Parser::parse_comma_separated_ident_list()
 // struct ident< comma_separated_ident_list > { declaration_stmt* }
 std::unique_ptr<Stmt> Parser::parse_struct_def()
 {
-	tkns.match_token(Token::Specifier::KwStruct);
-	auto& name = tkns.match_token(Token::Specifier::Ident);
-	std::vector<GenericInfo> generic_parameters;
-	if (tkns.lookahead(1).type == Token::Specifier::Less)
-	{
-		tkns.eat();
-		generic_parameters = parse_comma_separated_ident_list();
-		tkns.match_token(Token::Specifier::Greater);
-	}
-	tkns.match_token(Token::Specifier::BraceL);
-	std::vector<uptr<Stmt>> decls_inside_struct;
-	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
-	{
-		decls_inside_struct.push_back(parse_decl_stmt());
-	}
-	tkns.match_token(Token::Specifier::BraceR);
-	return std::make_unique<StructDefStmt>(mv(name), mv(generic_parameters), mv(decls_inside_struct));
+	return parse_attr_collection<StructDefStmt>(Token::Specifier::KwStruct, [&]() {return parse_decl_stmt(); });
+}
+
+std::unique_ptr<Stmt> Parser::parse_union_def()
+{
+	return parse_attr_collection<UnionDefStmt>(Token::Specifier::KwUnion, [&]() {return parse_decl_stmt(); });
 }
 
 // namespace ident { allowed_namespace_stmts }
@@ -401,10 +417,8 @@ std::unique_ptr<Stmt> Parser::parse_allowed_namespace_stmt()
 		return parse_struct_def();
 	else if (tkns.lookahead(1).type == Token::Specifier::KwNamespace)
 		return parse_namespace_stmt();
-	else if (tkns.lookahead(1).type == Token::Specifier::KwContract)
-		return parse_contract_def();
-	else if (tkns.lookahead(1).type == Token::Specifier::KwFulfill)
-		return parse_contract_impl_block();
+	else if (tkns.lookahead(1).type == Token::Specifier::KwUnion)
+		return parse_union_def();
 	else return parse_function_def_stmt();
 }
 
@@ -419,57 +433,21 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_namespace_stmts()
 	return vec;
 }
 
-// contract ident (: ident ("+" (ident "+" )*)? ) { allowed_contract_stmts }
-std::unique_ptr<Stmt> Parser::parse_contract_def()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_function_body()
 {
-	tkns.match_token(Token::Specifier::KwContract);
-	auto& name = tkns.match_token(Token::Specifier::Ident);
-	std::vector<Token> inherited_contracts;
-	if (tkns.lookahead(1).type == Token::Specifier::Colon)
-	{
-		tkns.eat(); // :
-		auto& inherited = tkns.match_token(Token::Specifier::Ident);
-		inherited_contracts.push_back(mv(inherited));
-		while (tkns.lookahead(1).type == Token::Specifier::Plus)
-		{
-			tkns.eat(); // +
-			auto& inherited_further = tkns.match_token(Token::Specifier::Ident);
-			inherited_contracts.push_back(mv(inherited_further));
-		}
-	}
-	tkns.match_token(Token::Specifier::BraceL);
-	auto stmts = parse_allowed_contract_stmts();
-	return std::make_unique<ContractDefStmt>(mv(name), mv(inherited_contracts), mv(stmts));
-}
+	std::vector<uptr<Stmt>> body;
 
-// (function_def | function_decl)*
-std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_contract_stmts()
-{
-	std::vector<std::unique_ptr<Stmt>> stmts;
+	tkns.match_token(Token::Specifier::BraceL); // '{'
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
-		auto decl = static_cast<uptr<Stmt>>(parse_function_decl_stmt_part());
-		if (tkns.lookahead(1).type == Token::Specifier::Semicolon)
-		{
-			tkns.eat();
-			stmts.push_back(mv(decl));
-		}
-		else if(tkns.lookahead(1).type == Token::Specifier::BraceL)
-		{
-			stmts.push_back(parse_function_def_stmt());
-		}
-		else
-		{
-			auto descr = Error::FromToken(tkns.lookahead(1));
-			descr.Message = fmt::format("Expected a function declaration or function definition, but got {}", tkns.lookahead(1).text);
-			Error::SyntacticalError(descr);
-		}
+		body.push_back(parse_allowed_func_stmt());
 	}
-	tkns.match_token(Token::Specifier::BraceR);
-	return stmts;
+
+	tkns.match_token(Token::Specifier::BraceR); // '}'
+	return body;
 }
 
-std::unique_ptr<FuncDefStmt> Parser::parse_function_decl_stmt_part()
+std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 {
 	auto type = parse_type_spec(); // Type
 	auto& name = tkns.match_token(Token::Specifier::Ident); // ident
@@ -478,7 +456,7 @@ std::unique_ptr<FuncDefStmt> Parser::parse_function_decl_stmt_part()
 	if (tkns.lookahead(1).type == Token::Specifier::Less) // <
 	{
 		tkns.eat();
-		generic_list = parse_generic_list();
+		generic_list = parse_comma_separated_ident_list();
 		tkns.match_token(Token::Specifier::Greater);
 	}
 
@@ -497,7 +475,8 @@ std::unique_ptr<FuncDefStmt> Parser::parse_function_decl_stmt_part()
 	}
 
 	tkns.match_token(Token::Specifier::RParenR); // ')'
-	return std::make_unique<FuncDefStmt>(mv(type), mv(name), mv(generic_list), mv(param_list), std::vector<uptr<Stmt>>{});
+
+	return std::make_unique<FuncDeclStmt>(mv(type), mv(name), mv(generic_list), mv(param_list));
 }
 
 std::unique_ptr<Stmt> Parser::parse_function_decl_stmt()
@@ -563,19 +542,6 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_loop_stmts()
 		stmts.push_back(parse_allowed_loop_stmt());
 	}
 	return stmts;
-}
-
-// fullfill ident for ident { func_def_list }
-std::unique_ptr<Stmt> Parser::parse_contract_impl_block()
-{
-	tkns.match_token(Token::Specifier::KwFulfill);
-	auto& contr = tkns.match_token(Token::Specifier::Ident);
-	tkns.match_token(Token::Specifier::KwFor);
-	auto& for_name = tkns.match_token(Token::Specifier::Ident);
-	tkns.match_token(Token::Specifier::BraceL);
-	auto def_list = parse_func_def_list();
-	tkns.match_token(Token::Specifier::BraceR);
-	return std::make_unique<ContractImplStmt>(mv(contr), mv(for_name), mv(def_list));
 }
 
 // Should only be called from whatever has "}" as closing token

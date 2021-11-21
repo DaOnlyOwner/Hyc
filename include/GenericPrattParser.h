@@ -10,6 +10,9 @@
 This file provides and implementation of a (probably mutated) "pratt" parser that can be extended at runtime
 */
 
+#define InfixExprFnArgs ExprParser& parser, const Token& token, std::unique_ptr<Expr> lh
+#define PrefixExprFnArgs ExprParser& parser, const Token& token
+
 class Parser;
 
 template<typename TReturn>
@@ -60,7 +63,7 @@ public:
 		if (prefix_it == m_prefix_operation.end()) 
 		{
 			auto descr = Error::FromToken(prefix_token);
-			descr.Message = fmt::format("Expected an expression, but got {}", Token::Translate(prefix_token.type));
+			descr.Message = fmt::format("Expected an expression, but got '{}'", Token::Translate(prefix_token.type));
 			descr.Hint = fmt::format("The offending token is '{}'", prefix_token.text);
 			Error::SyntacticalError(descr);
 		}
@@ -82,9 +85,6 @@ public:
 				? -1 
 				: infix_it->second.precedence + infix_it->second.right_assoc;
 		}
-
-		// TODO: Completness: Parse postfix, ternary operators
-
 
 		return std::move(lh);
 	}

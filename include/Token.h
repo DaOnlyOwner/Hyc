@@ -16,7 +16,9 @@ struct Token
 		Double,
 		Slash,
 		Plus,
+		DoublePlus,
 		Minus,
+		DoubleMinus,
 		Asterix,
 		Eof,
 		Ident,
@@ -31,13 +33,42 @@ struct Token
 		BracketL,
 		BracketR,
 		Colon,
+		DoubleColon,
 		Less,
 		Greater,
 		DeclMv,
+		Dot,
+		Ampersand,
+		DoubleAmpersand,
+		Or,
+		DoubleOr,
+		MemAccess, // ->
+		ExclMark,
+		Tilde,
+		Percent,
+		ShiftLeft,
+		ShiftRight,
+		ThreeWay,
+		LessEql,
+		GreaterEql,
+		DoubleEqual,
+		NotEqual,
+		Caret,
+		QuestionMark,
+		PlusEqual,
+		MinusEqual,
+		OrEqual,
+		CaretEqual,
+		AsterixEqual,
+		SlashEqual,
+		SlEqual,
+		SrEqual,
+		PercentEqual,
+		AmpersandEqual,
+		KwThrow,
+		KwAs,
 		KwStruct,
 		KwNamespace,
-		KwContract,
-		KwFulfill,
 		KwFor,
 		KwWhile,
 		KwIf,
@@ -45,7 +76,8 @@ struct Token
 		KwReturn,
 		KwElse,
 		KwContinue,
-		KwFptr
+		KwFptr,
+		KwUnion
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -115,12 +147,8 @@ struct Token
 			return "elif (keyword)";
 		case Specifier::KwElse:
 			return "else (keyword)";
-		case Specifier::KwContract:
-			return "contract (keyword)";
 		case Specifier::KwFor:
 			return "for (keyword)";
-		case Specifier::KwFulfill:
-			return "fulfill (keyword)";
 		case Specifier::KwNamespace:
 			return "namespace (keyword)";
 		case Specifier::KwStruct:
@@ -139,6 +167,74 @@ struct Token
 			return "continue (keyword)";
 		case Specifier::KwFptr:
 			return "fptr (keyword)";
+		case Specifier::DoubleColon:
+			return "::";
+		case Specifier::DoublePlus:
+			return "++";
+		case Specifier::DoubleMinus:
+			return "--";
+		case Specifier::Dot:
+			return ".";
+		case Specifier::MemAccess:
+			return "->";
+		case Specifier::ExclMark:
+			return "!";
+		case Specifier::Tilde:
+			return "~";
+		case Specifier::KwAs:
+			return "as (keyword)";
+		case Specifier::Ampersand:
+			return "&";
+		case Specifier::Percent:
+			return "%";
+		case Specifier::ShiftLeft:
+			return "<|";
+		case Specifier::ShiftRight:
+			return "|>";
+		case Specifier::ThreeWay:
+			return "<=>";
+		case Specifier::LessEql:
+			return "<=";
+		case Specifier::GreaterEql:
+			return ">=";
+		case Specifier::DoubleEqual:
+			return "==";
+		case Specifier::NotEqual:
+			return "!=";
+		case Specifier::Caret:
+			return "^";
+		case Specifier::Or:
+			return "|";
+		case Specifier::DoubleAmpersand:
+			return "&&";
+		case Specifier::DoubleOr:
+			return "||";
+		case Specifier::QuestionMark:
+			return "?";
+		case Specifier::KwThrow:
+			return "throw (keyword)";
+		case Specifier::PlusEqual:
+			return "+=";
+		case Specifier::MinusEqual:
+			return "-=";
+		case Specifier::AsterixEqual:
+			return "*=";
+		case Specifier::SlashEqual:
+			return "/=";
+		case Specifier::PercentEqual:
+			return "%=";
+		case Specifier::SlEqual:
+			return "<|=";
+		case Specifier::SrEqual:
+			return "|>=";
+		case Specifier::AmpersandEqual:
+			return "&=";
+		case Specifier::CaretEqual:
+			return "^=";
+		case Specifier::OrEqual:
+			return "|=";
+		case Specifier::KwUnion:
+			return "union (keyword)";
 		}
 		return "Unknown";
 

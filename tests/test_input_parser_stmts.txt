@@ -12,7 +12,28 @@ struct B<T,T2 = int, T3 = B<int>*,T4=T3>
    B<int>*[23]**[5] b;
 }
 
-int test1<T:A+B,T2:A+B+C=int*[10]>(int a, int b)
+union A
+{
+   int a;
+   float b;
+}
+
+union A<T>
+{
+   
+}
+
+union A<T=int>
+{
+   int b;
+}
+
+union A<T,T2=int*[23]>
+{
+   
+}
+
+int test1<T,T2=int*[10]>(int a, int b)
 {
 }
 

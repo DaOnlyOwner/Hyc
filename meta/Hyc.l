@@ -6,6 +6,7 @@
 #include "fmt/core.h"
 #include <vector>
 #include <algorithm>
+#define PUSH(name) push(Token::Specifier::name)
 %} 
 
 %class{
@@ -63,16 +64,17 @@ public:
 %}
 kw_return 	"return"
 kw_for		"for"
-kw_fulfill	"fulfill"
+kw_union    "union"
 kw_if		"if"
 kw_while	"while"
 kw_elif		"elif"
 kw_else		"else"
 kw_struct	"struct"
-kw_contract	"contract"
 kw_namespace	"namespace"
 kw_continue	"continue"
 kw_fptr		"fptr"
+kw_as		"as"
+kw_throw	"throw"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -88,6 +90,7 @@ slash   	"/"
 decl_cpy	":="
 decl_mv		":#"
 colon		":"
+double_colon	"::"
 less		"<"
 greater		">"
 equal		"="
@@ -99,21 +102,83 @@ brace_r		"}"
 bracket_r	"]"
 bracket_l	"["
 comma		","
-
+double_plus	"++"
+double_minus	"--"
+ex_mark		"!"
+tilde		"~"
+amp		"&"
+perc		"%"
+sr		"|>"
+sl		"<|"
+thrway		"<=>"
+lessEql		"<="
+grEql		">="
+double_eql	"=="
+not_equal	"!="
+caret		"^"
+or		"|"
+dot   "."
+mem_acc "->"
+double_amp	"&&"
+double_or	"||"
+questionmark	"?"
+plus_eql	"+="
+minus_eql	"-="
+asterix_eql	"*="
+slash_eql	"/="
+percent_equal	"%="
+sl_eql		"<|="
+sr_eql		"|>="
+amp_eql		"&="
+caret_eql	"^="
+or_eql		"|="
 
 %%
 \s+
 {kw_return}	{ push(Token::Specifier::KwReturn);}
 {kw_for}	{ push(Token::Specifier::KwFor);}
 {kw_while}	{ push(Token::Specifier::KwWhile);}
-{kw_contract}	{ push(Token::Specifier::KwContract);}
-{kw_fulfill}	{ push(Token::Specifier::KwFulfill);}
 {kw_if}		{ push(Token::Specifier::KwIf);}
 {kw_elif}	{ push(Token::Specifier::KwElif);}
 {kw_else}	{ push(Token::Specifier::KwElse);}
 {kw_struct}	{ push(Token::Specifier::KwStruct);}
 {kw_continue}	{ push(Token::Specifier::KwContinue);}
 {kw_fptr}	{ push(Token::Specifier::KwFptr);}
+{kw_as}		{ push(Token::Specifier::KwAs);}
+{kw_throw}	{ PUSH(KwThrow);}
+{kw_union}  { PUSH(KwUnion);}
+{kw_namespace} {PUSH(KwNamespace);}
+{double_colon}	{ PUSH(DoubleColon);}
+{double_plus}	{ PUSH(DoublePlus);}
+{double_minus}	{ PUSH(DoubleMinus);}
+{ex_mark}	{ PUSH(ExclMark);}
+{tilde}		{ PUSH(Tilde);}
+{amp}		{ PUSH(Ampersand);}
+{perc}		{ PUSH(Percent);}
+{sr}		{ PUSH(ShiftRight);}
+{sl}		{ PUSH(ShiftLeft);}
+{thrway}		{ PUSH(ThreeWay);}
+{lessEql}		{ PUSH(LessEql);}
+{grEql}		{ PUSH(GreaterEql);}
+{double_eql}	{ PUSH(DoubleEqual);}
+{not_equal}	{ PUSH(NotEqual);}
+{caret}		{ PUSH(Caret);}
+{or}   		{ PUSH(Or);}
+{double_amp}	{ PUSH(DoubleAmpersand);}
+{double_or}	{ PUSH(DoubleOr);}
+{questionmark}	{ PUSH(QuestionMark);}
+{plus_eql}	   { PUSH(PlusEqual);}
+{minus_eql}  { PUSH(MinusEqual);}
+{asterix_eql}	{ PUSH(AsterixEqual);}
+{slash_eql}	{ PUSH(SlashEqual);}
+{percent_equal}	{ PUSH(PercentEqual);}
+{sl_eql}		{ PUSH(SlEqual);}
+{sr_eql}		{ PUSH(SrEqual);}
+{amp_eql}		{ PUSH(AmpersandEqual);}
+{caret_eql}	{ PUSH(CaretEqual);}
+{or_eql}		{ PUSH(OrEqual);}
+{dot}       { PUSH(Dot);}
+{mem_acc}   { PUSH(MemAccess);}
 {comma}		{ push(Token::Specifier::Comma);}
 {rparen_l}	{ push(Token::Specifier::RParenL);}
 {rparen_r}	{ push(Token::Specifier::RParenR);}
