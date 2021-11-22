@@ -64,6 +64,7 @@ struct IAstVisitor
 	virtual void visit(struct ArraySubscriptExpr& subs) = 0;
 	virtual void visit(struct TernaryExpr& tern) = 0;
 	virtual void visit(struct UnionDefStmt& union_def) = 0;
+	virtual void visit(struct MatchStmt& match) = 0;
 };
 
 struct Node
@@ -140,20 +141,19 @@ struct FloatLiteralExpr : Expr
 struct TypeSpec;
 struct IdentExpr : Expr
 {
-	IdentExpr(const Token& token, std::vector<uptr<TypeSpec>>&& generic_params)
-		: ident(token),generic_params(mv(generic_params)) {}
+	IdentExpr(const Token& token)
+		: ident(token) {}
 	Token ident;
-	std::vector<uptr<TypeSpec>> generic_params;
 	IMPL_VISITOR
 };
 
 struct FuncCallExpr : Expr
 {
-	FuncCallExpr(uptr<Expr>& from, std::vector<uptr<Expr>>&& arg_list)
-		: from(mv(from)), arg_list(mv(arg_list)){}
+	FuncCallExpr(uptr<Expr>& from, std::vector<uptr<Expr>>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
+		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
 	uptr<Expr> from;
 	std::vector<uptr<Expr>> arg_list;
-
+	std::vector<uptr<TypeSpec>> generic_params;
 	// Semantic annotations:
 	struct Function* sem_function = nullptr;
 
@@ -423,6 +423,24 @@ struct FuncDefStmt : Stmt
 
 	IMPL_VISITOR
 };
+
+struct MatchCase 
+{
+	MatchCase(uptr<DeclStmt>&& decl_stmt, std::vector<uptr<Stmt>>&& body)
+		:decl_stmt(mv(decl_stmt)),body(mv(body)){}
+	uptr<DeclStmt> decl_stmt;
+	std::vector<uptr<Stmt>> body;
+};
+
+struct MatchStmt : Stmt
+{
+	MatchStmt(std::vector<MatchCase>&& match_cases, uptr<Expr>&& match_on)
+		:match_cases(mv(match_cases)),match_on(mv(match_on)){}
+	std::vector<MatchCase> match_cases;
+	uptr<Expr> match_on;
+	IMPL_VISITOR
+};
+
 
 struct ExprStmt : Stmt
 {

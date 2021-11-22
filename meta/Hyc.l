@@ -1,4 +1,4 @@
-%o header-file="../include/Lexer.h" fast outfile="../src/Lexer.cpp" noline
+%o header-file="../include/Frontend/Lexer.h" fast outfile="../src/Frontend/Lexer.cpp" noline
 
 %top{
 #include "Token.h"
@@ -75,14 +75,16 @@ kw_continue	"continue"
 kw_fptr		"fptr"
 kw_as		"as"
 kw_throw	"throw"
+kw_match	"match"
+kw_case		"case"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		0|([1-9]\d*)
 ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
-integer 	-?({uhex}|{uoct}|{ubin}|{udec})
-float		-?\d*\.\d+([Ee][-+]\d+)?f
-double		-?\d*\.\d+([Ee][-+]\d+)?
+integer 	({uhex}|{uoct}|{ubin}|{udec})
+float		\d*\.\d+([Ee][-+]\d+)?f
+double		\d*\.\d+([Ee][-+]\d+)?
 plus    	"+"
 minus   	"-"
 asterix 	"*"
@@ -148,6 +150,8 @@ or_eql		"|="
 {kw_throw}	{ PUSH(KwThrow);}
 {kw_union}  { PUSH(KwUnion);}
 {kw_namespace} {PUSH(KwNamespace);}
+{kw_match}	{PUSH(KwMatch);}
+{kw_case}	{PUSH(KwCase);}
 {double_colon}	{ PUSH(DoubleColon);}
 {double_plus}	{ PUSH(DoublePlus);}
 {double_minus}	{ PUSH(DoubleMinus);}

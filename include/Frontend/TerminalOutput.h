@@ -37,10 +37,13 @@ private:
 	virtual void visit(TernaryExpr& tern) override;
 	virtual void visit(FuncDeclStmt& func_decl) override;
 	virtual void visit(UnionDefStmt& union_def) override;
+	virtual void visit(MatchStmt& match) override;
 
 	int indent = 0;
 	void make_indent();
 	std::string out = "";
+
+
 
 
 

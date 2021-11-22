@@ -93,3 +93,39 @@ uint stmts(uint a, uint b)
     B<int,int*> f : init();
     return result;   
 }
+
+void match_case()
+{
+   match(t)
+   {
+     case int as e{}
+     case A<int>*[4] as e{}
+   }
+   match(t)
+   {
+   }
+   match(t)
+   {
+       case int as e{}
+   }
+   while(true)
+   {
+      match(t)
+      {
+         case int as e{continue;}
+      }
+   }
+}
+
+namespace A
+{
+   namespace B
+   {
+      namespace C
+	   {
+ 	      struct S{}
+	   }
+	   struct S2{}
+   }
+	struct S3{}
+}

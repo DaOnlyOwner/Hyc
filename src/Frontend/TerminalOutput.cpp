@@ -10,6 +10,24 @@ void TerminalOutput::make_indent()
 	}
 }
 
+void TerminalOutput::visit(MatchStmt& match)
+{
+	make_indent();
+	out += "MatchStmt\n";
+	indent++;
+	match.match_on->accept(*this);
+	for (MatchCase& mc : match.match_cases)
+	{
+		make_indent();
+		out += fmt::format("MatchCase: type='{}', name='{}'\n", mc.decl_stmt->type_spec->as_str(), mc.decl_stmt->name.text);
+		indent++;
+		for (auto& stmt : mc.body)
+			stmt->accept(*this);
+		indent--;
+	}
+	indent--;
+}
+
 void TerminalOutput::visit(FuncDeclStmt& func_decl)
 {
 	make_indent();
@@ -24,7 +42,7 @@ void TerminalOutput::visit(FuncDeclStmt& func_decl)
 	{
 		generic_params += fmt::format("{}{},", gi.name.text, gi.default_type ? "=" + gi.default_type->as_str() : "");
 	}
-	out += fmt::format("FuncDefStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n", func_decl.name.text, generic_params, func_decl.ret_type->as_str(), args);
+	out += fmt::format("FuncDeclStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n", func_decl.name.text, generic_params, func_decl.ret_type->as_str(), args);
 }
 
 void TerminalOutput::visit(UnionDefStmt& union_def)
@@ -58,7 +76,7 @@ void TerminalOutput::visit(FptrTypeSpec& fptr)
 void TerminalOutput::visit(ArraySubscriptExpr& subs)
 {
 	make_indent();
-	out += "ArraySubscriptExpr\nInner Expr:\n";
+	out += "ArraySubscriptExpr\n";
 	indent++;
 	subs.inner->accept(*this);
 	subs.from->accept(*this);
@@ -68,7 +86,9 @@ void TerminalOutput::visit(ArraySubscriptExpr& subs)
 void TerminalOutput::visit(TernaryExpr& tern)
 {
 	make_indent();
-	out += "TernaryExpr\nFirst Expr:\n";
+	out += "TernaryExpr\n";
+	make_indent();
+	out += "First Expr:\n";
 	indent++;
 	tern.fst->accept(*this);
 	indent--;
@@ -92,7 +112,7 @@ void TerminalOutput::visit(StructDefStmt& struct_def_stmt)
 	{
 		gp += fmt::format("{}{}, ", param.name.text, param.default_type != nullptr ? "=" + param.default_type->as_str() : "");
 	}
-	out += fmt::format("UnionDefStmt: name='{}', generic_params='{}'\n", struct_def_stmt.name.text, gp);
+	out += fmt::format("StructDefStmt: name='{}', generic_params='{}'\n", struct_def_stmt.name.text, gp);
 	indent++;
 	for (auto& stmt : struct_def_stmt.stmts)
 	{
@@ -125,7 +145,7 @@ void TerminalOutput::visit(BinOpExpr& bin_op)
 void TerminalOutput::visit(PrefixOpExpr& pre_op)
 {
 	make_indent();
-	out+=fmt::format("BinOpExpr: '{}'\n", pre_op.op.text);
+	out+=fmt::format("PrefixOpExpr: '{}'\n", pre_op.op.text);
 	indent++;
 	pre_op.lh->accept(*this);
 	indent--;
@@ -134,7 +154,7 @@ void TerminalOutput::visit(PrefixOpExpr& pre_op)
 void TerminalOutput::visit(PostfixOpExpr& post_op)
 {
 	make_indent();
-	out += fmt::format("BinOpExpr: '{}'\n", post_op.op.text);
+	out += fmt::format("PostfixOpExpr: '{}'\n", post_op.op.text);
 	indent++;
 	post_op.rh->accept(*this);
 	indent--;
@@ -187,13 +207,17 @@ void TerminalOutput::visit(NamespaceStmt& namespace_stmt)
 
 void TerminalOutput::visit(FuncCallExpr& func_call_expr)
 {
+	std::string gargs = "";
+	for (auto& expr : func_call_expr.generic_params)
+		gargs += fmt::format("{}, ", expr->as_str());
 	make_indent();
-	out+=fmt::format("FuncCallExpr\n");
+	out+=fmt::format("FuncCallExpr: generic_params={}\n",gargs);
 	indent++;
 	func_call_expr.from->accept(*this);
 	indent--;
+
 	make_indent();
-	out += fmt::format("Args:\n");
+	out += "Args:\n";
 	indent++;
 	for (int i = 0; i < func_call_expr.arg_list.size(); i++)
 	{

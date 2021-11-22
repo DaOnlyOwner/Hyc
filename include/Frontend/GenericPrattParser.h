@@ -72,17 +72,17 @@ public:
 		const Token* infix_token = &tkns.lookahead(1); // To reassign infix_token, use ptr.
 		auto infix_it = m_infix_operation.find(infix_token->type);
 		int infix_precedence = infix_it == m_infix_operation.end() 
-			? -1 
+			? 0 
 			// Trick so that precedence < infix_precedence when operator is right assoc to stop while loop (right_assoc = 1 or = 0)
 			: infix_it->second.precedence + infix_it->second.right_assoc; 
-		while (precedence <= infix_precedence)
+		while (precedence < infix_precedence)
 		{
 			tkns.eat();
 			lh = infix_it->second.operation(*this, *infix_token, std::move(lh));
 			infix_token = &tkns.lookahead(1);
 			infix_it = m_infix_operation.find(infix_token->type);
 			infix_precedence = infix_it == m_infix_operation.end() 
-				? -1 
+				? 0 
 				: infix_it->second.precedence + infix_it->second.right_assoc;
 		}
 

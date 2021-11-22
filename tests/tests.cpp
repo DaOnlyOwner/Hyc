@@ -9,7 +9,7 @@
 
 int main()
 {
-	std::string filename = ROOT "/tests/test_input_parser_stmts.txt";
+	std::string filename = ROOT "/tests/test_input_parser_expr.txt";
 	std::ifstream fileInput(filename);
 	reflex::Input lexerInput(fileInput);
 

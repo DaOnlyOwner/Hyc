@@ -48,7 +48,8 @@ public:
 		return std::make_unique<TRet>(mv(name), mv(generic_parameters), mv(decls_inside));
 	}
 
-
+	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);
+	MatchCase parse_match_case(bool in_loop);
 	std::unique_ptr<Stmt> parse_namespace_stmt();
 	std::unique_ptr<Stmt> parse_if_stmt();
 	std::unique_ptr<Stmt> parse_while_loop_stmt();

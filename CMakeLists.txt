@@ -14,127 +14,41 @@ else()
    message(STATUS "Warning: LTO not supported: ${error}")
 endif() 
 
+file(GLOB_RECURSE REFLEX_SRC ${CMAKE_SOURCE_DIR}/lib/Re-flex/lib/*.cpp ${CMAKE_SOURCE_DIR}/lib/Re-flex/unicode/*.cpp) #Static sources
 
-set(SOURCES 
-    ${CMAKE_SOURCE_DIR}/src/Lexer.cpp
-    ${CMAKE_SOURCE_DIR}/src/DebugPrint.cpp
-    ${CMAKE_SOURCE_DIR}/src/Pipeline.cpp
-    ${CMAKE_SOURCE_DIR}/src/Parser.cpp
-    ${CMAKE_SOURCE_DIR}/src/GraphOutput.cpp
-    ${CMAKE_SOURCE_DIR}/src/TypeChecker.cpp
-    ${CMAKE_SOURCE_DIR}/src/SymbolTable.cpp
-    ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
-    ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
-    ${CMAKE_SOURCE_DIR}/src/CodeGen.cpp
-    ${CMAKE_SOURCE_DIR}/src/AtomicType.cpp
-    ${CMAKE_SOURCE_DIR}/src/PointerType.cpp
-    ${CMAKE_SOURCE_DIR}/src/Operators.cpp
-    ${CMAKE_SOURCE_DIR}/src/TerminalOutput.cpp
-)
+file(GLOB_RECURSE FRONTEND_HEADERS ${CMAKE_SOURCE_DIR}/include/Frontend/*.h)
+file(GLOB_RECURSE MIDDLEEND_HEADERS ${CMAKE_SOURCE_DIR}/include/Middleend/*.h)
+file(GLOB_RECURSE TOOLS_HEADERS ${CMAKE_SOURCE_DIR}/include/Tools/*.h)
+file(GLOB_RECURSE BACKEND_HEADERS ${CMAKE_SOURCE_DIR}/include/Backend/*.h)
 
-set (HEADERS
-    ${CMAKE_SOURCE_DIR}/include/Token.h
-    ${CMAKE_SOURCE_DIR}/include/DebugPrint.h
-    ${CMAKE_SOURCE_DIR}/include/GenericPrattParser.h
-    ${CMAKE_SOURCE_DIR}/include/Lexer.h
-    ${CMAKE_SOURCE_DIR}/include/Pipeline.h
-    ${CMAKE_SOURCE_DIR}/include/Parser.h
-    ${CMAKE_SOURCE_DIR}/include/Ast.h
-    ${CMAKE_SOURCE_DIR}/include/GraphOutput.h
-    ${CMAKE_SOURCE_DIR}/include/TypeChecker.h
-    ${CMAKE_SOURCE_DIR}/include/SymbolTable.h
-    ${CMAKE_SOURCE_DIR}/include/Scopes.h
-    ${CMAKE_SOURCE_DIR}/include/Hashmap.h
-    ${CMAKE_SOURCE_DIR}/include/PerfectHashmap.h
-    ${CMAKE_SOURCE_DIR}/include/Primitive.h
-    ${CMAKE_SOURCE_DIR}/include/ValueStorage.h
-    ${CMAKE_SOURCE_DIR}/include/AtomicType.h
-    ${CMAKE_SOURCE_DIR}/include/Precedence.h
-    ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
-    ${CMAKE_SOURCE_DIR}/include/CodeGen.h
-    ${CMAKE_SOURCE_DIR}/include/PointerType.h
-    ${CMAKE_SOURCE_DIR}/include/Operators.h
-    ${CMAKE_SOURCE_DIR}/include/TerminalOutput.h
-)
-
-file(GLOB_RECURSE REFLEX_SRC "lib/Re-flex/lib/*.cpp" "lib/Re-flex/unicode/*.cpp") #Static sources
-
-set(SYNTAX_HEADERS 
-    ${CMAKE_SOURCE_DIR}/include/Lexer.h
-    ${CMAKE_SOURCE_DIR}/include/GenericPrattParser.h
-    ${CMAKE_SOURCE_DIR}/include/Token.h
-    ${CMAKE_SOURCE_DIR}/include/Lexer.h
-    ${CMAKE_SOURCE_DIR}/include/Parser.h
-    ${CMAKE_SOURCE_DIR}/include/Ast.h
-    ${CMAKE_SOURCE_DIR}/include/GraphOutput.h
-    ${CMAKE_SOURCE_DIR}/include/Precedence.h
-    ${CMAKE_SOURCE_DIR}/include/TerminalOutput.h
-)
-
-set(SYNTAX_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/Lexer.cpp
-    ${CMAKE_SOURCE_DIR}/src/Parser.cpp
-    ${CMAKE_SOURCE_DIR}/src/GraphOutput.cpp
-    ${CMAKE_SOURCE_DIR}/src/TerminalOutput.cpp
-)
-    
-set(SEMANTIC_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/TypeChecker.cpp
-    ${CMAKE_SOURCE_DIR}/src/SymbolTable.cpp
-    ${CMAKE_SOURCE_DIR}/src/Scopes.cpp
-    ${CMAKE_SOURCE_DIR}/src/DeclarationsCollector.cpp
-    ${CMAKE_SOURCE_DIR}/src/AtomicType.cpp
-    ${CMAKE_SOURCE_DIR}/src/Operators.cpp
-)
-
-set(SEMANTIC_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/TypeChecker.h
-    ${CMAKE_SOURCE_DIR}/include/SymbolTable.h
-    ${CMAKE_SOURCE_DIR}/include/Scopes.h
-    ${CMAKE_SOURCE_DIR}/include/Primitive.h
-    ${CMAKE_SOURCE_DIR}/include/AtomicType.h
-    ${CMAKE_SOURCE_DIR}/include/DeclarationsCollector.h
-    ${CMAKE_SOURCE_DIR}/include/Operators.h
-)
-
-set (TOOLS_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/DebugPrint.h
-    ${CMAKE_SOURCE_DIR}/include/Hashmap.h
-    ${CMAKE_SOURCE_DIR}/include/ValueStorage.h
-    ${CMAKE_SOURCE_DIR}/include/PerfectHashmap.h
-)
-
-set(TOOLS_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/DebugPrint.cpp
-)
-
-set(CODE_GEN_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/CodeGen.cpp
-)
-
-set(CODE_GEN_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/CodeGen.h
-)
+file(GLOB_RECURSE FRONTEND_SRC ${CMAKE_SOURCE_DIR}/src/Frontend/*.cpp)
+file(GLOB_RECURSE MIDDLEEND_SRC ${CMAKE_SOURCE_DIR}/src/Middleend/*.cpp)
+file(GLOB_RECURSE TOOLS_SRC ${CMAKE_SOURCE_DIR}/src/Tools/*.cpp)
+file(GLOB_RECURSE BACKEND_SRC ${CMAKE_SOURCE_DIR}/src/Backend/*.cpp)
+set(TARGET_INC_DIRS ${CMAKE_SOURCE_DIR}/include/Frontend ${CMAKE_SOURCE_DIR}/include/Middleend 
+${CMAKE_SOURCE_DIR}/include/Backend ${CMAKE_SOURCE_DIR}/include/Tools ${CMAKE_SOURCE_DIR}/lib/Re-flex/include)
 
 add_subdirectory(tests)
 add_subdirectory(lib/fmt)
 
 add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
-add_executable(Hyc ${SOURCES} ${REFLEX_SRC} ${HEADERS} src/main.cpp)
+add_executable(Hyc ${FRONTEND_SRC} ${MIDDLEEND_SRC} ${BACKEND_SRC}
+${TOOLS_SRC} ${REFLEX_SRC} ${FRONTEND_HEADERS} ${MIDDLEEND_HEADERS} ${BACKEND_HEADERS} ${TOOLS_HEADERS}  src/main.cpp)
 
 set_property(TARGET Hyc PROPERTY CXX_STANDARD 17)
 set_property(TARGET Hyc PROPERTY CXX_STANDARD_REQUIRED ON)
 
-source_group("Syntactical Analysis\\Source Files" FILES ${SYNTAX_SOURCES})
-source_group("Syntactical Analysis\\Header Files" FILES ${SYNTAX_HEADERS})
-source_group("Semantic Analysis\\Source Files" FILES ${SEMANTIC_SOURCES})
-source_group("Semantic Analysis\\Header Files" FILES ${SEMANTIC_HEADERS})
-source_group("Code Generation\\Source Files" FILES ${CODE_GEN_SOURCES})
-source_group("Code Generation\\Header Files" FILES ${CODE_GEN_HEADERS})
-source_group("Main" FILES src/main.cpp include/Pipeline.h src/Pipeline.cpp)
+
+source_group("Frontend\\Source Files" FILES ${FRONTEND_SRC})
+source_group("Frontend\\Header Files" FILES ${FRONTEND_HEADERS})
+source_group("Middleend\\Source Files" FILES ${MIDDLEEND_SRC})
+source_group("Middleend\\Header Files" FILES ${MIDDLEEND_HEADERS})
+source_group("Backend\\Source Files" FILES ${BACKEND_SRC})
+source_group("Backend\\Header Files" FILES ${BACKEND_HEADERS})
+source_group("Main" FILES src/main.cpp)
 source_group("Tools\\Header Files" FILES ${TOOLS_HEADERS})
-source_group("Tools\\Source Files" FILES ${TOOLS_SOURCES})
+source_group("Tools\\Source Files" FILES ${TOOLS_SRC})
 source_group("Embedded" FILES ${REFLEX_SRC})
 
-target_include_directories(Hyc PRIVATE include "lib/Re-flex/include")
+target_include_directories(Hyc PRIVATE ${INC_DIRS})
 target_link_libraries(Hyc fmt)
