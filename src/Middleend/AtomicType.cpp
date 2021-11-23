@@ -3,6 +3,7 @@
 #include "fmt/core.h"
 #include <algorithm>
 #include <Scopes.h>
+#include <cassert>
 
 bool Type::operator==(const Type& other) const
 {

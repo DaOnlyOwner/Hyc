@@ -1,8 +1,5 @@
 #pragma once
 #include <string>
-#include <cwchar>
-#include <cassert>
-
 /*
 	This file provides the datastructure of a token which is fed to the parser.
 */
@@ -79,7 +76,8 @@ struct Token
 		KwFptr,
 		KwUnion,
 		KwMatch,
-		KwCase
+		KwCase,
+		KwOperator
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -241,6 +239,8 @@ struct Token
 			return "match (keyword)";
 		case Specifier::KwCase:
 			return "case (keyword)";
+		case Specifier::KwOperator:
+			return "operator (keyword)";
 		}
 		return "Unknown";
 

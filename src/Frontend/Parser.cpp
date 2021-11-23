@@ -450,14 +450,62 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse_function_body()
 std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 {
 	auto type = parse_type_spec(); // Type
-	auto& name = tkns.match_token(Token::Specifier::Ident); // ident
 
+	Token name;
 	std::vector<GenericInfo> generic_list;
-	if (tkns.lookahead(1).type == Token::Specifier::Less) // <
+	if (tkns.lookahead(1).type == Token::Specifier::KwOperator)
 	{
 		tkns.eat();
-		generic_list = parse_comma_separated_ident_list();
-		tkns.match_token(Token::Specifier::Greater);
+		auto& tkn = tkns.match_one_of < 
+			Token::Specifier::DoublePlus,
+			Token::Specifier::DoubleMinus,
+			Token::Specifier::KwAs,
+			Token::Specifier::Plus,
+			Token::Specifier::Minus,
+			Token::Specifier::ExclMark,
+			Token::Specifier::Tilde,
+			Token::Specifier::Asterix,
+			Token::Specifier::Ampersand,
+			Token::Specifier::Slash,
+			Token::Specifier::Percent,
+			Token::Specifier::ShiftLeft,
+			Token::Specifier::ShiftRight,
+			Token::Specifier::ThreeWay,
+			Token::Specifier::Less,
+			Token::Specifier::Greater,
+			Token::Specifier::LessEql,
+			Token::Specifier::GreaterEql,
+			Token::Specifier::DoubleEqual,
+			Token::Specifier::NotEqual,
+			Token::Specifier::Caret,
+			Token::Specifier::Or,
+			Token::Specifier::DoubleAmpersand,
+			Token::Specifier::DoubleOr,
+			Token::Specifier::Equal,
+			Token::Specifier::PlusEqual,
+			Token::Specifier::MinusEqual,
+			Token::Specifier::AsterixEqual,
+			Token::Specifier::SlashEqual,
+			Token::Specifier::PercentEqual,
+			Token::Specifier::SlEqual,
+			Token::Specifier::SrEqual,
+			Token::Specifier::AmpersandEqual,
+			Token::Specifier::CaretEqual,
+			Token::Specifier::OrEqual > ();
+
+		name = tkn;
+		name.text = fmt::format("${}", tkn.text);
+	}
+	else
+	{
+		name = tkns.match_token(Token::Specifier::Ident); // ident
+
+		if (tkns.lookahead(1).type == Token::Specifier::Less) // <
+		{
+			tkns.eat();
+			generic_list = parse_comma_separated_ident_list();
+			tkns.match_token(Token::Specifier::Greater);
+		}
 	}
 
 	std::vector<std::pair<uptr<TypeSpec>, Token>> param_list;

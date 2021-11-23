@@ -1,5 +1,6 @@
 #include "TerminalOutput.h"
 #include "fmt/printf.h"
+#include <cassert>
 
 
 void TerminalOutput::make_indent()

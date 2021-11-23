@@ -71,7 +71,7 @@ case float as f // f has the same address as foo.f
 void a(int* i);
 void a(float* f);
 foo..a(); 
-Desugared:
+Desugared (but don't actually desugare it in code):
 match(foo)
 {
 case int as i // i has the same address as foo.a.
@@ -100,6 +100,10 @@ void a(int a{0},int b)
 - infer generic type parameters at function call.
 - default is moving when calling a function e.g. a(b); b is moved into the argument
   -> copying: a(=b);
+
+
+Avoided, but want to implement:
+- Structs, union def inside structs, unions
 
 Implementation order:
 - implement parsing of structs,functions,generics,expressions,statements(also switch, match),namespaces,operators,unions,type deduction for function generics

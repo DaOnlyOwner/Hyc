@@ -30,6 +30,7 @@
 #include "fmt/core.h"
 #include <vector>
 #include <algorithm>
+#include <array>
 #define PUSH(name) push(Token::Specifier::name)
 
 
@@ -106,6 +107,30 @@ public:
       }
       return token;
     }
+
+template<Token::Specifier... specs>
+   Token& match_one_of()
+   {
+       Token& token = eat();
+       // One of the arguments is the token type
+       if (((token.type == specs) || ... ))
+       {
+           return token;
+       }
+       else
+       {
+           std::array<Token::Specifier, sizeof... (specs)> specs_ary = { specs... };
+           std::string exp = "";
+           for (auto& spec : specs_ary)
+           {
+               exp += fmt::format("{}, ", Token::Translate(spec));
+           }
+           auto descr = Error::FromToken(token);
+           descr.Message = fmt::format("Expected one of '{}' but got '{}'", exp, Token::Translate(token.type));
+           descr.Hint = fmt::format("The offending token is '{}'", token.text);
+           Error::SyntacticalError(descr);
+       }
+   }
 
 
 

@@ -26,6 +26,7 @@ public:
 	std::unique_ptr<Stmt> parse_struct_def();
 	std::unique_ptr<Stmt> parse_union_def();
 	
+	// e.g. struct {int a;}
 	template<typename TRet, typename Fn>
 	std::unique_ptr<TRet> parse_attr_collection(Token::Specifier spec, Fn fn)
 	{
@@ -64,7 +65,6 @@ public:
 	std::unique_ptr<Stmt> parse_allowed_func_stmt();
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
 	std::unique_ptr<TypeSpec> parse_type_spec();
-	GenericInfo parse_generic_param();
 	std::unique_ptr<TypeSpec> Parser::parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
 private:
