@@ -35,36 +35,37 @@ struct EvalIntegerResult
 
 struct IAstVisitor
 {
-	virtual void visit(struct FloatLiteralExpr& lit) = 0;
-	virtual void visit(struct IntegerLiteralExpr& lit) = 0;
-	virtual void visit(struct BinOpExpr& bin_op) = 0;
-	virtual void visit(struct PrefixOpExpr& pre_op) = 0;
-	virtual void visit(struct PostfixOpExpr& post_op) = 0;
-	virtual void visit(struct DeclCpyStmt& decl_cpy) = 0;
-	virtual void visit(struct DeclMvStmt& decl_mv) = 0;
-	virtual void visit(struct DeclInitStmt& decl_init) = 0;
-	virtual void visit(struct IdentExpr& ident) = 0;
-	virtual void visit(struct NamespaceStmt& namespace_stmt) = 0;
-	virtual void visit(struct FuncCallExpr& func_call_expr) = 0;
-	virtual void visit(struct FuncDeclStmt& func_decl) = 0;
-	virtual void visit(struct FuncDefStmt& func_def_stmt) = 0;
-	virtual void visit(struct StructDefStmt& struct_def_stmt) = 0;
-	virtual void visit(struct ReturnStmt& ret_stmt) = 0;
-	virtual void visit(struct ExprStmt& expr_stmt) = 0;
-	virtual void visit(struct DeclStmt& decl_stmt) = 0;
-	virtual void visit(struct PointerTypeSpec& pt_spec) = 0;
-	virtual void visit(struct BaseTypeSpec& bt_spec) = 0;
-	virtual void visit(struct ArrayTypeSpec& at_spec) = 0;
-	virtual void visit(struct ImplicitCastExpr& ice) = 0;
-	virtual void visit(struct IfStmt& if_stmt) = 0;
-	virtual void visit(struct WhileStmt& while_stmt) = 0;
-	virtual void visit(struct ForStmt& for_stmt) = 0;
-	virtual void visit(struct ContinueStmt& cont_stmt) = 0;
-	virtual void visit(struct FptrTypeSpec& fptr) = 0;
-	virtual void visit(struct ArraySubscriptExpr& subs) = 0;
-	virtual void visit(struct TernaryExpr& tern) = 0;
-	virtual void visit(struct UnionDefStmt& union_def) = 0;
-	virtual void visit(struct MatchStmt& match) = 0;
+	virtual void visit(struct FloatLiteralExpr& lit) {};
+	virtual void visit(struct IntegerLiteralExpr& lit) {};
+	virtual void visit(struct BinOpExpr& bin_op) {};
+	virtual void visit(struct PrefixOpExpr& pre_op) {};
+	virtual void visit(struct PostfixOpExpr& post_op) {};
+	virtual void visit(struct DeclCpyStmt& decl_cpy) {};
+	virtual void visit(struct DeclMvStmt& decl_mv) { };
+	virtual void visit(struct DeclInitStmt& decl_init) {};
+	virtual void visit(struct IdentExpr& ident) {};
+	virtual void visit(struct NamespaceStmt& namespace_stmt) {};
+	virtual void visit(struct FuncCallExpr& func_call_expr) {};
+	virtual void visit(struct FuncDeclStmt& func_decl) {};
+	virtual void visit(struct FuncDefStmt& func_def_stmt) {};
+	virtual void visit(struct StructDefStmt& struct_def_stmt) {};
+	virtual void visit(struct ReturnStmt& ret_stmt) {};
+	virtual void visit(struct ExprStmt& expr_stmt) {};
+	virtual void visit(struct DeclStmt& decl_stmt) {};
+	virtual void visit(struct PointerTypeSpec& pt_spec) {};
+	virtual void visit(struct BaseTypeSpec& bt_spec) {};
+	virtual void visit(struct ArrayTypeSpec& at_spec) {};
+	virtual void visit(struct ImplicitCastExpr& ice) {};
+	virtual void visit(struct IfStmt& if_stmt) {};
+	virtual void visit(struct WhileStmt& while_stmt) {};
+	virtual void visit(struct ForStmt& for_stmt) {};
+	virtual void visit(struct ContinueStmt& cont_stmt) {};
+	virtual void visit(struct FptrTypeSpec& fptr) {};
+	virtual void visit(struct ArraySubscriptExpr& subs) {};
+	virtual void visit(struct TernaryExpr& tern) {};
+	virtual void visit(struct UnionDefStmt& union_def) {};
+	virtual void visit(struct MatchStmt& match) {};
+	virtual void visit(struct ScopeTypeSpec& scope_spec) {};
 };
 
 struct Node
@@ -217,7 +218,7 @@ struct PointerTypeSpec : TypeSpec
 
 struct BaseTypeSpec : TypeSpec
 {
-	BaseTypeSpec(const Token& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
+	BaseTypeSpec(Token&& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
 		:name(name), inner(mv(inner)),generic_list(mv(generic_list)) {}
 	Token name;
 	uptr<TypeSpec> inner;
@@ -239,6 +240,21 @@ struct BaseTypeSpec : TypeSpec
 		gl += ">";
 		return fmt::format("{}{}{}",name.text,generic_list.empty() ? "" : gl, inner ? inner->as_str() : std::string()); 
 	}
+	IMPL_VISITOR
+};
+
+struct ScopeTypeSpec : TypeSpec
+{
+	ScopeTypeSpec(uptr<TypeSpec>&& inner, uptr<BaseTypeSpec>&& base)
+		:inner(mv(inner)), base(mv(base)) {}
+	uptr<TypeSpec> inner;
+	uptr<BaseTypeSpec> base;
+
+	virtual std::string as_str() const override {
+
+		return fmt::format("{}::{}", base->as_str(), inner ? inner->as_str() : "");
+	}
+
 	IMPL_VISITOR
 };
 

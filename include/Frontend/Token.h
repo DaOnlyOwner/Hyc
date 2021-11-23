@@ -77,7 +77,8 @@ struct Token
 		KwUnion,
 		KwMatch,
 		KwCase,
-		KwOperator
+		KwOperator,
+		KwAuto
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -241,6 +242,8 @@ struct Token
 			return "case (keyword)";
 		case Specifier::KwOperator:
 			return "operator (keyword)";
+		case Specifier::KwAuto:
+			return "auto (keyword)";
 		}
 		return "Unknown";
 

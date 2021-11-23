@@ -11,6 +11,11 @@ void TerminalOutput::make_indent()
 	}
 }
 
+void TerminalOutput::visit(ScopeTypeSpec& scope_spec)
+{
+	assert(false);
+}
+
 void TerminalOutput::visit(MatchStmt& match)
 {
 	make_indent();

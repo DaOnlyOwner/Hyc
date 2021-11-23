@@ -1,0 +1,125 @@
+NamespaceStmt: name='GLOBAL'
+  FuncDefStmt
+    FuncDeclStmt: name='main', generic_params=, return_type='int', arg_list=''
+    DeclCpyStmt: name='math_expr', type='int'
+      BinOpExpr: '-'
+        BinOpExpr: '+'
+          BinOpExpr: '+'
+            IntegerLiteralExpr: '1'
+            BinOpExpr: '*'
+              BinOpExpr: '/'
+                BinOpExpr: '*'
+                  IntegerLiteralExpr: '2'
+                  IntegerLiteralExpr: '3'
+                IntegerLiteralExpr: '4'
+              IntegerLiteralExpr: '5'
+          IntegerLiteralExpr: '6'
+        BinOpExpr: '%'
+          IntegerLiteralExpr: '7'
+          IntegerLiteralExpr: '8'
+    DeclCpyStmt: name='prefix', type='int'
+      BinOpExpr: '+'
+        PrefixOpExpr: '-'
+          PrefixOpExpr: '!'
+            PrefixOpExpr: '-'
+              PrefixOpExpr: '!'
+                PrefixOpExpr: '-'
+                  IntegerLiteralExpr: '1'
+        IntegerLiteralExpr: '2'
+    DeclCpyStmt: name='func_call', type='int'
+      FuncCallExpr: generic_params=int, int, 
+        IdentExpr: name='a'
+      Args:
+        FuncCallExpr: generic_params=
+          IdentExpr: name='b'
+        Args:
+        BinOpExpr: '+'
+          BinOpExpr: '+'
+            IntegerLiteralExpr: '1'
+            IntegerLiteralExpr: '2'
+          BinOpExpr: '/'
+            BinOpExpr: '*'
+              IntegerLiteralExpr: '3'
+              IntegerLiteralExpr: '4'
+            IntegerLiteralExpr: '5'
+    DeclCpyStmt: name='operators', type='int'
+      BinOpExpr: '+='
+        IdentExpr: name='a'
+        BinOpExpr: '^='
+          BinOpExpr: '+'
+            IdentExpr: name='b'
+            IdentExpr: name='c'
+          BinOpExpr: '&='
+            BinOpExpr: '*'
+              IdentExpr: name='d'
+              IdentExpr: name='e'
+            IdentExpr: name='f'
+    DeclCpyStmt: name='scope', type='int'
+      BinOpExpr: '*'
+        BinOpExpr: '::'
+          BinOpExpr: '::'
+            BinOpExpr: '::'
+              IdentExpr: name='A'
+              IdentExpr: name='B'
+            IdentExpr: name='C'
+          IdentExpr: name='a'
+        PrefixOpExpr: '-'
+          IdentExpr: name='b'
+    DeclCpyStmt: name='member', type='int'
+      BinOpExpr: '->'
+        BinOpExpr: '.'
+          FuncCallExpr: generic_params=
+            BinOpExpr: '->'
+              IdentExpr: name='a'
+              IdentExpr: name='b'
+          Args:
+          IdentExpr: name='c'
+        IdentExpr: name='f'
+    DeclCpyStmt: name='member2', type='int'
+      FuncCallExpr: generic_params=
+        BinOpExpr: '.'
+          BinOpExpr: '.'
+            BinOpExpr: '.'
+              IdentExpr: name='a'
+              IdentExpr: name='b'
+            IdentExpr: name='c'
+          IdentExpr: name='d'
+      Args:
+    DeclCpyStmt: name='member_desugared', type='int'
+      BinOpExpr: '->'
+        BinOpExpr: '.'
+          FuncCallExpr: generic_params=
+            IdentExpr: name='b'
+          Args:
+            PrefixOpExpr: '&'
+              IdentExpr: name='a'
+          IdentExpr: name='c'
+        IdentExpr: name='f'
+    DeclCpyStmt: name='func_call2', type='int'
+      FuncCallExpr: generic_params=
+        FuncCallExpr: generic_params=
+          FuncCallExpr: generic_params=
+            ArraySubscriptExpr
+              IntegerLiteralExpr: '3'
+              ArraySubscriptExpr
+                IntegerLiteralExpr: '2'
+                FuncCallExpr: generic_params=int, 
+                  IdentExpr: name='a'
+                Args:
+          Args:
+        Args:
+      Args:
+    DeclCpyStmt: name='func_call3', type='int'
+      FuncCallExpr: generic_params=
+        FuncCallExpr: generic_params=
+          FuncCallExpr: generic_params=
+            ArraySubscriptExpr
+              IntegerLiteralExpr: '3'
+              ArraySubscriptExpr
+                IntegerLiteralExpr: '2'
+                FuncCallExpr: generic_params=
+                  IdentExpr: name='a'
+                Args:
+          Args:
+        Args:
+      Args:

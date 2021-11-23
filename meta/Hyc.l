@@ -76,7 +76,7 @@ template<Token::Specifier... specs>
            std::string exp = "";
            for (auto& spec : specs_ary)
            {
-               exp += fmt::format("{}, ", Token::Translate(spec.type));
+               exp += fmt::format("{}, ", Token::Translate(spec));
            }
            auto descr = Error::FromToken(token);
            descr.Message = fmt::format("Expected one of '{}' but got '{}'", exp, Token::Translate(token.type));
@@ -103,6 +103,7 @@ kw_throw	"throw"
 kw_match	"match"
 kw_case		"case"
 kw_operator	"operator"
+kw_auto		"auto"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -179,6 +180,7 @@ or_eql		"|="
 {kw_match}	{PUSH(KwMatch);}
 {kw_case}	{PUSH(KwCase);}
 {kw_operator}	{PUSH(KwOperator);}
+{kw_auto}	{PUSH(KwAuto);}
 {double_colon}	{ PUSH(DoubleColon);}
 {double_plus}	{ PUSH(DoublePlus);}
 {double_minus}	{ PUSH(DoubleMinus);}

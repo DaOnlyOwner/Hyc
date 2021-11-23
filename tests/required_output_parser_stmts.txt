@@ -1,0 +1,139 @@
+NamespaceStmt: name='GLOBAL'
+  StructDefStmt: name='A', generic_params=''
+    DeclStmt: name='a', type='int'
+    DeclStmt: name='b', type='A*'
+  DeclStmt: name='outer_decl', type='int'
+  StructDefStmt: name='B', generic_params='T, T2=int, T3=B<int>*, T4=T3, '
+    DeclStmt: name='a', type='T'
+    DeclStmt: name='b', type='B<int>*[23]**[5]'
+    DeclStmt: name='c', type='B::A::C<int,B<int>*[3]>::int*[3]'
+  UnionDefStmt: name='A', generic_params=''
+    DeclStmt: name='a', type='int'
+    DeclStmt: name='b', type='float'
+  UnionDefStmt: name='A', generic_params='T, '
+  UnionDefStmt: name='A', generic_params='T=int, '
+    DeclStmt: name='b', type='int'
+  UnionDefStmt: name='A', generic_params='T, T2=int*[23], '
+  FuncDefStmt
+    FuncDeclStmt: name='test1', generic_params=T,T2=int*[10],, return_type='int', arg_list='int a, int b, '
+  FuncDefStmt
+    FuncDeclStmt: name='type_test', generic_params=, return_type='int', arg_list=''
+    DeclStmt: name='a', type='A<B<C<D<E,F,G<H,I,J<K>**[324]>[2234]**>[23]*>>>'
+    DeclStmt: name='b', type='fptr(fptr(A<int,float>;int);B<int>*)'
+    DeclStmt: name='c', type='fptr(;int)'
+    DeclStmt: name='c', type='fptr(int;int)'
+  FuncDefStmt
+    FuncDeclStmt: name='for_loop', generic_params=, return_type='int', arg_list=''
+    ForStmt
+      DeclCpyStmt: name='i', type='int'
+        IdentExpr: name='b'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclMvStmt: name='i', type='int'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclInitStmt: name='i', type='int'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclCpyStmt: name='i', type='not specified'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclMvStmt: name='i', type='not specified'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclInitStmt: name='i', type='not specified'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+    ForStmt
+      DeclInitStmt: name='i', type='not specified'
+        IntegerLiteralExpr: '0'
+      IdentExpr: name='i'
+      IdentExpr: name='i'
+      ContinueStmt
+  FuncDefStmt
+    FuncDeclStmt: name='while_loop', generic_params=, return_type='int', arg_list=''
+    WhileStmt
+      IdentExpr: name='i'
+    WhileStmt
+      IdentExpr: name='i'
+      ContinueStmt
+  FuncDefStmt
+    FuncDeclStmt: name='if_stmt', generic_params=, return_type='int', arg_list=''
+    IfStmt
+          IdentExpr: name='a'
+    ElseStmt
+    IfStmt
+          IdentExpr: name='a'
+    ElifStmt
+      IdentExpr: name='b'
+    ElseStmt
+    IfStmt
+          IdentExpr: name='a'
+    ElifStmt
+      IdentExpr: name='b'
+    ElseStmt
+    IfStmt
+          IdentExpr: name='a'
+    ElifStmt
+      IdentExpr: name='b'
+    ElifStmt
+      IdentExpr: name='c'
+    ElseStmt
+  FuncDefStmt
+    FuncDeclStmt: name='stmts', generic_params=, return_type='uint', arg_list='uint a, uint b, '
+    DeclCpyStmt: name='result', type='not specified'
+      BinOpExpr: '+'
+        IdentExpr: name='a'
+        IdentExpr: name='b'
+    DeclStmt: name='a', type='int'
+    DeclCpyStmt: name='b', type='not specified'
+      IdentExpr: name='a'
+    DeclCpyStmt: name='c', type='int'
+      IdentExpr: name='a'
+    DeclMvStmt: name='d', type='not specified'
+      IdentExpr: name='a'
+    DeclMvStmt: name='f', type='A<int>*[34]'
+      IdentExpr: name='a'
+    DeclInitStmt: name='e', type='not specified'
+      FuncCallExpr: generic_params=
+        IdentExpr: name='init'
+      Args:
+    DeclInitStmt: name='f', type='B<int,int*>'
+      FuncCallExpr: generic_params=
+        IdentExpr: name='init'
+      Args:
+    ReturnStmt
+      IdentExpr: name='result'
+  FuncDefStmt
+    FuncDeclStmt: name='match_case', generic_params=, return_type='void', arg_list=''
+    MatchStmt
+      IdentExpr: name='t'
+      MatchCase: type='int', name='e'
+      MatchCase: type='A<int>*[4]', name='e'
+    MatchStmt
+      IdentExpr: name='t'
+    MatchStmt
+      IdentExpr: name='t'
+      MatchCase: type='int', name='e'
+    WhileStmt
+      IdentExpr: name='true'
+      MatchStmt
+        IdentExpr: name='t'
+        MatchCase: type='int', name='e'
+          ContinueStmt
+  NamespaceStmt: name='A'
+    NamespaceStmt: name='B'
+      NamespaceStmt: name='C'
+        StructDefStmt: name='S', generic_params=''
+      StructDefStmt: name='S2', generic_params=''
+    StructDefStmt: name='S3', generic_params=''

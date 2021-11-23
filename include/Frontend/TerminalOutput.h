@@ -38,10 +38,13 @@ private:
 	virtual void visit(FuncDeclStmt& func_decl) override;
 	virtual void visit(UnionDefStmt& union_def) override;
 	virtual void visit(MatchStmt& match) override;
+	virtual void visit(ScopeTypeSpec& scope_spec) override;
 
 	int indent = 0;
 	void make_indent();
 	std::string out = "";
+
+
 
 
 

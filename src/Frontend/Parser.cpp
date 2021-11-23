@@ -303,7 +303,7 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 // type_spec := (ident(< ident* >)? | fptr(type_spec*;type_spec) | "*" | "[integer_literal]") type_spec
 std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 {
-	if (tkns.lookahead(1).type == Token::Specifier::Ident)
+	if (tkns.lookahead(1).type == Token::Specifier::Ident || tkns.lookahead(1).type == Token::Specifier::KwAuto)
 	{
 		std::vector<uptr<TypeSpec>> generics;
 		auto& name = tkns.eat();
@@ -321,8 +321,19 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 			tkns.match_token(Token::Specifier::Greater);
 
 		} // Generics
+		uptr<TypeSpec> scope = nullptr;
+		if (tkns.lookahead(1).type == Token::Specifier::DoubleColon)
+		{
+			tkns.eat();
+			scope = parse_type_spec();
+		}
+		if (scope != nullptr)
+		{
+			return std::make_unique<ScopeTypeSpec>(mv(scope),
+				std::make_unique<BaseTypeSpec>(mv(name), nullptr, std::move(generics)));
+		}
 		auto inner = parse_type_spec_part();
-		return std::make_unique<BaseTypeSpec>(name, mv(inner), std::move(generics));
+		return std::make_unique<BaseTypeSpec>(mv(name), mv(inner), std::move(generics));
 	}
 	else if (tkns.lookahead(1).type == Token::Specifier::KwFptr)
 	{
