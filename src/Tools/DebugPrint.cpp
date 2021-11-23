@@ -43,4 +43,4 @@ Error::ErrorDescription Error::FromToken(const Token& t)
 	return out;
 }
 
-extern bool Error::Error = false;
+bool Error::Error = false;

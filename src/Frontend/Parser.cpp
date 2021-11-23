@@ -127,9 +127,9 @@ namespace
 	DEF_BIN_OP(threeway, Group8, false);
 	DEF_BIN_OP(rel, Group9, false);
 	DEF_BIN_OP(comp, Group10, false);
-	DEF_BIN_OP(and, Group11, false);
-	DEF_BIN_OP(xor, Group12, false);
-	DEF_BIN_OP(or , Group13, false);
+	DEF_BIN_OP(and_, Group11, false);
+	DEF_BIN_OP(xor_, Group12, false);
+	DEF_BIN_OP(or_ , Group13, false);
 	DEF_BIN_OP(land, Group14, false);
 	DEF_BIN_OP(lor, Group15, false);
 
@@ -177,9 +177,9 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::GreaterEql, rel);
 	ADD_OP(Token::Specifier::DoubleEqual, comp);
 	ADD_OP(Token::Specifier::NotEqual, comp);
-	ADD_OP(Token::Specifier::Ampersand, and);
-	ADD_OP(Token::Specifier::Caret, xor);
-	ADD_OP(Token::Specifier::Or, or);
+	ADD_OP(Token::Specifier::Ampersand, and_);
+	ADD_OP(Token::Specifier::Caret, xor_);
+	ADD_OP(Token::Specifier::Or, or_);
 	ADD_OP(Token::Specifier::DoubleAmpersand, land);
 	ADD_OP(Token::Specifier::DoubleOr, lor);
 	ADD_OP(Token::Specifier::QuestionMark, if_expr);

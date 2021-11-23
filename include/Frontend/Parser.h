@@ -65,7 +65,7 @@ public:
 	std::unique_ptr<Stmt> parse_allowed_func_stmt();
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
 	std::unique_ptr<TypeSpec> parse_type_spec();
-	std::unique_ptr<TypeSpec> Parser::parse_type_spec_part();
+	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
 private:
 	Lexer& tkns; 
