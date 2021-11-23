@@ -50,5 +50,5 @@ source_group("Tools\\Header Files" FILES ${TOOLS_HEADERS})
 source_group("Tools\\Source Files" FILES ${TOOLS_SRC})
 source_group("Embedded" FILES ${REFLEX_SRC})
 
-target_include_directories(Hyc PRIVATE ${INC_DIRS})
+target_include_directories(Hyc PRIVATE ${TARGET_INC_DIRS})
 target_link_libraries(Hyc fmt)
