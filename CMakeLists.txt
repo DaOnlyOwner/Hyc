@@ -4,15 +4,15 @@ project(Hyc VERSION 0.01 LANGUAGES CXX)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Hyc)
 
-include(CheckIPOSupported)
-check_ipo_supported(RESULT sup OUTPUT err)
+#include(CheckIPOSupported)
+#check_ipo_supported(RESULT sup OUTPUT err)
 
-if(sup)
-   message(STATUS "LTO supported")
-   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-   message(STATUS "Warning: LTO not supported: ${error}")
-endif() 
+#if(sup)
+#   message(STATUS "LTO supported")
+#   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+#else()
+#   message(STATUS "Warning: LTO not supported: ${error}")
+#endif() 
 
 file(GLOB_RECURSE REFLEX_SRC ${CMAKE_SOURCE_DIR}/lib/Re-flex/lib/*.cpp ${CMAKE_SOURCE_DIR}/lib/Re-flex/unicode/*.cpp) #Static sources
 
