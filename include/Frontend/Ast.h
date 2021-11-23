@@ -149,7 +149,7 @@ struct IdentExpr : Expr
 
 struct FuncCallExpr : Expr
 {
-	FuncCallExpr(uptr<Expr>& from, std::vector<uptr<Expr>>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
+	FuncCallExpr(uptr<Expr>&& from, std::vector<uptr<Expr>>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
 		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
 	uptr<Expr> from;
 	std::vector<uptr<Expr>> arg_list;

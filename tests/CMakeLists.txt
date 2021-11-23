@@ -20,8 +20,10 @@ source_group("Tools\\Source Files" FILES ${TOOLS_SRC})
 source_group("Embedded" FILES ${REFLEX_SRC})
 
 
+
 set_property(TARGET Hyc_Tests PROPERTY CXX_STANDARD 17)
 set_property(TARGET Hyc_Tests PROPERTY CXX_STANDARD_REQUIRED ON)
 
 source_group("Embedded" FILES ${REFLEX_SRC})
 target_include_directories(Hyc_Tests PRIVATE ${TARGET_INC_DIRS})
+target_link_libraries(Hyc_Tests fmt)
