@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include "PerfectHashmap.h"
 #include "AtomicType.h"
 #include "Primitive.h"
 #include <algorithm>
@@ -9,24 +8,17 @@
 #include <memory>
 #include "DebugPrint.h"
 #include <iterator>
+#include "Ast.h"
+#include <unordered_map>
 
 namespace
 {
-	template<typename T,typename TValue>
-	TValue* insert_into(T& insert_into, TValue* value, const std::string& key)
-	{
-		auto [inserted, succ] = insert_into.insert({ key,std::unique_ptr<TValue>(value) });
-		if (succ)
-		{
-			return inserted->second.get();
-		}
-		return nullptr;
-	}
+
 }
 
 
 // TODO: Performance: Use move constructor for strings too.
-struct Function 
+/*struct Function
 {
 	Function(const std::string& name, std::vector<Type>&& arguments, const Type& return_type)
 		: name(name), arguments(std::move(arguments)), return_type{ return_type }{}
@@ -52,7 +44,26 @@ struct Variable
 	bool operator!=(const Variable& other) { return !(*this == other); }
 };
 
-extern Variable error_variable;
+struct AttributeCollection // Structs, unions
+{
+	AttributeCollection(const std::string& name)
+		:name(name) {}
+	std::string name;
+	Stmt* def_stmt = nullptr;
+};
+
+struct Namespace
+{
+	Namespace(const std::string& name)
+		:name(name) {}
+	std::string name;
+	Namespace* inner = nullptr;
+	Stmt* def_stmt = nullptr;
+	void set_inner_ns(Namespace* inner) { this->inner = inner; }
+};
+
+
+extern Variable error_variable;*/
 
 class SymbolTable
 {
@@ -67,32 +78,45 @@ public:
 
 
 
-	Variable* add(Variable* var) { 
-		return insert_into(m_variables, var, var->name);
+	/*Variable* add(Variable* var) {
+		return insert_into(variables, var, var->name);
 	}
 	Function* add(Function* fn);
 	Type* add(Type* mt) { 
-		return insert_into(m_meta_types, mt, mt->as_str()); // This is just the base case e.g. struct A -> "A" gets inserted, never a pointer type etc.
+		return insert_into(types, mt, mt->as_str()); // This is just the base case e.g. struct A -> "A" gets inserted, never a pointer type etc.
 	}
-
 	Variable* get_var(const std::string& name)
 	{
-		auto it = m_variables.find(name);
-		if (it == m_variables.end()) return nullptr;
+		auto it = variables.find(name);
+		if (it == variables.end()) return nullptr;
 		return it->second.get();
-	}
-	Type* get_type(const std::string& name)
+	}*/
+
+
+	bool add(NamespaceStmt* ns)
 	{
-		auto it = m_meta_types.find(name);
-		if (it == m_meta_types.end()) return nullptr;
+		return namespaces.insert({ ns->name.text,ns }).second;
+	}
+
+	bool add(CollectionStmt* cs)
+	{
+		return collections.insert({ cs->name.text,cs }).second;
+	}
+
+	bool add(FuncDefStmt* fn);
+
+	/*Type* get_type(const std::string& name)
+	{
+		auto it = types.find(name);
+		if (it == types.end()) return nullptr;
 		return it->second.get();
 	}
 
 	template<typename Pred>
 	Function* get_func(const std::string& name, Pred pred)
 	{
-		auto it = m_functions.find(name);
-		if (it == m_functions.end()) return nullptr;
+		auto it = functions.find(name);
+		if (it == functions.end()) return nullptr;
 		auto& vars = it->second;
 		auto& it2 = std::find_if(vars.begin(), vars.end(), [&](auto& func) {return pred(*func); });
 		if (it2 != vars.end()) return it2->get();
@@ -101,17 +125,18 @@ public:
 
 	std::vector<Function> get_funcs(const std::string& name)
 	{
-		auto it = m_functions.find(name);
-		if (it == m_functions.end()) return {};
+		auto it = functions.find(name);
+		if (it == functions.end()) return {};
 		std::vector<Function> out;
 		std::transform(it->second.begin(), it->second.end(), std::back_inserter(out), [](auto& func) {return *func; });
 		return out;
-	}
+	}*/
 
 private:
-	std::unordered_map<std::string, std::unique_ptr<Variable>> m_variables;
-	std::unordered_map<std::string, std::unique_ptr<Type>> m_meta_types;
-
-	// Functions need a hashmap to lookup the name.
-	std::unordered_map<std::string, std::vector<std::unique_ptr<Function>>> m_functions;
+	//std::unordered_map<std::string, std::unique_ptr<Variable>> variables;
+	//std::unordered_map<std::string, std::unique_ptr<Type>> types;
+	std::unordered_map<std::string, NamespaceStmt*> namespaces;
+	std::unordered_map<std::string, CollectionStmt*> collections;
+	// name maps to overloads
+	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
 };

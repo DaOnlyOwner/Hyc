@@ -12,7 +12,7 @@ for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father
 }\
 return nullptr;
 
-Variable* Scopes::get_var(const std::string & name)
+/*Variable* Scopes::get_var(const std::string & name)
 {
 	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
 	{
@@ -102,7 +102,7 @@ std::vector<Function> Scopes::get_all_funcs(const std::string& name)
 		out.insert(out.begin(), elem.begin(), elem.end());
 	}
 	return out;
-}
+}*/
 
 void Scopes::ascend()
 {
@@ -120,16 +120,16 @@ int Scopes::expand()
 	return m_current_index;
 }
 
-bool Scopes::is_type_defined(const Type& t)
+/*bool Scopes::is_type_defined(const Type& t)
 {
 	std::string base = t.get_base_type();
 	return get_type(base) != nullptr;
-}
+}*/
 
 // Descends one child after the other and - completely iterated -, wraps around and starts at the root again.
 // This is really fast - just an increment operation because of the way the entries are located in the vector.
 
-void Scopes::descend_next()
+void Scopes::descend()
 {
 	if (m_current_index == m_collection.size() - 1)
 	{

@@ -100,10 +100,11 @@ void a(int a{0},int b)
 - infer generic type parameters at function call.
 - default is moving when calling a function e.g. a(b); b is moved into the argument
   -> copying: a(=b);
-
+- disallow parameters like int[4] in parser
+- operator as -> need special parsing and handling in the semantic checking.
 
 Avoided, but want to implement:
-- Structs, union def inside structs, unions
+- Structs, union def inside structs, unions, namespaces
 
 Implementation order:
 - implement parsing of structs,functions,generics,expressions,statements(also switch, match),namespaces,operators,unions,type deduction for function generics

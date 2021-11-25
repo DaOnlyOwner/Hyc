@@ -123,3 +123,24 @@ NamespaceStmt: name='GLOBAL'
           Args:
         Args:
       Args:
+    DeclMvStmt: name='func_call4', type='int'
+      FuncCallExpr: generic_params=
+        FuncCallExpr: generic_params=
+          IdentExpr: name='a'
+        Args:
+          IntegerLiteralExpr: '1'
+          IntegerLiteralExpr: '2'
+          IntegerLiteralExpr: '3'
+      Args:
+        IntegerLiteralExpr: '3'
+        IntegerLiteralExpr: '4'
+        IntegerLiteralExpr: '5'
+    DeclCpyStmt: name='func_call5', type='int'
+      FuncCallExpr: generic_params=
+        IdentExpr: name='a'
+      Args:
+        #
+        IntegerLiteralExpr: '1'
+        #
+        IntegerLiteralExpr: '2'
+        IntegerLiteralExpr: '3'

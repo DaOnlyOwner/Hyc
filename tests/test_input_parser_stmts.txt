@@ -58,6 +58,15 @@ int for_loop()
    for(i:0;i;i){continue;}
 }
 
+
+int operator[] (int test)
+{
+}
+
+int operator + (int a, int b)
+{
+}
+
 int while_loop()
 {
    while(i){}

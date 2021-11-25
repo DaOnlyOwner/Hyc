@@ -10,17 +10,19 @@
 #include "fmt/core.h"
 #include <stdexcept>
 #include "AtomicType.h"
+#include "ValuePtr.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 
+
 template <typename TRet, typename TArg>
-inline std::unique_ptr<TRet> ast_as(std::unique_ptr<TArg> arg)
+inline ValuePtr<TRet> ast_as(ValuePtr<TArg> arg)
 {
-	return static_cast<std::unique_ptr<TRet>>(std::move(arg));
+	return static_cast<ValuePtr<TRet>>(std::move(arg));
 }
 
 template<typename T>
-using uptr = std::unique_ptr<T>;
+using uptr = ValuePtr<T>;
 
 // Couldn't get std::move alias to work, so now here is a macro
 #define mv(arg) std::move(arg)
@@ -55,23 +57,24 @@ struct IAstVisitor
 	virtual void visit(struct PointerTypeSpec& pt_spec) {};
 	virtual void visit(struct BaseTypeSpec& bt_spec) {};
 	virtual void visit(struct ArrayTypeSpec& at_spec) {};
+	virtual void visit(struct FptrTypeSpec& fptr) {};
+	virtual void visit(struct ScopeTypeSpec& scope_spec) {};
 	virtual void visit(struct ImplicitCastExpr& ice) {};
 	virtual void visit(struct IfStmt& if_stmt) {};
 	virtual void visit(struct WhileStmt& while_stmt) {};
 	virtual void visit(struct ForStmt& for_stmt) {};
 	virtual void visit(struct ContinueStmt& cont_stmt) {};
-	virtual void visit(struct FptrTypeSpec& fptr) {};
 	virtual void visit(struct ArraySubscriptExpr& subs) {};
 	virtual void visit(struct TernaryExpr& tern) {};
 	virtual void visit(struct UnionDefStmt& union_def) {};
 	virtual void visit(struct MatchStmt& match) {};
-	virtual void visit(struct ScopeTypeSpec& scope_spec) {};
 };
 
 struct Node
 {
 	virtual void accept(IAstVisitor& visitor) = 0;
 	virtual ~Node() = default;
+
 };
 
 
@@ -95,6 +98,7 @@ struct BinOpExpr : Expr
 	struct Function* sem_bin_op = nullptr;
 
 	IMPL_VISITOR
+
 };
 
 struct PrefixOpExpr : Expr
@@ -148,12 +152,18 @@ struct IdentExpr : Expr
 	IMPL_VISITOR
 };
 
+struct FuncCallArg
+{
+	uptr<Expr> expr;
+	bool moved;
+};
+
 struct FuncCallExpr : Expr
 {
-	FuncCallExpr(uptr<Expr>&& from, std::vector<uptr<Expr>>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
+	FuncCallExpr(uptr<Expr>&& from, std::vector<FuncCallArg>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
 		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
 	uptr<Expr> from;
-	std::vector<uptr<Expr>> arg_list;
+	std::vector<FuncCallArg> arg_list; // bool: wether the given arg is moved into the parameter.
 	std::vector<uptr<TypeSpec>> generic_params;
 	// Semantic annotations:
 	struct Function* sem_function = nullptr;
@@ -204,6 +214,7 @@ struct TypeSpec : Node
 {
 	virtual const Token& get_ident_token() const { throw std::runtime_error("Compiler bug, cannot get token"); };
 	virtual std::string as_str() const = 0;
+	Type semantic_type;
 };
 
 struct PointerTypeSpec : TypeSpec
@@ -253,6 +264,11 @@ struct ScopeTypeSpec : TypeSpec
 	virtual std::string as_str() const override {
 
 		return fmt::format("{}::{}", base->as_str(), inner ? inner->as_str() : "");
+	}
+
+	virtual const Token& get_ident_token() const override
+	{
+		return inner->get_ident_token(); 
 	}
 
 	IMPL_VISITOR
@@ -347,23 +363,26 @@ struct DeclStmt : TypedStmt
 	IMPL_VISITOR
 };
 
-struct StructDefStmt : Stmt
+struct CollectionStmt : Stmt
 {
-	StructDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
-		:name(mv(name)),generic_params(mv(generic_params)), stmts(mv(stmts)){}
-	Token name;
-	std::vector<uptr<Stmt>> stmts;
-	std::vector<GenericInfo> generic_params;
-	IMPL_VISITOR
-};
-
-struct UnionDefStmt : Stmt
-{
-	UnionDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
+	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
 		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)) {}
 	Token name;
 	std::vector<uptr<Stmt>> stmts;
 	std::vector<GenericInfo> generic_params;
+};
+
+struct StructDefStmt : CollectionStmt
+{
+	StructDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
+		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
+	IMPL_VISITOR
+};
+
+struct UnionDefStmt : CollectionStmt
+{
+	UnionDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
+		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
 	IMPL_VISITOR
 };
 
@@ -417,11 +436,11 @@ struct IfStmt : Stmt
 
 struct FuncDeclStmt : Stmt
 {
-	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list_type_ident)
-		: ret_type(mv(ret_type)), name(mv(name)), arg_list_type_ident(mv(arg_list_type_ident)), generic_list(mv(generic_list)) {}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list)
+		: ret_type(mv(ret_type)), name(mv(name)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
 	uptr<TypeSpec> ret_type;
 	Token name;
-	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_type_ident;
+	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list;
 	std::vector<GenericInfo> generic_list;
 	std::vector<uptr<FuncDeclStmt>> needed_funcs;
 	IMPL_VISITOR

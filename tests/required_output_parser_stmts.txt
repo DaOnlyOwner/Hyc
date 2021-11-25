@@ -61,6 +61,10 @@ NamespaceStmt: name='GLOBAL'
       IdentExpr: name='i'
       ContinueStmt
   FuncDefStmt
+    FuncDeclStmt: name='$[]', generic_params=, return_type='int', arg_list='int test, '
+  FuncDefStmt
+    FuncDeclStmt: name='$+', generic_params=, return_type='int', arg_list='int a, int b, '
+  FuncDefStmt
     FuncDeclStmt: name='while_loop', generic_params=, return_type='int', arg_list=''
     WhileStmt
       IdentExpr: name='i'

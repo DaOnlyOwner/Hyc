@@ -113,6 +113,7 @@ integer 	({uhex}|{uoct}|{ubin}|{udec})
 float		\d*\.\d+([Ee][-+]\d+)?f
 double		\d*\.\d+([Ee][-+]\d+)?
 plus    	"+"
+hashtag		"#"
 minus   	"-"
 asterix 	"*"
 slash   	"/"
@@ -197,6 +198,7 @@ or_eql		"|="
 {not_equal}	{ PUSH(NotEqual);}
 {caret}		{ PUSH(Caret);}
 {or}   		{ PUSH(Or);}
+{hashtag}	{ PUSH(Hashtag);}
 {double_amp}	{ PUSH(DoubleAmpersand);}
 {double_or}	{ PUSH(DoubleOr);}
 {questionmark}	{ PUSH(QuestionMark);}

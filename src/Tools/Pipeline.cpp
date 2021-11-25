@@ -2,7 +2,7 @@
 #include "Parser.h"
 #include "GraphOutput.h"
 #include "TypeChecker.h"
-#include "DeclarationsCollector.h"
+//#include "DeclarationsCollector.h"
 
 void Pipeline::build(std::ifstream& input, const std::string& filename)
 {

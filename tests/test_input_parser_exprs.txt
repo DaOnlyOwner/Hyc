@@ -10,4 +10,6 @@ int main()
    int member_desugared := b(&a).c->f;
    int func_call2 := a<int>()[2][3]()()();
    int func_call3 := a()[2][3]()()();
+   int func_call4 :# a(1,2,3)(3,4,5);
+   int func_call5 := a(#1,#2,3);
 }

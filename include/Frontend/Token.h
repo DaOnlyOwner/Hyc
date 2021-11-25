@@ -42,6 +42,7 @@ struct Token
 		MemAccess, // ->
 		ExclMark,
 		Tilde,
+		Hashtag,
 		Percent,
 		ShiftLeft,
 		ShiftRight,
@@ -50,6 +51,7 @@ struct Token
 		GreaterEql,
 		DoubleEqual,
 		NotEqual,
+		OpSubs,
 		Caret,
 		QuestionMark,
 		PlusEqual,
@@ -244,6 +246,10 @@ struct Token
 			return "operator (keyword)";
 		case Specifier::KwAuto:
 			return "auto (keyword)";
+		case Specifier::Hashtag:
+			return "#";
+		case Specifier::OpSubs:
+			return "operator []";
 		}
 		return "Unknown";
 

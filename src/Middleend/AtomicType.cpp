@@ -5,6 +5,9 @@
 #include <Scopes.h>
 #include <cassert>
 
+BaseType error_base_type{ "__error_type__" };
+Type error_type{ &error_base_type };
+
 bool Type::operator==(const Type& other) const
 {
 	if (other.type_info.size() != type_info.size()) return false;
@@ -40,7 +43,7 @@ bool Type::operator==(const Type& other) const
 	return true;
 }
 
-Type::Type(const std::string& base)
+Type::Type(BaseType* base)
 {
 	promote_base(base);
 }
@@ -48,6 +51,11 @@ Type::Type(const std::string& base)
 Type::Type(uint64_t amount)
 {
 	promote_array(amount);
+}
+
+Type::Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
+{
+	promote_fptr(std::move(ret), std::move(args));
 }
 
 void Type::reverse()
@@ -60,14 +68,19 @@ void Type::promote_pointer()
 	type_info.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
 }
 
-void Type::promote_base(const std::string& base)
+void Type::promote_base(BaseType* base)
 {
-	type_info.push_back(std::make_pair(TypeKind::Base, TypeVariant(BaseType{ base })));
+	type_info.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
 }
 
 void Type::promote_array(uint64_t amount)
 {
 	type_info.push_back(std::make_pair(TypeKind::Array, TypeVariant(ArrayType{ amount })));
+}
+
+void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
+{
+	type_info.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
 ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes)
@@ -168,6 +181,4 @@ std::string Type::get_base_type() const
 	assert(false);
 	return "";
 }
-
-Type error_type("__error_type__");
 

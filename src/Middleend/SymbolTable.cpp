@@ -1,25 +1,39 @@
 #include "SymbolTable.h"
 
-Function error_function{};
-Variable error_variable{};
-
-Function* SymbolTable::add(Function* fn)
+bool SymbolTable::add(FuncDefStmt* fn)
 {
-	auto it = m_functions.find(fn->name);
-	auto managed = std::unique_ptr<Function>(fn);
-	if (it == m_functions.end())
+	auto it = functions.find(fn->decl->name.text);
+	if (it == functions.end())
 	{
-		std::vector<std::unique_ptr<Function>> vec;
-		vec.push_back(std::move(managed));
-		m_functions[fn->name] = std::move(vec);
-		return fn;
+		std::vector<FuncDefStmt*> vec = { fn };
+		functions[fn->decl->name.text] = std::move(vec);
+		return true;
 	}
 
 	auto& vec = it->second;
-	if (std::find_if(vec.begin(), vec.end(), [&](auto& fn_) {return *fn == *fn_; }) == vec.end())
+	if (std::find_if(vec.begin(), vec.end(), [&](auto& fn_) {
+		// If we have different function arguments, we can differentiate between them.
+		if (fn_->decl->arg_list.size() != fn->decl->arg_list.size()) return false;
+		/*
+		int a<T>(T arg);
+		int a(int arg);
+		What should a(3) call, the first function or the second? 
+		That's the problem here
+		*/
+		if (!fn->decl->generic_list.empty() || !fn_->decl->generic_list.empty()) return true;
+		bool same = true;
+		for (int i = 0; i < fn->decl->arg_list.size(); i++)
+		{
+			Type& t1 = fn->decl->arg_list[i];
+			Type& t2 = fn_->decl_arg_list[i];
+			if (t1 != t2) same = false;
+		}
+		return same;
+
+		}) == vec.end())
 	{
-		vec.push_back(std::move(managed));
-		return fn;
+		vec.push_back(fn);
+		return true;
 	}
-	return nullptr;
+	return false;
 }

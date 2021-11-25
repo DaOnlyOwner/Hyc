@@ -4,9 +4,6 @@
 #include "TerminalOutput.h"
 #include <fstream>
 #include <string>
-#include "DebugPrint.h"
-#include "DeclarationsCollector.h"
-#include "TypeChecker.h"
 #include "catch.hpp"
 
 namespace
