@@ -16,6 +16,7 @@ public:
 	
 	template<typename TNode>
 	T& get(std::unique_ptr<TNode>& node) { node->accept(*m_visitor); return m_elem; }
+	template<typename TNode>
 	T& get(TNode& node) { node.accept(*m_visitor); return m_elem; }
 private:
 	T m_elem = { };

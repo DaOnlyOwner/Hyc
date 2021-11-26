@@ -8,16 +8,13 @@
 class DeclarationsCollectorFunctions : public IAstVisitor
 {
 public:
-	DeclarationsCollectorFunctions(Scopes&& scopes)
-		:scopes(mv(scopes)){};
-
-	Scopes get_scopes()
-	{
-		return std::move(scopes);
-	}
+	DeclarationsCollectorFunctions(Scopes& scopes,NamespaceStmt& ns)
+		:scopes(scopes),ns(ns) {};
 
 private:
-	Scopes scopes;
+	Scopes& scopes;
+	NamespaceStmt& ns;
 
-	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
+	virtual void visit(NamespaceStmt& ns) override;
+	virtual void visit(FuncDefStmt& func_def_stmt) override;
 };

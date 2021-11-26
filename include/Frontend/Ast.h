@@ -10,19 +10,20 @@
 #include "fmt/core.h"
 #include <stdexcept>
 #include "AtomicType.h"
-#include "ValuePtr.h"
+#include <cassert>
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
-
+#define IMPL_CLONE(u) uptr<u> clone() const override 
+#define CPY_VEC(name_from,name_to, type) std::vector<type> name_to; for(auto& p : name_from) name_to.push_back(p->clone());
 
 template <typename TRet, typename TArg>
-inline ValuePtr<TRet> ast_as(ValuePtr<TArg> arg)
+inline std::unique_ptr<TRet> ast_as(std::unique_ptr<TArg> arg)
 {
-	return static_cast<ValuePtr<TRet>>(std::move(arg));
+	return static_cast<std::unique_ptr<TRet>>(std::move(arg));
 }
 
 template<typename T>
-using uptr = ValuePtr<T>;
+using uptr = std::unique_ptr<T>;
 
 // Couldn't get std::move alias to work, so now here is a macro
 #define mv(arg) std::move(arg)
@@ -77,128 +78,26 @@ struct Node
 
 };
 
-
-
 // Expressions
 
 struct Expr : Node
 {
 	// Semantic annotations:
 	Type sem_type;
-};
-
-struct BinOpExpr : Expr
-{
-	BinOpExpr(const Token& op, uptr<Expr> lh, uptr<Expr> rh)
-		:op(op),lh(mv(lh)),rh(mv(rh)){}
-	Token op;
-	uptr<Expr> lh, rh;
-
-	// Semantic annotations
-	struct Function* sem_bin_op = nullptr;
-
-	IMPL_VISITOR
-
-};
-
-struct PrefixOpExpr : Expr
-{
-	PrefixOpExpr(const Token& op, uptr<Expr> lh)
-		:op(op),lh(mv(lh)){}
-	Token op;
-	uptr<Expr> lh;
-
-	// Semantic annotations
-	struct Function* sem_unary_op = nullptr;
-
-	IMPL_VISITOR
-};
-
-struct PostfixOpExpr : Expr
-{
-	PostfixOpExpr(const Token& op, uptr<Expr> rh)
-		:op(op), rh(mv(rh)) {}
-	Token op;
-	uptr<Expr> rh;
-	IMPL_VISITOR
+	virtual	uptr<Expr> clone() const = 0;
 };
 
 struct IntegerLiteralExpr : Expr
 {
-	IntegerLiteralExpr(const Token& token, const EvalIntegerResult& res) 
-		: integer_literal(token),eval_res(res)
+	IntegerLiteralExpr(const Token& token, const EvalIntegerResult& res)
+		: integer_literal(token), eval_res(res)
 	{
-	
+
 	}
 	Token integer_literal;
 	EvalIntegerResult eval_res;
-	IMPL_VISITOR
-};
-
-struct FloatLiteralExpr : Expr
-{
-	FloatLiteralExpr(const Token& token)
-		: float_literal(token){}
-	Token float_literal;
-	IMPL_VISITOR
-};
-
-struct TypeSpec;
-struct IdentExpr : Expr
-{
-	IdentExpr(const Token& token)
-		: ident(token) {}
-	Token ident;
-	IMPL_VISITOR
-};
-
-struct FuncCallArg
-{
-	uptr<Expr> expr;
-	bool moved;
-};
-
-struct FuncCallExpr : Expr
-{
-	FuncCallExpr(uptr<Expr>&& from, std::vector<FuncCallArg>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
-		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
-	uptr<Expr> from;
-	std::vector<FuncCallArg> arg_list; // bool: wether the given arg is moved into the parameter.
-	std::vector<uptr<TypeSpec>> generic_params;
-	// Semantic annotations:
-	struct Function* sem_function = nullptr;
-
-
-	IMPL_VISITOR
-};
-
-struct ArraySubscriptExpr : Expr
-{
-	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)
-		:from(mv(from)), inner(mv(inner)){}
-		uptr<Expr> from, inner;
-	IMPL_VISITOR
-};
-
-struct TernaryExpr : Expr
-{
-	TernaryExpr(uptr<Expr>&& fst, uptr<Expr>&& snd, uptr<Expr>&& trd)
-		:fst(mv(fst)), snd(mv(snd)), trd(mv(trd)) {}
-	uptr<Expr> fst, snd, trd;
-	IMPL_VISITOR
-};
-
-
-struct ImplicitCastExpr : Expr
-{
-	ImplicitCastExpr(uptr<Expr> expr, Type&& t)
-		:expr(mv(expr))
-	{
-		sem_type = mv(t);
-	}
-	uptr<Expr> expr;
-
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new IntegerLiteralExpr(*this)); }
 };
 
 
@@ -215,6 +114,7 @@ struct TypeSpec : Node
 	virtual const Token& get_ident_token() const { throw std::runtime_error("Compiler bug, cannot get token"); };
 	virtual std::string as_str() const = 0;
 	Type semantic_type;
+	virtual uptr<TypeSpec> clone() const = 0;
 };
 
 struct PointerTypeSpec : TypeSpec
@@ -224,34 +124,38 @@ struct PointerTypeSpec : TypeSpec
 
 	uptr<TypeSpec> inner = nullptr;
 	virtual std::string as_str() const override { return "*" + (inner ? inner->as_str() : std::string()); }
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new PointerTypeSpec(inner->clone())); }
 };
 
 struct BaseTypeSpec : TypeSpec
 {
 	BaseTypeSpec(Token&& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
-		:name(name), inner(mv(inner)),generic_list(mv(generic_list)) {}
+		:name(name), inner(mv(inner)), generic_list(mv(generic_list)) {}
 	Token name;
 	uptr<TypeSpec> inner;
 	std::vector<uptr<TypeSpec>> generic_list;
 	virtual const Token& get_ident_token() const override { return name; }
-	virtual std::string as_str() const override { 
-		
+	virtual std::string as_str() const override {
+
 		std::string gl = "<";
 		if (!generic_list.empty())
 		{
 			gl += generic_list[0]->as_str();
 		}
 
-		for (int i = 1; i<generic_list.size(); i++)
+		for (int i = 1; i < generic_list.size(); i++)
 		{
 			auto& ts = generic_list[i];
 			gl += "," + ts->as_str();
 		}
 		gl += ">";
-		return fmt::format("{}{}{}",name.text,generic_list.empty() ? "" : gl, inner ? inner->as_str() : std::string()); 
+		return fmt::format("{}{}{}", name.text, generic_list.empty() ? "" : gl, inner ? inner->as_str() : std::string());
 	}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(TypeSpec) {
+		CPY_VEC(generic_list,generic_list_cpy,uptr<TypeSpec>);
+		return uptr<TypeSpec>(new BaseTypeSpec(Token(name),inner->clone(),mv(generic_list_cpy))); }
 };
 
 struct ScopeTypeSpec : TypeSpec
@@ -268,10 +172,11 @@ struct ScopeTypeSpec : TypeSpec
 
 	virtual const Token& get_ident_token() const override
 	{
-		return inner->get_ident_token(); 
+		return inner->get_ident_token();
 	}
 
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(TypeSpec) { assert(false); return nullptr; }
 };
 
 struct FptrTypeSpec : TypeSpec
@@ -294,7 +199,12 @@ struct FptrTypeSpec : TypeSpec
 		return fmt::format("fptr({};{})", args_str, ret_type->as_str());
 	}
 
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(TypeSpec) {
+		std::vector<uptr<TypeSpec>> args_cpy;
+	for (auto& p : args) args_cpy.push_back(p->clone());
+		return uptr<TypeSpec>(new FptrTypeSpec(mv(args_cpy),ret_type->clone()));
+	}
 
 };
 
@@ -305,13 +215,145 @@ struct ArrayTypeSpec : TypeSpec
 	uptr<IntegerLiteralExpr> amount;
 	uptr<TypeSpec> inner;
 	virtual std::string as_str() const override { return fmt::format("[{}]", amount->integer_literal.text) + (inner ? inner->as_str() : std::string()); }
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new ArrayTypeSpec(uptr<IntegerLiteralExpr>(dynamic_cast<IntegerLiteralExpr*>(amount->clone().release())), inner->clone())); }
 };
+
+
+struct BinOpExpr : Expr
+{
+	BinOpExpr(const Token& op, uptr<Expr> lh, uptr<Expr> rh)
+		:op(op),lh(mv(lh)),rh(mv(rh)){}
+	Token op;
+	uptr<Expr> lh, rh;
+
+	// Semantic annotations
+	struct Function* sem_bin_op = nullptr;
+
+	IMPL_VISITOR;
+
+	IMPL_CLONE(Expr)
+	{
+		return uptr<Expr>(new BinOpExpr(op,lh->clone(),rh->clone()));
+	}
+
+};
+
+struct PrefixOpExpr : Expr
+{
+	PrefixOpExpr(const Token& op, uptr<Expr> lh)
+		:op(op),lh(mv(lh)){}
+	Token op;
+	uptr<Expr> lh;
+
+	// Semantic annotations
+	struct Function* sem_unary_op = nullptr;
+
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{ return uptr<Expr>(new PrefixOpExpr(op, lh->clone())); }
+};
+
+struct PostfixOpExpr : Expr
+{
+	PostfixOpExpr(const Token& op, uptr<Expr> rh)
+		:op(op), rh(mv(rh)) {}
+	Token op;
+	uptr<Expr> rh;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new PostfixOpExpr(op, rh->clone())); }
+};
+
+
+struct FloatLiteralExpr : Expr
+{
+	FloatLiteralExpr(const Token& token)
+		: float_literal(token){}
+	Token float_literal;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new FloatLiteralExpr(*this)); }
+};
+
+struct TypeSpec;
+struct IdentExpr : Expr
+{
+	IdentExpr(const Token& token)
+		: ident(token) {}
+	Token ident;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new IdentExpr(*this)); }
+};
+
+struct FuncCallArg
+{
+	uptr<Expr> expr;
+	bool moved;
+};
+
+struct FuncCallExpr : Expr
+{
+	FuncCallExpr(uptr<Expr>&& from, std::vector<FuncCallArg>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
+		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
+	uptr<Expr> from;
+	std::vector<FuncCallArg> arg_list; // bool: wether the given arg is moved into the parameter.
+	std::vector<uptr<TypeSpec>> generic_params;
+	// Semantic annotations:
+	struct Function* sem_function = nullptr;
+
+
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+	std::vector<FuncCallArg> arg_list_cpy;
+	for (int i = 0; i < arg_list.size(); i++)
+	{
+		arg_list_cpy.push_back({ arg_list[i].expr->clone(),arg_list[i].moved });
+	}
+	CPY_VEC(generic_params, generic_params_cpy, uptr<TypeSpec>);
+
+	return uptr<Expr>(new FuncCallExpr(from->clone(),mv(arg_list_cpy),mv(generic_params_cpy))); 
+	}
+};
+
+struct ArraySubscriptExpr : Expr
+{
+	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)
+		:from(mv(from)), inner(mv(inner)){}
+		uptr<Expr> from, inner;
+		IMPL_VISITOR;
+		IMPL_CLONE(Expr) { return uptr<Expr>(new ArraySubscriptExpr(from->clone(), inner->clone())); }
+};
+
+struct TernaryExpr : Expr
+{
+	TernaryExpr(uptr<Expr>&& fst, uptr<Expr>&& snd, uptr<Expr>&& trd)
+		:fst(mv(fst)), snd(mv(snd)), trd(mv(trd)) {}
+	uptr<Expr> fst, snd, trd;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new TernaryExpr(fst->clone(), snd->clone(), trd->clone())); }
+};
+
+
+struct ImplicitCastExpr : Expr
+{
+	ImplicitCastExpr(uptr<Expr> expr, Type&& t)
+		:expr(mv(expr))
+	{
+		sem_type = mv(t);
+	}
+	uptr<Expr> expr;
+
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new ImplicitCastExpr(expr->clone(), Type(sem_type))); }
+};
+
 
 
 // Statements
 
-struct Stmt : Node {};
+struct Stmt : Node {
+	virtual uptr<Stmt> clone() const = 0;
+};
 
 struct TypedStmt : Stmt
 {
@@ -331,26 +373,30 @@ struct DeclCpyStmt : DeclOpStmt
 {
 	DeclCpyStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
 		: DeclOpStmt(mv(type),mv(name),mv(expr)) {}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclCpyStmt(type->clone(), Token(name), expr->clone())); }
 };
 
 struct DeclMvStmt : DeclOpStmt
 {
 	DeclMvStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
 		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclMvStmt(type->clone(), Token(name), expr->clone())); }
 };
 
 struct DeclInitStmt : DeclOpStmt
 {
 	DeclInitStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
 		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclInitStmt(type->clone(), Token(name), expr->clone())); }
 };
 
 struct ContinueStmt : Stmt
 {
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new ContinueStmt()); }
 };
 
 struct DeclStmt : TypedStmt
@@ -360,7 +406,8 @@ struct DeclStmt : TypedStmt
 
 	Token name;
 	uptr<TypeSpec> type_spec;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec->clone(), Token(name))); }
 };
 
 struct CollectionStmt : Stmt
@@ -376,14 +423,24 @@ struct StructDefStmt : CollectionStmt
 {
 	StructDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
 		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		CPY_VEC(stmts,stmts_cpy,uptr<Stmt>);
+	std::vector<GenericInfo> gp_cpy;
+	for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type->clone() });
+		return uptr<Stmt>(new StructDefStmt(Token(name),mv(gp_cpy),mv(stmts_cpy))); }
 };
 
 struct UnionDefStmt : CollectionStmt
 {
 	UnionDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
 		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		CPY_VEC(stmts,stmts_cpy,uptr<Stmt>);
+	std::vector<GenericInfo> gp_cpy;
+	for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type->clone() });
+		return uptr<Stmt>(new UnionDefStmt(Token(name),mv(gp_cpy),mv(stmts_cpy))); }
 };
 
 struct NamespaceStmt : Stmt
@@ -394,7 +451,8 @@ struct NamespaceStmt : Stmt
 		:name(name){}
 	std::vector<uptr<Stmt>> stmts;
 	Token name;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { CPY_VEC(stmts, stmts_cpy, uptr<Stmt>) return uptr<Stmt>(new NamespaceStmt(mv(stmts_cpy), Token(name))); }
 };
 
 struct WhileStmt : Stmt
@@ -403,7 +461,8 @@ struct WhileStmt : Stmt
 		:expr(mv(expr)),stmts(mv(stmts)){}
 	uptr<Expr> expr;
 	std::vector<uptr<Stmt>> stmts;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { CPY_VEC(stmts, stmts_cpy, uptr<Stmt>); return uptr<Stmt>(new WhileStmt(expr->clone(), mv(stmts_cpy))); }
 };
 
 struct ForStmt : Stmt
@@ -414,7 +473,8 @@ struct ForStmt : Stmt
 	uptr<Expr> fst_expr;
 	uptr<Expr> snd_expr;
 	std::vector<uptr<Stmt>> stmts;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) { CPY_VEC(stmts, stmts_cpy, uptr<Stmt>); return uptr<Stmt>(new ForStmt(decl_stmt->clone(), fst_expr->clone(), snd_expr->clone(), mv(stmts_cpy))); }
 };
 
 struct IfStmt : Stmt
@@ -431,7 +491,19 @@ struct IfStmt : Stmt
 	std::vector<uptr<Expr>> elif_exprs;
 	std::vector<std::vector<uptr<Stmt>>> all_elif_stmts;
 	std::vector<uptr<Stmt>> else_stmts;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		CPY_VEC(if_stmts,if_stmts_cpy,uptr<Stmt>);
+	CPY_VEC(elif_exprs, elif_exprs_cpy, uptr<Expr>);
+	CPY_VEC(else_stmts, else_stmts_cpy, uptr<Stmt>);
+	std::vector<std::vector<uptr<Stmt>>> all_elif_stmts_cpy;
+	for (auto& vec : all_elif_stmts)
+	{
+		CPY_VEC(vec, vec_cpy, uptr<Stmt>);
+		all_elif_stmts_cpy.push_back(mv(vec_cpy));
+	}
+	return uptr<Stmt>(new IfStmt(if_expr->clone(), mv(if_stmts_cpy), mv(elif_exprs_cpy), mv(all_elif_stmts_cpy), mv(else_stmts_cpy)));
+	}
 };
 
 struct FuncDeclStmt : Stmt
@@ -442,8 +514,14 @@ struct FuncDeclStmt : Stmt
 	Token name;
 	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list;
 	std::vector<GenericInfo> generic_list;
-	std::vector<uptr<FuncDeclStmt>> needed_funcs;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+	std::vector<GenericInfo> generic_list_cpy;
+	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type->clone() });
+	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_cpy;
+	for (auto& p : arg_list) arg_list_cpy.push_back({p.first->clone(),Token(p.second)});
+	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), Token(name), mv(generic_list_cpy), mv(arg_list_cpy)));
+	}
 };
 
 struct FuncDefStmt : Stmt
@@ -456,7 +534,11 @@ struct FuncDefStmt : Stmt
 	// Semantic annotations:
 	struct Function* sem_function = nullptr;
 
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		CPY_VEC(body,body_cpy,uptr<Stmt>);
+		return uptr<Stmt>(new FuncDefStmt(uptr<FuncDeclStmt>(dynamic_cast<FuncDeclStmt*>(decl->clone().release())), mv(body_cpy)));
+	}
 };
 
 struct MatchCase 
@@ -465,6 +547,11 @@ struct MatchCase
 		:decl_stmt(mv(decl_stmt)),body(mv(body)){}
 	uptr<DeclStmt> decl_stmt;
 	std::vector<uptr<Stmt>> body;
+	MatchCase clone() const
+	{
+		CPY_VEC(body, body_cpy, uptr<Stmt>);
+		return MatchCase(uptr<DeclStmt>(dynamic_cast<DeclStmt*>(decl_stmt->clone().release())), mv(body_cpy));
+	}
 };
 
 struct MatchStmt : Stmt
@@ -473,7 +560,12 @@ struct MatchStmt : Stmt
 		:match_cases(mv(match_cases)),match_on(mv(match_on)){}
 	std::vector<MatchCase> match_cases;
 	uptr<Expr> match_on;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		std::vector<MatchCase> match_cases_cpy;
+	for (auto& p : match_cases) match_cases_cpy.push_back(p.clone());
+		return uptr<Stmt>(new MatchStmt(mv(match_cases_cpy),match_on->clone()));
+	}
 };
 
 
@@ -483,7 +575,10 @@ struct ExprStmt : Stmt
 		: expr(mv(expr)){}
 	uptr<Expr> expr;
 
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		return uptr<Stmt>(new ExprStmt(expr->clone()));
+	}
 };
 
 struct ReturnStmt : Stmt
@@ -492,7 +587,10 @@ struct ReturnStmt : Stmt
 		: returned_expr(mv(returned_expr)),return_kw(return_kw){}
 	uptr<Expr> returned_expr;
 	Token return_kw;
-	IMPL_VISITOR
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt) {
+		return uptr<Stmt>(new ReturnStmt(returned_expr->clone(),Token(return_kw)));
+	}
 };
 
 

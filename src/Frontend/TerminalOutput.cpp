@@ -57,7 +57,7 @@ void TerminalOutput::visit(UnionDefStmt& union_def)
 	std::string gp = "";
 	for (auto& param : union_def.generic_params)
 	{
-		gp += fmt::format("{}{}, ", param.name.text, param.default_type.is_null() ? "=" + param.default_type->as_str() : "");
+		gp += fmt::format("{}{}, ", param.name.text, param.default_type == nullptr ? "=" + param.default_type->as_str() : "");
 	}
 	out += fmt::format("UnionDefStmt: name='{}', generic_params='{}'\n", union_def.name.text, gp);
 	indent++;
@@ -116,7 +116,7 @@ void TerminalOutput::visit(StructDefStmt& struct_def_stmt)
 	std::string gp = "";
 	for (auto& param : struct_def_stmt.generic_params)
 	{
-		gp += fmt::format("{}{}, ", param.name.text, param.default_type.is_null() ? "=" + param.default_type->as_str() : "");
+		gp += fmt::format("{}{}, ", param.name.text, param.default_type == nullptr ? "=" + param.default_type->as_str() : "");
 	}
 	out += fmt::format("StructDefStmt: name='{}', generic_params='{}'\n", struct_def_stmt.name.text, gp);
 	indent++;
@@ -169,7 +169,7 @@ void TerminalOutput::visit(PostfixOpExpr& post_op)
 void TerminalOutput::visit(DeclCpyStmt& decl_cpy)
 {
 	make_indent();
-	out += fmt::format("DeclCpyStmt: name='{}', type='{}'\n", decl_cpy.name.text,decl_cpy.type.is_null() ? "not specified" : decl_cpy.type->as_str());
+	out += fmt::format("DeclCpyStmt: name='{}', type='{}'\n", decl_cpy.name.text,decl_cpy.type == nullptr ? "not specified" : decl_cpy.type->as_str());
 	indent++;
 	decl_cpy.expr->accept(*this);
 	indent--;
@@ -178,7 +178,7 @@ void TerminalOutput::visit(DeclCpyStmt& decl_cpy)
 void TerminalOutput::visit(DeclMvStmt& decl_mv)
 {
 	make_indent();
-	out += fmt::format("DeclMvStmt: name='{}', type='{}'\n", decl_mv.name.text, decl_mv.type.is_null() ? "not specified" : decl_mv.type->as_str());
+	out += fmt::format("DeclMvStmt: name='{}', type='{}'\n", decl_mv.name.text, decl_mv.type == nullptr ? "not specified" : decl_mv.type->as_str());
 	indent++;
 	decl_mv.expr->accept(*this);
 	indent--;
@@ -187,7 +187,7 @@ void TerminalOutput::visit(DeclMvStmt& decl_mv)
 void TerminalOutput::visit(DeclInitStmt& decl_init)
 {
 	make_indent();
-	out += fmt::format("DeclInitStmt: name='{}', type='{}'\n", decl_init.name.text, decl_init.type.is_null() ? "not specified" : decl_init.type->as_str());
+	out += fmt::format("DeclInitStmt: name='{}', type='{}'\n", decl_init.name.text, decl_init.type == nullptr ? "not specified" : decl_init.type->as_str());
 	indent++;
 	decl_init.expr->accept(*this);
 	indent--;

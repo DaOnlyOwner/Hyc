@@ -1,6 +1,5 @@
 #pragma once
 #include <Token.h>
-#include "ValuePtr.h"
 #include <unordered_map>
 #include <functional>
 #include "Lexer.h"
@@ -10,7 +9,7 @@
 This file provides and implementation of a (probably mutated) "pratt" parser that can be extended at runtime
 */
 
-#define InfixExprFnArgs ExprParser& parser, const Token& token, ValuePtr<Expr> lh
+#define InfixExprFnArgs ExprParser& parser, const Token& token, std::unique_ptr<Expr> lh
 #define PrefixExprFnArgs ExprParser& parser, const Token& token
 
 class Parser;
@@ -19,10 +18,10 @@ template<typename TReturn>
 class GenericPrattParser;
 
 template<typename TReturn>
-using OperationFnPrefix = std::function< ValuePtr<TReturn>(GenericPrattParser<TReturn>&, const Token&) >;
+using OperationFnPrefix = std::function< std::unique_ptr<TReturn>(GenericPrattParser<TReturn>&, const Token&) >;
 
 template<typename TReturn>
-using OperationFnInfix = std::function< ValuePtr<TReturn>(GenericPrattParser<TReturn>&, const Token&, ValuePtr<TReturn>) >;
+using OperationFnInfix = std::function< std::unique_ptr<TReturn>(GenericPrattParser<TReturn>&, const Token&, std::unique_ptr<TReturn>) >;
 
 template<typename TReturn>
 struct InfixOperation
@@ -55,7 +54,7 @@ public:
 		return m_prefix_operation.emplace(ttype, prefix).second;
 	}
 
-	ValuePtr<TReturn> parse_internal(int precedence)
+	std::unique_ptr<TReturn> parse_internal(int precedence)
 	{
 		const Token& prefix_token = tkns.eat();
 		// Let's parse a prefix
@@ -89,7 +88,7 @@ public:
 		return std::move(lh);
 	}
 
-	ValuePtr<TReturn> parse()
+	std::unique_ptr<TReturn> parse()
 	{
 		return parse_internal(0);
 	}

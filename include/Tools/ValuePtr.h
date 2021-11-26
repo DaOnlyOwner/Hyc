@@ -17,7 +17,7 @@ public:
 	
 
 	ValuePtr(const ValuePtr& other)
-		: val(new T(other.val))
+		: val(new T(*other.val))
 	{
 	}
 
@@ -40,7 +40,7 @@ public:
 		if (this == &other)
 			return *this;
 		delete val;
-		val = new T(other.val);
+		val = new T(*other.val);
 		return *this;
 	}
 

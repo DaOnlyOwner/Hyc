@@ -23,4 +23,5 @@ namespace Error
 	void SemanticError(const ErrorDescription& descr);
 	void LexicalError(const ErrorDescription& descr);
 	void SyntacticalError(const ErrorDescription& descr);
+	void Info(const ErrorDescription& descr);
 }

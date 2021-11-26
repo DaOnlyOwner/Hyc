@@ -27,6 +27,11 @@ void Error::SemanticError(const ErrorDescription& descr)
 	Error = true;
 }
 
+void Error::Info(const ErrorDescription& descr)
+{
+	print(descr, fmt::color::alice_blue, "Info");
+}
+
 void Error::SyntacticalError(const ErrorDescription& descr)
 {
 	print(descr, fmt::color::red, "Syntax Error");

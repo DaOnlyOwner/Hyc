@@ -1,6 +1,40 @@
 #include "GenericInstantiation.h"
 #include "DebugPrint.h"
 
+void GenericInst::visit(NamespaceStmt& stmt)
+{
+	scopes.descend();
+	for (auto& s : stmt.stmts) s->accept(*this);
+	scopes.go_to_root();
+}
+
+void GenericInst::visit(FuncDefStmt& stmt)
+{
+	scopes.descend();
+	// The arguments of the function are already instantiated
+	for (auto& s : stmt.body) s->accept(*this);
+}
+
+void GenericInst::visit(DeclStmt& stmt)
+{
+	if (stmt.type_spec != nullptr)
+	{
+		stmt.type_spec->accept(*this);
+	}
+}
+
+void GenericInst::visit(StructDefStmt& stmt)
+{
+	scopes.descend();
+	for (auto& s : stmt.stmts) s->accept(*this);
+}
+
+void GenericInst::visit(UnionDefStmt& stmt)
+{
+	scopes.descend(); 
+	for (auto& s : stmt.stmts) s->accept(*this);
+}
+
 void GenericInst::visit(BaseTypeSpec& bt)
 {
 	// Base case
@@ -50,7 +84,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 		{
 			auto& t = defined->generic_params[i];
 			// Its not a default argument
-			if (t.default_type.is_null())
+			if (t.default_type == nullptr)
 			{
 				auto descr = Error::FromToken(bt.name);
 				std::string num = "";
@@ -72,6 +106,12 @@ void GenericInst::visit(BaseTypeSpec& bt)
 		to_paste.push_back(given_t->as_str());
 	}
 
-	CodePaster cp(*defined, scopes, to_paste, *top_level);
+	CodePaster code_paster(*defined, scopes, to_paste, top_level);
+	code_paster.paste();
+}
 
+void instantiate_generic(BaseTypeSpec& bt, Scopes& scopes, NamespaceStmt& ns)
+{
+	GenericInst gi(scopes,ns);
+	gi.instantiate(bt);
 }

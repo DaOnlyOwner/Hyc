@@ -2,7 +2,6 @@
 #include "Lexer.h"
 #include "GenericPrattParser.h"
 #include "Ast.h"
-#include "ValuePtr.h"
 
 typedef GenericPrattParser<Expr> ExprParser;
 
@@ -11,24 +10,24 @@ class Parser
 {
 public:
 	Parser(Lexer& token_source, const std::string& filename);
-	ValuePtr<Stmt> parse();
+	std::unique_ptr<Stmt> parse();
 	Lexer& get_lexer() { return tkns; }
 	const Lexer& get_lexer() const { return tkns; }
-	ValuePtr<Stmt> parse_compilation_unit();
-	ValuePtr<Stmt> parse_function_def_stmt();
-	ValuePtr<Stmt> parse_function_decl_stmt();
-	ValuePtr<Stmt> parse_continue_stmt();
-	ValuePtr<FuncDeclStmt> parse_function_decl_stmt_part();
-	ValuePtr<Stmt> parse_expr_stmt();
-	ValuePtr<Stmt> parse_return_stmt();
-	ValuePtr<Stmt> parse_decl_operator_stmt(); 
-	ValuePtr<Stmt> parse_decl_stmt();
-	ValuePtr<Stmt> parse_struct_def();
-	ValuePtr<Stmt> parse_union_def();
+	std::unique_ptr<Stmt> parse_compilation_unit();
+	std::unique_ptr<Stmt> parse_function_def_stmt();
+	std::unique_ptr<Stmt> parse_function_decl_stmt();
+	std::unique_ptr<Stmt> parse_continue_stmt();
+	std::unique_ptr<FuncDeclStmt> parse_function_decl_stmt_part();
+	std::unique_ptr<Stmt> parse_expr_stmt();
+	std::unique_ptr<Stmt> parse_return_stmt();
+	std::unique_ptr<Stmt> parse_decl_operator_stmt(); 
+	std::unique_ptr<Stmt> parse_decl_stmt();
+	std::unique_ptr<Stmt> parse_struct_def();
+	std::unique_ptr<Stmt> parse_union_def();
 	
 	// e.g. struct {int a;}
 	template<typename TRet, typename Fn>
-	ValuePtr<TRet> parse_attr_collection(Token::Specifier spec, Fn fn)
+	std::unique_ptr<TRet> parse_attr_collection(Token::Specifier spec, Fn fn)
 	{
 		tkns.match_token(spec);
 		auto& name = tkns.match_token(Token::Specifier::Ident);
@@ -46,27 +45,27 @@ public:
 			decls_inside.push_back(fn());
 		}
 		tkns.match_token(Token::Specifier::BraceR);
-		return make_value<TRet>(mv(name), mv(generic_parameters), mv(decls_inside));
+		return std::make_unique<TRet>(mv(name), mv(generic_parameters), mv(decls_inside));
 	}
 
-	ValuePtr<Stmt> parse_match_stmt(bool in_loop);
+	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);
 	MatchCase parse_match_case(bool in_loop);
-	ValuePtr<Stmt> parse_namespace_stmt();
-	ValuePtr<Stmt> parse_if_stmt();
-	ValuePtr<Stmt> parse_while_loop_stmt();
-	ValuePtr<Stmt> parse_for_loop_stmt();
-	//ValuePtr<Stmt> parse_switch_stmt();
-	std::vector<ValuePtr<Stmt>> parse_function_body();
-	std::vector<ValuePtr<Stmt>> parse_allowed_namespace_stmts();
-	ValuePtr<Stmt> parse_allowed_top_level_stmt();
-	ValuePtr<Stmt> parse_allowed_namespace_stmt();
-	std::vector<ValuePtr<Stmt>> parse_func_def_list();
-	ValuePtr<Stmt> parse_allowed_loop_stmt();
-	std::vector<ValuePtr<Stmt>> parse_allowed_loop_stmts();
-	ValuePtr<Stmt> parse_allowed_func_stmt();
-	std::vector<ValuePtr<Stmt>> parse_allowed_func_stmts();
-	ValuePtr<TypeSpec> parse_type_spec();
-	ValuePtr<TypeSpec> parse_type_spec_part();
+	std::unique_ptr<Stmt> parse_namespace_stmt();
+	std::unique_ptr<Stmt> parse_if_stmt();
+	std::unique_ptr<Stmt> parse_while_loop_stmt();
+	std::unique_ptr<Stmt> parse_for_loop_stmt();
+	//std::unique_ptr<Stmt> parse_switch_stmt();
+	std::vector<std::unique_ptr<Stmt>> parse_function_body();
+	std::vector<std::unique_ptr<Stmt>> parse_allowed_namespace_stmts();
+	std::unique_ptr<Stmt> parse_allowed_top_level_stmt();
+	std::unique_ptr<Stmt> parse_allowed_namespace_stmt();
+	std::vector<std::unique_ptr<Stmt>> parse_func_def_list();
+	std::unique_ptr<Stmt> parse_allowed_loop_stmt();
+	std::vector<std::unique_ptr<Stmt>> parse_allowed_loop_stmts();
+	std::unique_ptr<Stmt> parse_allowed_func_stmt();
+	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
+	std::unique_ptr<TypeSpec> parse_type_spec();
+	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
 private:
 	Lexer& tkns; 

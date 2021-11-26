@@ -21,7 +21,7 @@ bool Type::operator==(const Type& other) const
 		case TypeKind::Pointer:
 			break;
 		case TypeKind::Base:
-			if (std::get<BaseType>(acc).name != std::get<BaseType>(oacc).name) return false;
+			if (std::get<BaseType*>(acc)->name != std::get<BaseType*>(oacc)->name) return false;
 			break;
 		case TypeKind::Array:
 			if (std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return false;
@@ -103,16 +103,16 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 		case TypeKind::Base:
 		{
 			std::array<std::string, (int)Primitive::Specifier::Count> primitives = { "u8","u16","u32","uint","s8","s16","s32","int","float","double" };
-			const BaseType& bt = std::get<BaseType>(acc);
-			const BaseType& obt = std::get<BaseType>(oacc);
-			if (bt.name == obt.name)
+			BaseType* bt = std::get<BaseType*>(acc);
+			BaseType* obt = std::get<BaseType*>(oacc);
+			if (bt == obt)
 			{
 				ctype = ConversionType::Same;
 			}
 			else
 			{
-				bool contains = std::find(primitives.begin(), primitives.end(), bt.name) != primitives.end();
-				bool ocontains = std::find(primitives.begin(), primitives.end(), obt.name) != primitives.end();
+				bool contains = std::find(primitives.begin(), primitives.end(), bt->name) != primitives.end();
+				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name) != primitives.end();
 				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
 			}
 		}
@@ -149,7 +149,7 @@ std::string Type::as_str() const
 		case TypeKind::Array:
 			out += fmt::format("[{}]", std::get<ArrayType>(var).amount);
 		case TypeKind::Base:
-			out += std::get<BaseType>(var).name;
+			out += std::get<BaseType*>(var)->name;
 		case TypeKind::Pointer:
 			out += "*";
 		case TypeKind::FunctionPointer:
@@ -171,14 +171,14 @@ std::string Type::as_str() const
 	return out;
 }
 
-std::string Type::get_base_type() const
+BaseType* Type::get_base_type() const
 {
 	for (auto& ti : type_info)
 	{
-		if (ti.first == TypeKind::Base) return std::get<BaseType>(ti.second).name;
+		if (ti.first == TypeKind::Base) return std::get<BaseType*>(ti.second);
 	}
 
 	assert(false);
-	return "";
+	return nullptr;
 }
 

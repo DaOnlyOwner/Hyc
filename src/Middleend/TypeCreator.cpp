@@ -27,7 +27,7 @@ void TypeCreator::visit(PointerTypeSpec& pt_spec)
 
 void TypeCreator::visit(BaseTypeSpec& bt_spec)
 {
-	instantiate_generic(bt_spec, scopes);
+	instantiate_generic(bt_spec, scopes,ns);
 	auto* bt = scopes.get_base_type(bt_spec.as_str());
 	if (bt == nullptr)
 	{
@@ -35,6 +35,7 @@ void TypeCreator::visit(BaseTypeSpec& bt_spec)
 		descr.Message = fmt::format("The type '{}' is undefined",bt->name);
 		Error::SemanticError(descr);
 		bt = &error_base_type;
+		succ = false;
 	}
 	if (bt_spec.inner)
 	{
@@ -59,8 +60,8 @@ void TypeCreator::visit(ArrayTypeSpec& at_spec)
 
 void TypeCreator::visit(FptrTypeSpec& fptr)
 {
-	auto ret = get(fptr.ret_type);
-	ValuePtr<Type> ret_vp(new Type(ret));
+	auto rettype = get(fptr.ret_type);
+	ValuePtr<Type> ret_vp(new Type(rettype));
 	
 	std::vector<ValuePtr<Type>> value_ptrs;
 	for (int i = 0; i < fptr.args.size(); i++)
@@ -74,9 +75,9 @@ void TypeCreator::visit(FptrTypeSpec& fptr)
 	//std::vector<
 }
 
-std::pair<Type,bool> create_type(TypeSpec& ts, Scopes& scopes)
+std::pair<Type,bool> create_type(TypeSpec& ts, Scopes& scopes,NamespaceStmt& ns)
 {
-	TypeCreator tc(ts, scopes);
+	TypeCreator tc(ts, scopes,ns);
 	return tc.create_type();
 }
 

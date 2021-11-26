@@ -11,17 +11,17 @@
 
 #define DEF_POSTFIX_OP(name,group,right)\
 InfixOperation<Expr> name{ (int)ExprPrecedence::group, right, [](InfixExprFnArgs) {\
-		return make_value<PostfixOpExpr>(token,mv(lh));} }
+		return std::make_unique<PostfixOpExpr>(token,mv(lh));} }
 
 #define DEF_BIN_OP(name, group, right)\
 InfixOperation<Expr> name{(int)ExprPrecedence::group, right, [](InfixExprFnArgs){\
-		return make_value<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::group));\
+		return std::make_unique<BinOpExpr>(token,mv(lh),parser.parse_internal((int)ExprPrecedence::group));\
 }}
 
 #define DEF_PREFIX_OP(name, group)\
 PrefixOperation<Expr> name{(int)ExprPrecedence::group, [](PrefixExprFnArgs)\
 	{\
-		return static_cast<uptr<Expr>>(make_value<PrefixOpExpr>(Token(token),parser.parse_internal((int)ExprPrecedence::group)));\
+		return static_cast<uptr<Expr>>(std::make_unique<PrefixOpExpr>(Token(token),parser.parse_internal((int)ExprPrecedence::group)));\
 	} }
 
 #define ADD_OP(op,name) expr_parser.add_operation(op,name)
@@ -51,13 +51,13 @@ namespace
 				descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
 				Error::SyntacticalError(descr);
 			}
-		return ast_as<Expr>(make_value<IntegerLiteralExpr>(token,eval_res));
+		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res));
 	} };
 
 	PrefixOperation<Expr> ident{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 	{
 			auto& l = parser.overall_parser->get_lexer();
-			uptr<Expr> ident_expr = make_value<IdentExpr>(Token(token));
+			uptr<Expr> ident_expr = std::make_unique<IdentExpr>(Token(token));
 			// It's actually a function call
 			if (l.lookahead(1).type == Token::Specifier::Less)
 			{
@@ -91,7 +91,7 @@ namespace
 
 				l.match_token(Token::Specifier::RParenR); // ')'
 
-				return static_cast<uptr<Expr>>(make_value<FuncCallExpr>(mv(ident_expr), mv(arg_list), mv(generic_params)));
+				return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(ident_expr), mv(arg_list), mv(generic_params)));
 			}
 			return ident_expr;
 	} };
@@ -123,14 +123,14 @@ namespace
 
 			l.match_token(Token::Specifier::RParenR); // ')'
 
-			return static_cast<uptr<Expr>>(make_value<FuncCallExpr>(mv(lh), mv(arg_list),std::vector<uptr<TypeSpec>>{}));
+			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(lh), mv(arg_list),std::vector<uptr<TypeSpec>>{}));
 		}
 
 		else if (token.type == Token::Specifier::BracketL)
 		{
 			auto expr = parser.parse();
 			l.match_token(Token::Specifier::BracketR);
-			return static_cast<uptr<Expr>>(make_value<ArraySubscriptExpr>(mv(lh), mv(expr)));
+			return static_cast<uptr<Expr>>(std::make_unique<ArraySubscriptExpr>(mv(lh), mv(expr)));
 		}
 	} };
 	DEF_BIN_OP(member, Group2, false);
@@ -153,7 +153,7 @@ namespace
 		auto snd = parser.parse();
 		parser.overall_parser->get_lexer().match_token(Token::Specifier::Colon);
 		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);
-		return make_value<TernaryExpr>(mv(lh), mv(snd), mv(trd));
+		return std::make_unique<TernaryExpr>(mv(lh), mv(snd), mv(trd));
 	} };
 
 	DEF_BIN_OP(assignment_move_etc, Group16, true);
@@ -218,15 +218,15 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	file = filename;
 }
 
-ValuePtr<Stmt> Parser::parse()
+std::unique_ptr<Stmt> Parser::parse()
 {
 	return parse_compilation_unit();
 }
 
 // stmt*
-ValuePtr<Stmt> Parser::parse_compilation_unit()
+std::unique_ptr<Stmt> Parser::parse_compilation_unit()
 {
-	auto nms = make_value<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", file, "", 0, 0, 0, 0));
+	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", file, "", 0, 0, 0, 0));
 	while (tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
 		nms->stmts.push_back(parse_allowed_top_level_stmt());
@@ -235,21 +235,21 @@ ValuePtr<Stmt> Parser::parse_compilation_unit()
 }
 
 // (type ident ((:= | :# | :) expr)?) | (type? ident (:= | :# | :) expr)  ; 
-ValuePtr<Stmt> Parser::parse_decl_operator_stmt()
+std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 {
 	auto la2 = tkns.lookahead(2).type;
-	ValuePtr<TypeSpec> type = nullptr;
+	std::unique_ptr<TypeSpec> type = nullptr;
 	if (la2 != Token::Specifier::DeclCpy && la2 != Token::Specifier::DeclMv && la2 != Token::Specifier::Colon)
 		type = parse_type_spec(); // type
 	auto& ident = tkns.match_token(Token::Specifier::Ident); // Ident
 	auto la1 = tkns.lookahead(1).type;
-	ValuePtr<Expr> expr;
+	std::unique_ptr<Expr> expr;
 	if (la1 == Token::Specifier::DeclCpy)
 	{
 		tkns.eat(); // :=
 		expr = expr_parser.parse();
 		tkns.match_token(Token::Specifier::Semicolon); // ;
-		return make_value<DeclCpyStmt>(std::move(type), std::move(ident), std::move(expr));
+		return std::make_unique<DeclCpyStmt>(std::move(type), std::move(ident), std::move(expr));
 	}
 
 	else if (la1 == Token::Specifier::DeclMv)
@@ -257,7 +257,7 @@ ValuePtr<Stmt> Parser::parse_decl_operator_stmt()
 		tkns.eat(); // :#
 		expr = expr_parser.parse();
 		tkns.match_token(Token::Specifier::Semicolon); // ;
-		return make_value<DeclMvStmt>(std::move(type), std::move(ident), std::move(expr));
+		return std::make_unique<DeclMvStmt>(std::move(type), std::move(ident), std::move(expr));
 	}
 
 	else if (la1 == Token::Specifier::Colon)
@@ -265,31 +265,31 @@ ValuePtr<Stmt> Parser::parse_decl_operator_stmt()
 		tkns.eat(); // :
 		expr = expr_parser.parse();
 		tkns.match_token(Token::Specifier::Semicolon); // ;
-		return make_value<DeclInitStmt>(std::move(type), std::move(ident), std::move(expr));
+		return std::make_unique<DeclInitStmt>(std::move(type), std::move(ident), std::move(expr));
 	}
 	// Is a declaration stmt
 	else if (la1 == Token::Specifier::Semicolon)
 	{
-		assert(!type.is_null()); // It would look like this "a;" which is an expression. Contrary to the grammar spec we should never step into this case in this function
+		assert(type != nullptr); // It would look like this "a;" which is an expression. Contrary to the grammar spec we should never step into this case in this function
 		tkns.match_token(Token::Specifier::Semicolon); // ; 
-		return make_value<DeclStmt>(std::move(type), std::move(ident));
+		return std::make_unique<DeclStmt>(std::move(type), std::move(ident));
 	}
 }
 
 // type ident(< generic_list >)? (type ident1, type ident2,...,){stmts}
-ValuePtr<Stmt> Parser::parse_function_def_stmt()
+std::unique_ptr<Stmt> Parser::parse_function_def_stmt()
 {
 	auto func_decl = parse_function_decl_stmt_part();
-	return make_value<FuncDefStmt>(mv(func_decl), parse_function_body());
+	return std::make_unique<FuncDefStmt>(mv(func_decl), parse_function_body());
 }
 
 // TODO: Parse e.g. A::B
-ValuePtr<TypeSpec> Parser::parse_type_spec_part()
+std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 {
 	if (tkns.lookahead(1).type == Token::Specifier::Asterix)
 	{
 		tkns.eat();
-		return make_value<PointerTypeSpec>(parse_type_spec_part());
+		return std::make_unique<PointerTypeSpec>(parse_type_spec_part());
 	}
 	else if (tkns.lookahead(1).type == Token::Specifier::BracketL)
 	{
@@ -310,14 +310,14 @@ ValuePtr<TypeSpec> Parser::parse_type_spec_part()
 			descr.Message = fmt::format("Array size specificators must be of type uint, but {} has type int", integer.text);
 			Error::SyntacticalError(descr);
 		}
-		auto integerLiteral = make_value<IntegerLiteralExpr>(integer, res);
-		return make_value<ArrayTypeSpec>(mv(integerLiteral), parse_type_spec_part());
+		auto integerLiteral = std::make_unique<IntegerLiteralExpr>(integer, res);
+		return std::make_unique<ArrayTypeSpec>(mv(integerLiteral), parse_type_spec_part());
 	}
 	else return nullptr;
 }
 
 // type_spec := (ident(< ident* >)? | fptr(type_spec*;type_spec) | "*" | "[integer_literal]") type_spec
-ValuePtr<TypeSpec> Parser::parse_type_spec()
+std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 {
 	if (tkns.lookahead(1).type == Token::Specifier::Ident || tkns.lookahead(1).type == Token::Specifier::KwAuto)
 	{
@@ -346,11 +346,11 @@ ValuePtr<TypeSpec> Parser::parse_type_spec()
 		}
 		if (scope != nullptr)
 		{
-			return make_value<ScopeTypeSpec>(mv(scope),
-				make_value<BaseTypeSpec>(mv(name), nullptr, std::move(generics)));
+			return std::make_unique<ScopeTypeSpec>(mv(scope),
+				std::make_unique<BaseTypeSpec>(mv(name), nullptr, std::move(generics)));
 		}*/
 		auto inner = parse_type_spec_part();
-		return make_value<BaseTypeSpec>(mv(name), mv(inner), std::move(generics));
+		return std::make_unique<BaseTypeSpec>(mv(name), mv(inner), std::move(generics));
 	}
 	else if (tkns.lookahead(1).type == Token::Specifier::KwFptr)
 	{
@@ -367,18 +367,18 @@ ValuePtr<TypeSpec> Parser::parse_type_spec()
 		tkns.match_token(Token::Specifier::Semicolon);
 		auto ret_type = parse_type_spec();
 		tkns.match_token(Token::Specifier::RParenR);
-		return make_value<FptrTypeSpec>(mv(args), mv(ret_type));
+		return std::make_unique<FptrTypeSpec>(mv(args), mv(ret_type));
 	}
 	return nullptr;
 }
 
 // type ident ;
-ValuePtr<Stmt> Parser::parse_decl_stmt()
+std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 {
 	auto type = parse_type_spec();
 	auto& name = tkns.match_token(Token::Specifier::Ident);
 	tkns.match_token(Token::Specifier::Semicolon);
-	return make_value<DeclStmt>(mv(type), mv(name));
+	return std::make_unique<DeclStmt>(mv(type), mv(name));
 }
 
 
@@ -415,29 +415,29 @@ std::vector<GenericInfo> Parser::parse_comma_separated_ident_list()
 }
 
 // struct ident< comma_separated_ident_list > { declaration_stmt* }
-ValuePtr<Stmt> Parser::parse_struct_def()
+std::unique_ptr<Stmt> Parser::parse_struct_def()
 {
 	return parse_attr_collection<StructDefStmt>(Token::Specifier::KwStruct, [&]() {return parse_decl_stmt(); });
 }
 
-ValuePtr<Stmt> Parser::parse_union_def()
+std::unique_ptr<Stmt> Parser::parse_union_def()
 {
 	return parse_attr_collection<UnionDefStmt>(Token::Specifier::KwUnion, [&]() {return parse_decl_stmt(); });
 }
 
 // namespace ident { allowed_namespace_stmts }
-ValuePtr<Stmt> Parser::parse_namespace_stmt()
+std::unique_ptr<Stmt> Parser::parse_namespace_stmt()
 {
 	tkns.match_token(Token::Specifier::KwNamespace);
 	auto& name = tkns.match_token(Token::Specifier::Ident);
 	tkns.match_token(Token::Specifier::BraceL);
 	std::vector<uptr<Stmt>> stmts = parse_allowed_namespace_stmts();
 	tkns.match_token(Token::Specifier::BraceR);
-	return make_value<NamespaceStmt>(mv(stmts),mv(name));
+	return std::make_unique<NamespaceStmt>(mv(stmts),mv(name));
 }
 
 
-ValuePtr<Stmt> Parser::parse_allowed_namespace_stmt()
+std::unique_ptr<Stmt> Parser::parse_allowed_namespace_stmt()
 {
 	if (tkns.lookahead(3).type == Token::Specifier::Semicolon)
 		return parse_decl_stmt();
@@ -453,7 +453,7 @@ ValuePtr<Stmt> Parser::parse_allowed_namespace_stmt()
 	Error::SyntacticalError(descr);
 }
 
-ValuePtr<Stmt> Parser::parse_allowed_top_level_stmt()
+std::unique_ptr<Stmt> Parser::parse_allowed_top_level_stmt()
 {
 	if (tkns.lookahead(3).type == Token::Specifier::Semicolon)
 		return parse_decl_stmt();
@@ -467,9 +467,9 @@ ValuePtr<Stmt> Parser::parse_allowed_top_level_stmt()
 }
 
 // decl_stmt | function_def | struct_def | namespace_stmt | contract_def | contract_impl
-std::vector<ValuePtr<Stmt>> Parser::parse_allowed_namespace_stmts()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_namespace_stmts()
 {
-	std::vector<ValuePtr<Stmt>> vec;
+	std::vector<std::unique_ptr<Stmt>> vec;
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
 		vec.push_back(parse_allowed_namespace_stmt());
@@ -477,7 +477,7 @@ std::vector<ValuePtr<Stmt>> Parser::parse_allowed_namespace_stmts()
 	return vec;
 }
 
-std::vector<ValuePtr<Stmt>> Parser::parse_function_body()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_function_body()
 {
 	std::vector<uptr<Stmt>> body;
 
@@ -491,7 +491,7 @@ std::vector<ValuePtr<Stmt>> Parser::parse_function_body()
 	return body;
 }
 
-ValuePtr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
+std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 {
 	auto type = parse_type_spec(); // Type
 
@@ -584,17 +584,17 @@ ValuePtr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 
 	tkns.match_token(Token::Specifier::RParenR); // ')'
 
-	return make_value<FuncDeclStmt>(mv(type), mv(name), mv(generic_list), mv(param_list));
+	return std::make_unique<FuncDeclStmt>(mv(type), mv(name), mv(generic_list), mv(param_list));
 }
 
-ValuePtr<Stmt> Parser::parse_function_decl_stmt()
+std::unique_ptr<Stmt> Parser::parse_function_decl_stmt()
 {
 	auto out = parse_function_decl_stmt_part();
 	tkns.match_token(Token::Specifier::Semicolon);
 	return out;
 }
 
-ValuePtr<Stmt> Parser::parse_match_stmt(bool in_loop)
+std::unique_ptr<Stmt> Parser::parse_match_stmt(bool in_loop)
 {
 	tkns.match_token(Token::Specifier::KwMatch);
 	tkns.match_token(Token::Specifier::RParenL);
@@ -607,7 +607,7 @@ ValuePtr<Stmt> Parser::parse_match_stmt(bool in_loop)
 		cases_lst.push_back(parse_match_case(in_loop));
 	}
 	tkns.match_token(Token::Specifier::BraceR);
-	return make_value<MatchStmt>(mv(cases_lst), mv(match_expr));
+	return std::make_unique<MatchStmt>(mv(cases_lst), mv(match_expr));
 }
 
 MatchCase Parser::parse_match_case(bool in_loop)
@@ -621,17 +621,17 @@ MatchCase Parser::parse_match_case(bool in_loop)
 	if (in_loop) body = parse_allowed_loop_stmts();
 	else body = parse_allowed_func_stmts();
 	tkns.match_token(Token::Specifier::BraceR);
-	return MatchCase(make_value<DeclStmt>(mv(type), mv(name)), mv(body));
+	return MatchCase(std::make_unique<DeclStmt>(mv(type), mv(name)), mv(body));
 }
 
-ValuePtr<Stmt> Parser::parse_continue_stmt()
+std::unique_ptr<Stmt> Parser::parse_continue_stmt()
 {
 	tkns.match_token(Token::Specifier::KwContinue);
 	tkns.match_token(Token::Specifier::Semicolon);
-	return make_value<ContinueStmt>();
+	return std::make_unique<ContinueStmt>();
 }
 
-ValuePtr<Stmt> Parser::parse_allowed_loop_stmt()
+std::unique_ptr<Stmt> Parser::parse_allowed_loop_stmt()
 {
 	auto la1 = tkns.lookahead(1).type;
 	auto la2 = tkns.lookahead(2).type;
@@ -674,9 +674,9 @@ ValuePtr<Stmt> Parser::parse_allowed_loop_stmt()
 	return parse_expr_stmt();
 }
 
-std::vector<ValuePtr<Stmt>> Parser::parse_allowed_loop_stmts()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_loop_stmts()
 {
-	std::vector<ValuePtr<Stmt>> stmts;
+	std::vector<std::unique_ptr<Stmt>> stmts;
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
 		stmts.push_back(parse_allowed_loop_stmt());
@@ -685,7 +685,7 @@ std::vector<ValuePtr<Stmt>> Parser::parse_allowed_loop_stmts()
 }
 
 // Should only be called from whatever has "}" as closing token
-std::vector<ValuePtr<Stmt>> Parser::parse_func_def_list()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_func_def_list()
 {
 	std::vector<uptr<Stmt>> stmts;
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
@@ -696,7 +696,7 @@ std::vector<ValuePtr<Stmt>> Parser::parse_func_def_list()
 }
 
 // e.g if(a) {b;} elif(c){} else{}
-ValuePtr<Stmt> Parser::parse_if_stmt()
+std::unique_ptr<Stmt> Parser::parse_if_stmt()
 {
 	tkns.match_token(Token::Specifier::KwIf);
 	tkns.match_token(Token::Specifier::RParenL);
@@ -758,11 +758,11 @@ ValuePtr<Stmt> Parser::parse_if_stmt()
 		}
 	}
 	
-	return make_value<IfStmt>(mv(if_expr), mv(if_stmts), mv(elif_exprs), mv(all_elif_stmts), mv(else_stmts));
+	return std::make_unique<IfStmt>(mv(if_expr), mv(if_stmts), mv(elif_exprs), mv(all_elif_stmts), mv(else_stmts));
 }
 
 
-ValuePtr<Stmt> Parser::parse_while_loop_stmt()
+std::unique_ptr<Stmt> Parser::parse_while_loop_stmt()
 {
 	tkns.match_token(Token::Specifier::KwWhile);
 	tkns.match_token(Token::Specifier::RParenL);
@@ -771,10 +771,10 @@ ValuePtr<Stmt> Parser::parse_while_loop_stmt()
 	tkns.match_token(Token::Specifier::BraceL);
 	auto stmts = parse_allowed_loop_stmts(); 
 	tkns.match_token(Token::Specifier::BraceR);
-	return make_value<WhileStmt>(mv(expr), mv(stmts));
+	return std::make_unique<WhileStmt>(mv(expr), mv(stmts));
 }
 
-ValuePtr<Stmt> Parser::parse_for_loop_stmt()
+std::unique_ptr<Stmt> Parser::parse_for_loop_stmt()
 {
 	tkns.match_token(Token::Specifier::KwFor); // for
 	tkns.match_token(Token::Specifier::RParenL); // (
@@ -786,11 +786,11 @@ ValuePtr<Stmt> Parser::parse_for_loop_stmt()
 	tkns.match_token(Token::Specifier::BraceL); // {
 	auto stmts = parse_allowed_loop_stmts();
 	tkns.match_token(Token::Specifier::BraceR); // }
-	return make_value<ForStmt>(mv(decl_stmt), mv(fst_expr), mv(snd_expr),mv(stmts));
+	return std::make_unique<ForStmt>(mv(decl_stmt), mv(fst_expr), mv(snd_expr),mv(stmts));
 }
 
 // var_decl_def | expr_stmt | return_stmt
-ValuePtr<Stmt> Parser::parse_allowed_func_stmt()
+std::unique_ptr<Stmt> Parser::parse_allowed_func_stmt()
 {
 	auto la1 = tkns.lookahead(1).type;
 	auto la2 = tkns.lookahead(2).type;
@@ -831,9 +831,9 @@ ValuePtr<Stmt> Parser::parse_allowed_func_stmt()
 	return parse_expr_stmt();
 }
 
-std::vector<ValuePtr<Stmt>> Parser::parse_allowed_func_stmts()
+std::vector<std::unique_ptr<Stmt>> Parser::parse_allowed_func_stmts()
 {
-	std::vector<ValuePtr<Stmt>> stmts;
+	std::vector<std::unique_ptr<Stmt>> stmts;
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
 		stmts.push_back(parse_allowed_func_stmt());
@@ -841,17 +841,17 @@ std::vector<ValuePtr<Stmt>> Parser::parse_allowed_func_stmts()
 	return stmts;
 }
 
-ValuePtr<Stmt> Parser::parse_expr_stmt()
+std::unique_ptr<Stmt> Parser::parse_expr_stmt()
 {
-	auto out = make_value<ExprStmt>(expr_parser.parse());
+	auto out = std::make_unique<ExprStmt>(expr_parser.parse());
 	tkns.match_token(Token::Specifier::Semicolon);
 	return out;
 }
 
-ValuePtr<Stmt> Parser::parse_return_stmt()
+std::unique_ptr<Stmt> Parser::parse_return_stmt()
 {
 	auto& rk = tkns.match_token(Token::Specifier::KwReturn);
-	auto out = make_value<ReturnStmt>(expr_parser.parse(),mv(rk));
+	auto out = std::make_unique<ReturnStmt>(expr_parser.parse(),mv(rk));
 	tkns.match_token(Token::Specifier::Semicolon);
 	return out;
 }

@@ -46,10 +46,11 @@ public:
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
-	bool is_type_defined(const std::string& t);
+	bool is_type_defined(const std::string& t) { return get_type_both(t).has_value(); }
 
-	CollectionStmt* get_type(const std::string& str);
-	BaseType* get_base_type(const std::string& str);
+	std::optional<std::pair<CollectionStmt*, BaseType*>> get_type_both(const std::string& str);
+	CollectionStmt* get_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().first : nullptr; }
+	BaseType* get_base_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().second : nullptr; }
 
 	static const Type& get_primitive_type(const std::string name) { return m_predefined_types[name]; };
 	static const Type& get_primitive_type(Primitive::Specifier primitive) { return m_predefined_types[Primitive::Translate(primitive)]; }
@@ -78,27 +79,16 @@ public:
 	// Descends one child after the other and - completely iterated -, wraps around and starts at the root again.
 	// This is really fast - just an increment operation because of the way the entries are located in the vector.
 	void descend();
+	void descend(size_t nthChild);
 
 	void go_to_root() { m_current_index = 0; }
-	void go_to_father(int amount)
-	{
-		for (int i = 0; i < amount; i++)
-		{
-			m_current_index = get_entry(m_current_index).father;
-			if (m_current_index == -1)
-			{
-				m_current_index = 0;
-				return;
-			}
-		}
-	}
+	bool go_to_father(int amount);
 
 	Scopes& at_root() { save(); go_to_root(); return *this; }
 	Scopes& at_father(int i = 1) { save(); go_to_father(i); return *this; }
 	void ret() { m_current_index = savepoint; }
 	void save() { savepoint = m_current_index; }
 
-	void descend(size_t nthChild);
 
 private:
 	struct t_entry

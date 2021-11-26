@@ -11,12 +11,6 @@
 #include "Ast.h"
 #include <unordered_map>
 
-namespace
-{
-
-}
-
-
 // TODO: Performance: Use move constructor for strings too.
 /*struct Function
 {
@@ -76,8 +70,6 @@ public:
 	SymbolTable(SymbolTable&& other) noexcept= default;
 	SymbolTable& operator=(SymbolTable&& other) = default;
 
-
-
 	/*Variable* add(Variable* var) {
 		return insert_into(variables, var, var->name);
 	}
@@ -92,18 +84,22 @@ public:
 		return it->second.get();
 	}*/
 
-
-	bool add(NamespaceStmt* ns)
-	{
-		return namespaces.insert({ ns->name.text,ns }).second;
-	}
-
 	bool add(CollectionStmt* cs)
 	{
-		return collections.insert({ cs->name.text,cs }).second;
+		CollectionInfo info;
+		info.bt = std::unique_ptr<BaseType>(new BaseType{ cs->name.text });
+		info.stmt = cs;
+		return collections.insert({ cs->name.text,std::move(info) }).second;
 	}
 
 	bool add(FuncDefStmt* fn);
+
+	std::optional<std::pair<CollectionStmt*,BaseType*>> get_type(const std::string& name)
+	{
+		auto it = collections.find(name);
+		if (it != collections.end()) return { { it->second.stmt,it->second.bt.get()} };
+		return std::nullopt;
+	}
 
 	/*Type* get_type(const std::string& name)
 	{
@@ -133,10 +129,14 @@ public:
 	}*/
 
 private:
+	struct CollectionInfo
+	{
+		CollectionStmt* stmt;
+		std::unique_ptr<BaseType> bt;
+	};
 	//std::unordered_map<std::string, std::unique_ptr<Variable>> variables;
 	//std::unordered_map<std::string, std::unique_ptr<Type>> types;
-	std::unordered_map<std::string, NamespaceStmt*> namespaces;
-	std::unordered_map<std::string, CollectionStmt*> collections;
+	std::unordered_map<std::string, CollectionInfo> collections;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
 };

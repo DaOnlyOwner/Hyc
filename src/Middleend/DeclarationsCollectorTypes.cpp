@@ -3,7 +3,7 @@
 namespace
 {
 	template<typename T>
-	void add(Scopes& scopes, T& s, const Token& name, const std::string& error_msg)
+	void add(DeclarationsCollectorTypes& t, Scopes& scopes, T& s, const Token& name, const std::string& error_msg)
 	{
 		bool succ = scopes.add(&s);
 		if (!succ)
@@ -13,7 +13,7 @@ namespace
 			Error::SemanticError(descr);
 		}
 		scopes.descend();
-		for (auto& stmt : s.stmts) { stmt->accept(*this); }
+		for (auto& stmt : s.stmts) { stmt->accept(t); }
 	}
 }
 
@@ -25,12 +25,12 @@ void DeclarationsCollectorTypes::visit(NamespaceStmt& namespace_stmt)
 
 void DeclarationsCollectorTypes::visit(StructDefStmt& struct_def_stmt)
 {
-	add(scopes, struct_def_stmt, struct_def_stmt.name, fmt::format("A type with name '{}' has already been defined",struct_def_stmt.name.text));
+	add(*this,scopes, struct_def_stmt, struct_def_stmt.name, fmt::format("A type with name '{}' has already been defined",struct_def_stmt.name.text));
 }
 
 void DeclarationsCollectorTypes::visit(UnionDefStmt& union_def)
 {
-	add(scopes, union_def, union_def.name, fmt::format("A type with name '{}' has already been defined", union_def.name.text));
+	add(*this,scopes, union_def, union_def.name, fmt::format("A type with name '{}' has already been defined", union_def.name.text));
 }
 
 

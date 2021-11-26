@@ -104,6 +104,13 @@ std::vector<Function> Scopes::get_all_funcs(const std::string& name)
 	return out;
 }*/
 
+std::optional<std::pair<CollectionStmt*, BaseType*>> Scopes::get_type_both(const std::string & str)
+{
+	auto out = at_root().get_current_entry().table.get_type(str);
+	ret();
+	return out;
+}
+
 void Scopes::ascend()
 {
 	t_entry& current = get_current_entry();
@@ -153,4 +160,18 @@ void Scopes::descend(size_t nthChild)
 			return;
 		}
 	}
+}
+
+bool Scopes::go_to_father(int amount)
+{
+	for (int i = 0; i < amount; i++)
+	{
+		m_current_index = get_entry(m_current_index).father;
+		if (m_current_index == -1)
+		{
+			m_current_index = 0;
+			return false;
+		}
+	}
+	return true;
 }
