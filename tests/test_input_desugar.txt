@@ -1,14 +1,18 @@
 struct A
 {}
 
+struct B{}
+
 A a()
 {
+   a.b();
+   a->b();
    a.b.c().d.e.f().g().h();
    A a := 0;
      b := 0;
    B b :# 0;
      b :# 0;
-   A a : a.init();  
+   A a : a.init();
    for(i := 0; i<10; i++)
    {
       a();

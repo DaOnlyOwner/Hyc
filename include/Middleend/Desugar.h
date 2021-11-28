@@ -15,11 +15,11 @@ private:
 	virtual void visit(FuncCallExpr& call) override;
 };
 
-class DesugarForStmt : public IAstVisitor, ValueStorage<uptr<WhileStmt>>
+class DesugarForStmt : public IAstVisitor, ValueStorage<uptr<ScopeStmt>>
 {
 public:
 	DesugarForStmt()
-		:ValueStorage<uptr<WhileStmt>>(this) {}
+		:ValueStorage<uptr<ScopeStmt>>(this) {}
 private:
 	virtual void visit(NamespaceStmt& ns);
 	virtual void visit(IfStmt& if_stmt) override;
@@ -52,8 +52,11 @@ private:
 	template<typename T>
 	void make_new_stmts(T& decl,Token::Specifier op)
 	{
+		Token tk(decl.name);
+		tk.type = op;
+		tk.text = Token::Translate(op);
 		uptr<DeclStmt> decl_new = std::make_unique<DeclStmt>(mv(decl.type), std::move(decl.name));
-		uptr<BinOpExpr> bin_op = std::make_unique<BinOpExpr>(op,
+		uptr<BinOpExpr> bin_op = std::make_unique<BinOpExpr>(std::move(tk),
 			std::make_unique<IdentExpr>(Token(decl_new->name)), mv(decl.expr));
 		uptr<ExprStmt> sexpr = std::make_unique<ExprStmt>(mv(bin_op));
 		RETURN(std::make_pair(mv(decl_new), mv(sexpr)));

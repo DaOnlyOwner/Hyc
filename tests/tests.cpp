@@ -70,7 +70,7 @@ TEST_CASE("DEBUG")
 	//write_to(ROOT "/tests/required_output_parser_exprs.txt", out_expr);
 	//write_to(ROOT "/tests/required_output_parser_stmts.txt", out_stmt);
 
-	std::string filename_coll = ROOT "/tests/test_input_type_function_collection.txt";
+	std::string filename_coll = ROOT "/tests/test_input_desugar.txt";
 	auto [_3, parsed] = parse(filename_coll);
 	Scopes sc;
 	expand_scopes(*parsed, sc);

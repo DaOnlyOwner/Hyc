@@ -28,7 +28,6 @@ void DesugarAccess::visit(FuncCallExpr& expr)
 
 	if (bin_op->op.type == Token::Specifier::MemAccess || bin_op->op.type == Token::Specifier::Dot)
 	{
-		auto ie = std::make_unique<IdentExpr>(std::move(bin_op->rh));
 		uptr<Expr> transformed;
 		bin_op->lh->accept(*this);
 		if (bin_op->op.type == Token::Specifier::MemAccess)
@@ -40,6 +39,7 @@ void DesugarAccess::visit(FuncCallExpr& expr)
 			tk.type = Token::Specifier::Ampersand;
 			transformed = std::make_unique<PrefixOpExpr>(tk, std::move(bin_op->lh));
 		}
+		expr.from = std::move(bin_op->rh);
 		FuncCallArg fca;
 		fca.expr = std::move(transformed);
 		fca.moved = false;
@@ -101,8 +101,8 @@ void DesugarForStmt::visit(ForStmt& for_stmt)
 	scope.push_back(std::move(for_stmt.decl_stmt));
 	auto body = mv(for_stmt.stmts);
 	body.push_back(std::make_unique<ExprStmt>(mv(for_stmt.snd_expr)));
-	uptr<WhileStmt> ws = std::make_unique<WhileStmt>(std::move(for_stmt.fst_expr), mv(body));
-	RETURN(std::move(ws));
+	scope.push_back(std::make_unique<WhileStmt>(std::move(for_stmt.fst_expr), mv(body)));
+	RETURN(std::make_unique<ScopeStmt>(std::move(scope)));
 }
 
 void DesugarDecl::visit(IfStmt& if_stmt)
@@ -149,8 +149,7 @@ void DesugarDecl::visit(DeclInitStmt& init)
 {
 	uptr<DeclStmt> decl_new = std::make_unique<DeclStmt>(mv(init.type), std::move(init.name));
 	uptr<ExprStmt> sexpr = std::make_unique<ExprStmt>(mv(init.expr));
-	auto& [decl, expr] = retrieve();
-	
+	RETURN(std::make_pair(mv(decl_new), mv(sexpr)));	
 }
 
 void DesugarDecl::update(std::vector<uptr<Stmt>>& to_update)
@@ -159,6 +158,7 @@ void DesugarDecl::update(std::vector<uptr<Stmt>>& to_update)
 	{
 		ret(std::make_pair(nullptr,nullptr));
 		auto& p = get(to_update[i]);
+		if (p.first == nullptr || p.second == nullptr) continue;
 		to_update[i] = std::move(p.first);
 		to_update.insert(to_update.begin() + i+1, std::move(p.second));
 	}

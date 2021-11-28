@@ -11,11 +11,6 @@ void TerminalOutput::make_indent()
 	}
 }
 
-void TerminalOutput::visit(ScopeTypeSpec& scope_spec)
-{
-	assert(false);
-}
-
 void TerminalOutput::visit(MatchStmt& match)
 {
 	make_indent();
@@ -31,6 +26,15 @@ void TerminalOutput::visit(MatchStmt& match)
 			stmt->accept(*this);
 		indent--;
 	}
+	indent--;
+}
+
+void TerminalOutput::visit(ScopeStmt& sc)
+{
+	make_indent();
+	out += "ScopeStmt\n";
+	indent++;
+	for (auto& p : sc.stmts)p->accept(*this);
 	indent--;
 }
 
@@ -254,7 +258,7 @@ void TerminalOutput::visit(ExprStmt& expr_stmt)
 void TerminalOutput::visit(DeclStmt& decl_stmt)
 {
 	make_indent();
-	out += fmt::format("DeclStmt: name='{}', type='{}'\n", decl_stmt.name.text, decl_stmt.type_spec->as_str());
+	out += fmt::format("DeclStmt: name='{}', type='{}'\n", decl_stmt.name.text, decl_stmt.type_spec ? decl_stmt.type_spec->as_str() : "");
 }
 
 void TerminalOutput::visit(PointerTypeSpec& pt_spec)

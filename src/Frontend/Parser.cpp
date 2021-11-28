@@ -59,7 +59,7 @@ namespace
 			auto& l = parser.overall_parser->get_lexer();
 			uptr<Expr> ident_expr = std::make_unique<IdentExpr>(Token(token));
 			// It's actually a function call
-			if (l.lookahead(1).type == Token::Specifier::Less)
+			if (l.lookahead(1).type == Token::Specifier::GenFCallOpen)
 			{
 				std::vector<uptr<TypeSpec>> generic_params;
 				l.eat(); // <
@@ -70,7 +70,7 @@ namespace
 					l.eat(); // ,
 					generic_params.push_back(parser.overall_parser->parse_type_spec());
 				}
-				l.match_token(Token::Specifier::Greater); // >
+				l.match_token(Token::Specifier::GenFCallClose); // >
 				l.match_token(Token::Specifier::RParenL);
 				std::vector<FuncCallArg> arg_list;
 				// Parse an argument list:
@@ -733,6 +733,7 @@ std::unique_ptr<Stmt> Parser::parse_if_stmt(bool in_loop)
 			elif_stmts = in_loop ? parse_allowed_func_stmts() : parse_allowed_loop_stmts();
 			tkns.match_token(Token::Specifier::BraceR);
 		}
+		// TODO: Rework
 		else if (tkns.lookahead(1).type != Token::Specifier::KwElif && tkns.lookahead(1).type != Token::Specifier::KwElse)
 		{
 			elif_stmts.push_back(in_loop ? parse_allowed_func_stmt() : parse_allowed_loop_stmt());

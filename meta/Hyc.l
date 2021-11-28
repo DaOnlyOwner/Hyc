@@ -117,6 +117,8 @@ hashtag		"#"
 minus   	"-"
 asterix 	"*"
 slash   	"/"
+gen_fcall_open  "<."
+gen_fcall_close ".>"
 decl_cpy	":="
 decl_mv		":#"
 colon		":"
@@ -187,6 +189,8 @@ or_eql		"|="
 {double_minus}	{ PUSH(DoubleMinus);}
 {ex_mark}	{ PUSH(ExclMark);}
 {tilde}		{ PUSH(Tilde);}
+{gen_fcall_open} { PUSH(GenFCallOpen);}
+{gen_fcall_close} {PUSH(GenFCallClose);}
 {amp}		{ PUSH(Ampersand);}
 {perc}		{ PUSH(Percent);}
 {sr}		{ PUSH(ShiftRight);}

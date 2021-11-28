@@ -50,10 +50,10 @@ struct IAstVisitor
 	virtual void visit(struct NamespaceStmt& namespace_stmt); 
 	virtual void visit(struct FuncCallExpr& func_call_expr) {};
 	virtual void visit(struct FuncDeclStmt& func_decl) {};
-	virtual void visit(struct FuncDefStmt& func_def_stmt) {};
+	virtual void visit(struct FuncDefStmt& func_def_stmt);
 	virtual void visit(struct CollectionStmt& coll_def) {};
 	virtual void visit(struct ReturnStmt& ret_stmt) {};
-	virtual void visit(struct ExprStmt& expr_stmt) {};
+	virtual void visit(struct ExprStmt& expr_stmt);
 	virtual void visit(struct DeclStmt& decl_stmt) {};
 	virtual void visit(struct PointerTypeSpec& pt_spec) {};
 	virtual void visit(struct BaseTypeSpec& bt_spec) {};
@@ -602,39 +602,6 @@ struct ReturnStmt : Stmt
 		return uptr<Stmt>(new ReturnStmt(returned_expr->clone(),Token(return_kw)));
 	}
 };
-
-void IAstVisitor::visit(struct NamespaceStmt& namespace_stmt) { for (auto& p : namespace_stmt.stmts) p->accept(*this); };
-void IAstVisitor::visit(struct IfStmt& if_stmt) {
-	for (auto& p : if_stmt.if_stmts) p->accept(*this);
-	for (auto& elif : if_stmt.all_elif_stmts)
-	{
-		for (auto& p : elif) p->accept(*this);
-	}
-	for (auto& p : if_stmt.else_stmts) p->accept(*this);
-};
-
-void IAstVisitor::visit(struct WhileStmt& while_stmt) {
-	for (auto& p : while_stmt.stmts) p->accept(*this);
-};
-
-void IAstVisitor::visit(struct ForStmt& for_stmt) {
-	for_stmt.decl_stmt->accept(*this);
-	for (auto& p : for_stmt.stmts) p->accept(*this);
-};
-
-void IAstVisitor::visit(struct MatchStmt& match) {
-	for (auto& case_ : match.match_cases)
-	{
-		case_.decl_stmt->accept(*this);
-		for (auto& p : case_.body)
-		{
-			p->accept(*this);
-		}
-	}
-};
-
-void IAstVisitor::visit(struct ScopeStmt& sc) { for (auto& p : sc.stmts) p->accept(*this); };
-
 
 
 

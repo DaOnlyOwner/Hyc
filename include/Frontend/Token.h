@@ -80,7 +80,9 @@ struct Token
 		KwMatch,
 		KwCase,
 		KwOperator,
-		KwAuto
+		KwAuto,
+		GenFCallOpen,
+		GenFCallClose
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -253,6 +255,10 @@ struct Token
 			return "#";
 		case Specifier::OpSubs:
 			return "operator []";
+		case Specifier::GenFCallOpen:
+			return "<.";
+		case Specifier::GenFCallClose:
+			return ".>";
 		}
 		return "Unknown";
 
