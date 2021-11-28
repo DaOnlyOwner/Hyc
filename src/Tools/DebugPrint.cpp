@@ -29,7 +29,7 @@ void Error::SemanticError(const ErrorDescription& descr)
 
 void Error::Info(const ErrorDescription& descr)
 {
-	print(descr, fmt::color::alice_blue, "Info");
+	print(descr, fmt::color::cadet_blue, "Info");
 }
 
 void Error::SyntacticalError(const ErrorDescription& descr)

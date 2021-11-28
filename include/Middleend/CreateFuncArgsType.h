@@ -3,7 +3,7 @@
 #include "Scopes.h"
 
 // Creates types of the function arguments AND the return type
-class CreateFuncArgsType : IAstVisitor
+class CreateFuncArgsType : public IAstVisitor
 {
 public:
 	CreateFuncArgsType(Scopes& sc,NamespaceStmt& ns)
@@ -16,3 +16,5 @@ private:
 	Scopes& scopes;
 	NamespaceStmt& ns;
 };
+
+void create_func_args_type(Scopes& sc, NamespaceStmt& ns);

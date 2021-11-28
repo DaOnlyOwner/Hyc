@@ -4,8 +4,14 @@
 
 class DeclarationsCollectorTypes : public IAstVisitor
 {
+public:
+	DeclarationsCollectorTypes(Scopes& sc)
+		:scopes(sc){}
+
+private:
 	virtual void visit(struct NamespaceStmt& namespace_stmt) override;
-	virtual void visit(struct StructDefStmt& struct_def_stmt) override;
-	virtual void visit(struct UnionDefStmt& union_def) override;
-	Scopes scopes;
+	virtual void visit(struct CollectionStmt& coll_def) override;
+	Scopes& scopes;
 };
+
+void collect_types(NamespaceStmt& ns,Scopes& sc);

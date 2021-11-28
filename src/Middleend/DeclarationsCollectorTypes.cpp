@@ -5,7 +5,8 @@ namespace
 	template<typename T>
 	void add(DeclarationsCollectorTypes& t, Scopes& scopes, T& s, const Token& name, const std::string& error_msg)
 	{
-		bool succ = scopes.add(&s);
+		bool succ = scopes.at_root().add(&s);
+		scopes.ret();
 		if (!succ)
 		{
 			auto descr = Error::FromToken(name);
@@ -23,14 +24,13 @@ void DeclarationsCollectorTypes::visit(NamespaceStmt& namespace_stmt)
 	for (auto& stmt : namespace_stmt.stmts) { stmt->accept(*this); }
 }
 
-void DeclarationsCollectorTypes::visit(StructDefStmt& struct_def_stmt)
+void DeclarationsCollectorTypes::visit(CollectionStmt& coll_def)
 {
-	add(*this,scopes, struct_def_stmt, struct_def_stmt.name, fmt::format("A type with name '{}' has already been defined",struct_def_stmt.name.text));
+	add(*this,scopes, coll_def, coll_def.name, fmt::format("A type with name '{}' has already been defined", coll_def.name.text));
 }
 
-void DeclarationsCollectorTypes::visit(UnionDefStmt& union_def)
+void collect_types(NamespaceStmt& ns,Scopes& sc)
 {
-	add(*this,scopes, union_def, union_def.name, fmt::format("A type with name '{}' has already been defined", union_def.name.text));
+	DeclarationsCollectorTypes dc(sc);
+	ns.accept(dc); 
 }
-
-

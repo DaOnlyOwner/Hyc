@@ -10,10 +10,10 @@ class Parser
 {
 public:
 	Parser(Lexer& token_source, const std::string& filename);
-	std::unique_ptr<Stmt> parse();
+	std::unique_ptr<NamespaceStmt> parse();
 	Lexer& get_lexer() { return tkns; }
 	const Lexer& get_lexer() const { return tkns; }
-	std::unique_ptr<Stmt> parse_compilation_unit();
+	std::unique_ptr<NamespaceStmt> parse_compilation_unit();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_function_decl_stmt();
 	std::unique_ptr<Stmt> parse_continue_stmt();
@@ -26,8 +26,8 @@ public:
 	std::unique_ptr<Stmt> parse_union_def();
 	
 	// e.g. struct {int a;}
-	template<typename TRet, typename Fn>
-	std::unique_ptr<TRet> parse_attr_collection(Token::Specifier spec, Fn fn)
+	template<typename Fn>
+	std::unique_ptr<Stmt> parse_attr_collection(Token::Specifier spec, Fn fn)
 	{
 		tkns.match_token(spec);
 		auto& name = tkns.match_token(Token::Specifier::Ident);
@@ -45,7 +45,7 @@ public:
 			decls_inside.push_back(fn());
 		}
 		tkns.match_token(Token::Specifier::BraceR);
-		return std::make_unique<TRet>(mv(name), mv(generic_parameters), mv(decls_inside));
+		return std::make_unique<CollectionStmt>(mv(name), mv(generic_parameters), mv(decls_inside),spec == Token::Specifier::KwStruct ? CollectionType::Struct : CollectionType::Union);
 	}
 
 	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);

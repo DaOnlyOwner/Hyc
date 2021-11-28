@@ -19,14 +19,15 @@ bool SymbolTable::add(FuncDefStmt* fn)
 		int a<T>(T arg);
 		int a(int arg);
 		What should a(3) call, the first function or the second? 
-		That's the problem here
+		That's the problem here.
+		So that's why I don't allow two generic functions with the same name and same argument size
 		*/
 		if (!fn->decl->generic_list.empty() || !fn_->decl->generic_list.empty()) return true;
 		bool same = true;
 		for (int i = 0; i < fn->decl->arg_list.size(); i++)
 		{
-			Type t1 = fn->decl->arg_list[i].first->semantic_type;
-			Type t2 = fn_->decl->arg_list[i].first->semantic_type;
+			Type t1 = fn->decl->arg_list[i]->type_spec->semantic_type;
+			Type t2 = fn_->decl->arg_list[i]->type_spec->semantic_type;
 			if (t1 != t2) same = false;
 		}
 		return same;

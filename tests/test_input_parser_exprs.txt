@@ -4,7 +4,6 @@ int main()
    int prefix := -!-!-1+2;
    int func_call := a<int,int>(b(),1+2+3*4/5);
    int operators := a+=b+c^=d*e&=f;
-   int scope := A::B::C::a * -b;
    int member := a->b().c->f;
    int member2 := a.b.c.d();
    int member_desugared := b(&a).c->f;

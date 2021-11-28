@@ -30,13 +30,12 @@ private:
 	virtual void visit(IfStmt& if_stmt) override;
 	virtual void visit(WhileStmt& while_stmt) override;
 	virtual void visit(ForStmt& for_stmt) override;
-	virtual void visit(StructDefStmt& struct_def_stmt) override;
+	virtual void visit(CollectionStmt& collection_def) override;
 	virtual void visit(ContinueStmt& cont_stmt) override;
 	virtual void visit(FptrTypeSpec& fptr) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;
 	virtual void visit(TernaryExpr& tern) override;
 	virtual void visit(FuncDeclStmt& func_decl) override;
-	virtual void visit(UnionDefStmt& union_def) override;
 	virtual void visit(MatchStmt& match) override;
 	virtual void visit(ScopeTypeSpec& scope_spec) override;
 

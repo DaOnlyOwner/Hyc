@@ -218,13 +218,13 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	file = filename;
 }
 
-std::unique_ptr<Stmt> Parser::parse()
+std::unique_ptr<NamespaceStmt> Parser::parse()
 {
 	return parse_compilation_unit();
 }
 
 // stmt*
-std::unique_ptr<Stmt> Parser::parse_compilation_unit()
+std::unique_ptr<NamespaceStmt> Parser::parse_compilation_unit()
 {
 	auto nms = std::make_unique<NamespaceStmt>(Token(Token::Specifier::Ident, "GLOBAL", file, "", 0, 0, 0, 0));
 	while (tkns.lookahead(1).type != Token::Specifier::Eof)
@@ -417,12 +417,12 @@ std::vector<GenericInfo> Parser::parse_comma_separated_ident_list()
 // struct ident< comma_separated_ident_list > { declaration_stmt* }
 std::unique_ptr<Stmt> Parser::parse_struct_def()
 {
-	return parse_attr_collection<StructDefStmt>(Token::Specifier::KwStruct, [&]() {return parse_decl_stmt(); });
+	return parse_attr_collection(Token::Specifier::KwStruct, [&]() {return parse_decl_stmt(); });
 }
 
 std::unique_ptr<Stmt> Parser::parse_union_def()
 {
-	return parse_attr_collection<UnionDefStmt>(Token::Specifier::KwUnion, [&]() {return parse_decl_stmt(); });
+	return parse_attr_collection(Token::Specifier::KwUnion, [&]() {return parse_decl_stmt(); });
 }
 
 // namespace ident { allowed_namespace_stmts }
@@ -511,7 +511,6 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 			name.text = "$[]";
 		}
 
-
 		else
 		{
 			auto& tkn = tkns.match_one_of <
@@ -568,7 +567,7 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 		}
 	}
 
-	std::vector<std::pair<uptr<TypeSpec>, Token>> param_list;
+	std::vector<uptr<DeclStmt>> param_list;
 
 	tkns.match_token(Token::Specifier::RParenL);
 
@@ -577,7 +576,7 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 		auto arg_type = parse_type_spec(); // Type
 		auto& arg_name = tkns.match_token(Token::Specifier::Ident); // name
 
-		param_list.push_back(std::make_pair(std::move(arg_type), std::move(arg_name)));
+		param_list.push_back(std::make_unique<DeclStmt>(std::move(arg_type), std::move(arg_name)));
 
 		if (tkns.lookahead(1).type == Token::Specifier::Comma) tkns.eat();
 	}

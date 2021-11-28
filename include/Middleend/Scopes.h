@@ -28,7 +28,7 @@ return nullptr;
 class Scopes
 {
 public:
-	Scopes();
+	Scopes() = default;
 	Scopes(const Scopes&) = delete;
 	Scopes& operator=(const Scopes&) = delete;
 

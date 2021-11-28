@@ -1,7 +1,6 @@
 #include "CodePaster.h"
 #include <iterator>
 #include <cassert>
-
 namespace
 {
 	std::string get_str(const std::string& name, const std::vector<std::string>& to_paste)
@@ -38,34 +37,32 @@ void CodePaster::visit(BaseTypeSpec& bt)
 		if (!bt.generic_list.empty())
 		{
 			auto descr = Error::FromToken(bt.name);
-			descr.Message = fmt::format("type '{}': A generic type parameter must not have generic parameters specified", bt.name.text);
+			descr.Message = fmt::format("type '{}': A generic type parameter cannot be generic itself", bt.name.text);
 			Error::SemanticError(descr);
+			return;
 		}
-		int arg = std::distance(it,must_replace->end());
+		int arg = std::distance(it,must_replace->end())-1;
 		assert(arg < to_paste.size());
 		auto& p = to_paste[arg];
 		bt.name.text = p;
 	}
+	for (auto& arg : bt.generic_list)
+	{
+		arg->accept(*this); // Paste the generic types now
+	}
 }
 
-void CodePaster::visit(StructDefStmt& stmt)
+void CodePaster::visit(CollectionStmt& stmt)
 {
-	auto pasted = uptr<StructDefStmt>(dynamic_cast<StructDefStmt*>(stmt.clone().release()));
+	auto pasted = uptr<CollectionStmt>(dynamic_cast<CollectionStmt*>(stmt.clone().release()));
 	pasted->name.text = get_str(stmt.name.text, to_paste);
 	pasted->generic_params.clear();
 	must_replace = &stmt.generic_params;
 	for (auto& s : pasted->stmts) s->accept(*this);
-	top_level.stmts.push_back(std::move(pasted));
-	scopes.at_root().add((CollectionStmt*)top_level.stmts.back().get());
-}
-
-void CodePaster::visit(UnionDefStmt& stmt)
-{
-	auto pasted = uptr<UnionDefStmt>(dynamic_cast<UnionDefStmt*>(stmt.clone().release()));
-	pasted->name.text = get_str(stmt.name.text, to_paste);
-	pasted->generic_params.clear();
-	must_replace = &stmt.generic_params;
-	for (auto& s : pasted->stmts) s->accept(*this);
-	top_level.stmts.push_back(std::move(pasted));
-	scopes.at_root().add((CollectionStmt*)top_level.stmts.back().get());
+	auto* ptr = pasted.get();
+	bool succ = scopes.at_root().add(ptr);
+	// If no success we have already pasted
+	if (succ)
+		top_level.stmts.push_back(std::move(pasted));
+	scopes.ret();
 }

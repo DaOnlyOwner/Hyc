@@ -4,12 +4,12 @@
 #include "Scopes.h"
 #include "ValueStorage.h"
 
-class TypeCreator : IAstVisitor, ValueStorage<Type>
+class TypeCreator : IAstVisitor, public ValueStorage<Type>
 {
 public:
 	TypeCreator(TypeSpec& spec, Scopes& scopes, NamespaceStmt& ns)
-		:spec(spec),scopes(scopes),ns(ns),ValueStorage<Type>(*this) {}
-	std::pair<Type,bool> create_type();
+		:spec(spec),scopes(scopes),ns(ns),ValueStorage<Type>(this) {}
+	bool get_succ() { return succ; }
 private:
 	TypeSpec& spec;
 	Scopes& scopes;
@@ -20,7 +20,7 @@ private:
 	virtual void visit(struct ArrayTypeSpec& at_spec) override;
 	virtual void visit(struct FptrTypeSpec& fptr) override;
 };
-
 std::pair<Type,bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns);
+
 
 

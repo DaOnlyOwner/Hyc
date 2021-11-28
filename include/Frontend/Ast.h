@@ -51,7 +51,7 @@ struct IAstVisitor
 	virtual void visit(struct FuncCallExpr& func_call_expr) {};
 	virtual void visit(struct FuncDeclStmt& func_decl) {};
 	virtual void visit(struct FuncDefStmt& func_def_stmt) {};
-	virtual void visit(struct StructDefStmt& struct_def_stmt) {};
+	virtual void visit(struct CollectionStmt& coll_def) {};
 	virtual void visit(struct ReturnStmt& ret_stmt) {};
 	virtual void visit(struct ExprStmt& expr_stmt) {};
 	virtual void visit(struct DeclStmt& decl_stmt) {};
@@ -67,7 +67,6 @@ struct IAstVisitor
 	virtual void visit(struct ContinueStmt& cont_stmt) {};
 	virtual void visit(struct ArraySubscriptExpr& subs) {};
 	virtual void visit(struct TernaryExpr& tern) {};
-	virtual void visit(struct UnionDefStmt& union_def) {};
 	virtual void visit(struct MatchStmt& match) {};
 };
 
@@ -125,7 +124,7 @@ struct PointerTypeSpec : TypeSpec
 	uptr<TypeSpec> inner = nullptr;
 	virtual std::string as_str() const override { return "*" + (inner ? inner->as_str() : std::string()); }
 	IMPL_VISITOR;
-	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new PointerTypeSpec(inner->clone())); }
+	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new PointerTypeSpec(inner?inner->clone():nullptr)); }
 };
 
 struct BaseTypeSpec : TypeSpec
@@ -155,7 +154,10 @@ struct BaseTypeSpec : TypeSpec
 	IMPL_VISITOR;
 	IMPL_CLONE(TypeSpec) {
 		CPY_VEC(generic_list,generic_list_cpy,uptr<TypeSpec>);
-		return uptr<TypeSpec>(new BaseTypeSpec(Token(name),inner->clone(),mv(generic_list_cpy))); }
+		auto ts = uptr<TypeSpec>(new BaseTypeSpec(Token(name),inner ? inner->clone() : nullptr,mv(generic_list_cpy))); 
+		ts->semantic_type = semantic_type;
+		return mv(ts);
+	}
 };
 
 struct ScopeTypeSpec : TypeSpec
@@ -216,7 +218,7 @@ struct ArrayTypeSpec : TypeSpec
 	uptr<TypeSpec> inner;
 	virtual std::string as_str() const override { return fmt::format("[{}]", amount->integer_literal.text) + (inner ? inner->as_str() : std::string()); }
 	IMPL_VISITOR;
-	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new ArrayTypeSpec(uptr<IntegerLiteralExpr>(dynamic_cast<IntegerLiteralExpr*>(amount->clone().release())), inner->clone())); }
+	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new ArrayTypeSpec(uptr<IntegerLiteralExpr>(dynamic_cast<IntegerLiteralExpr*>(amount->clone().release())), inner?inner->clone():nullptr)); }
 };
 
 
@@ -410,37 +412,31 @@ struct DeclStmt : TypedStmt
 	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec->clone(), Token(name))); }
 };
 
+enum class CollectionType
+{
+	Union,Struct
+};
+
+
 struct CollectionStmt : Stmt
 {
-	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
-		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)) {}
+	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
+		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
 	Token name;
 	std::vector<uptr<Stmt>> stmts;
 	std::vector<GenericInfo> generic_params;
-};
-
-struct StructDefStmt : CollectionStmt
-{
-	StructDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
-		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
+	CollectionType ct;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
-		CPY_VEC(stmts,stmts_cpy,uptr<Stmt>);
-	std::vector<GenericInfo> gp_cpy;
-	for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type->clone() });
-		return uptr<Stmt>(new StructDefStmt(Token(name),mv(gp_cpy),mv(stmts_cpy))); }
-};
-
-struct UnionDefStmt : CollectionStmt
-{
-	UnionDefStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts)
-		:CollectionStmt(mv(name),mv(generic_params),mv(stmts)){}
-	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) {
-		CPY_VEC(stmts,stmts_cpy,uptr<Stmt>);
-	std::vector<GenericInfo> gp_cpy;
-	for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type->clone() });
-		return uptr<Stmt>(new UnionDefStmt(Token(name),mv(gp_cpy),mv(stmts_cpy))); }
+		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);
+		std::vector<GenericInfo> gp_cpy;
+		for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type ? p.default_type->clone() : nullptr });
+		return uptr<Stmt>(new CollectionStmt(Token(name), mv(gp_cpy), mv(stmts_cpy),ct));
+	}
+	inline std::string get_collection_type()
+	{
+		return ct == CollectionType::Struct ? "struct" : "union";
+	}
 };
 
 struct NamespaceStmt : Stmt
@@ -508,18 +504,18 @@ struct IfStmt : Stmt
 
 struct FuncDeclStmt : Stmt
 {
-	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<std::pair<uptr<TypeSpec>, Token>>&& arg_list)
+	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
 		: ret_type(mv(ret_type)), name(mv(name)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
 	uptr<TypeSpec> ret_type;
 	Token name;
-	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list;
+	std::vector<uptr<DeclStmt>> arg_list;
 	std::vector<GenericInfo> generic_list;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 	std::vector<GenericInfo> generic_list_cpy;
 	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type->clone() });
-	std::vector<std::pair<uptr<TypeSpec>, Token>> arg_list_cpy;
-	for (auto& p : arg_list) arg_list_cpy.push_back({p.first->clone(),Token(p.second)});
+	std::vector<uptr<DeclStmt>> arg_list_cpy;
+	for (auto& p : arg_list) arg_list_cpy.push_back(uptr<DeclStmt>(new DeclStmt(p->type_spec->clone(), Token(p->name))));
 	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), Token(name), mv(generic_list_cpy), mv(arg_list_cpy)));
 	}
 };

@@ -10,7 +10,7 @@ struct B<T,T2 = int, T3 = B<int>*,T4=T3>
 {
    T a;
    B<int>*[23]**[5] b;
-   B::A::C<int,B<int>*[3]>::int*[3] c;
+   C<int,B<int>*[3]> c;
 }
 
 union A

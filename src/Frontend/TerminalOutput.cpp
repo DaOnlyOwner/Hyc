@@ -41,7 +41,7 @@ void TerminalOutput::visit(FuncDeclStmt& func_decl)
 	for (int i = 0; i < func_decl.arg_list.size(); i++)
 	{
 		auto& arg = func_decl.arg_list[i];
-		args += fmt::format("{} {}, ", arg.first->as_str(), arg.second.text);
+		args += fmt::format("{} {}, ", arg->type_spec->as_str(), arg->name.text);
 	}
 	std::string generic_params = "";
 	for (auto& gi : func_decl.generic_list)
@@ -51,17 +51,17 @@ void TerminalOutput::visit(FuncDeclStmt& func_decl)
 	out += fmt::format("FuncDeclStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n", func_decl.name.text, generic_params, func_decl.ret_type->as_str(), args);
 }
 
-void TerminalOutput::visit(UnionDefStmt& union_def)
+void TerminalOutput::visit(CollectionStmt& coll_def)
 {
 	make_indent();
 	std::string gp = "";
-	for (auto& param : union_def.generic_params)
+	for (auto& param : coll_def.generic_params)
 	{
-		gp += fmt::format("{}{}, ", param.name.text, param.default_type == nullptr ? "=" + param.default_type->as_str() : "");
+		gp += fmt::format("{}{}, ", param.name.text, param.default_type != nullptr ? "=" + param.default_type->as_str() : "");
 	}
-	out += fmt::format("UnionDefStmt: name='{}', generic_params='{}'\n", union_def.name.text, gp);
+	out += fmt::format("CollectionStmt: collection_type='{}', name='{}', generic_params='{}'\n", coll_def.get_collection_type(), coll_def.name.text, gp);
 	indent++;
-	for (auto& stmt : union_def.stmts)
+	for (auto& stmt : coll_def.stmts)
 	{
 		stmt->accept(*this);
 	}
@@ -107,23 +107,6 @@ void TerminalOutput::visit(TernaryExpr& tern)
 	out += "Third Expr:\n";
 	indent++;
 	tern.trd->accept(*this);
-	indent--;
-}
-
-void TerminalOutput::visit(StructDefStmt& struct_def_stmt)
-{
-	make_indent();
-	std::string gp = "";
-	for (auto& param : struct_def_stmt.generic_params)
-	{
-		gp += fmt::format("{}{}, ", param.name.text, param.default_type == nullptr ? "=" + param.default_type->as_str() : "");
-	}
-	out += fmt::format("StructDefStmt: name='{}', generic_params='{}'\n", struct_def_stmt.name.text, gp);
-	indent++;
-	for (auto& stmt : struct_def_stmt.stmts)
-	{
-		stmt->accept(*this);
-	}
 	indent--;
 }
 

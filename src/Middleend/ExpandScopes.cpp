@@ -20,16 +20,6 @@ void ExpandScopes::visit(FuncDefStmt& func_call_stmt)
 	scopes.ascend();
 }
 
-void ExpandScopes::visit(StructDefStmt& struct_def_stmt)
-{
-	scopes.expand();
-	for (auto& stmt : struct_def_stmt.stmts)
-	{
-		stmt->accept(*this);
-	}
-	scopes.ascend();
-}
-
 void ExpandScopes::visit(IfStmt& if_stmt)
 {
 	scopes.expand();
@@ -78,10 +68,10 @@ void ExpandScopes::visit(ForStmt& for_stmt)
 	scopes.ascend();
 }
 
-void ExpandScopes::visit(UnionDefStmt& union_def)
+void ExpandScopes::visit(CollectionStmt& coll_def)
 {
 	scopes.expand();
-	for (auto& stmt : union_def.stmts)
+	for (auto& stmt : coll_def.stmts)
 	{
 		stmt->accept(*this);
 	}
@@ -99,4 +89,10 @@ void ExpandScopes::visit(MatchStmt& match)
 		}
 		scopes.ascend();
 	}
+}
+
+void expand_scopes(NamespaceStmt& ns, Scopes& sc)
+{
+	ExpandScopes es(sc);
+	ns.accept(es);
 }

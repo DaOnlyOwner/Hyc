@@ -1,0 +1,43 @@
+struct A
+{
+}
+
+struct C
+{
+}
+
+struct D<T>
+{
+}
+
+struct B<T1,T2,T3=C,T4=D<C>>
+{
+   T1 t1;
+   T2 t2;
+   T3 t3;
+   T4 t4;
+   B<A,D<A>,A,A> t5;
+}
+
+struct F<T1,T2=D<A>>
+{
+   T1 t1;
+   B<A,C,A,D<A>> t2;
+   T2 t3;
+}
+
+struct H<T,T2=T>
+{
+
+}
+
+struct G<T>
+{
+   D<T> a;
+   H<A> b;
+}
+
+A f(B<A,A> arg1, B<A,A,A> arg2, B<A,A,A,A> arg3)
+{
+   G<G<A>> a; 
+}

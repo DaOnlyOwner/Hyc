@@ -18,3 +18,5 @@ private:
 	virtual void visit(NamespaceStmt& ns) override;
 	virtual void visit(FuncDefStmt& func_def_stmt) override;
 };
+
+void collect_funcs(NamespaceStmt& ns, Scopes& sc);

@@ -4,11 +4,12 @@
 #include <cassert>
 #include "ValuePtr.h"
 
-std::pair<Type, bool> TypeCreator::create_type()
+std::pair<Type, bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns)
 {
-	auto type = get(spec);
+	TypeCreator tc(ts, scopes, ns);
+	auto type = tc.get(ts);
 	type.reverse();
-	return { type,succ };
+	return { std::move(type),tc.get_succ()};
 }
 
 void TypeCreator::visit(PointerTypeSpec& pt_spec)
@@ -28,11 +29,11 @@ void TypeCreator::visit(PointerTypeSpec& pt_spec)
 void TypeCreator::visit(BaseTypeSpec& bt_spec)
 {
 	instantiate_generic(bt_spec, scopes,ns);
-	auto* bt = scopes.get_base_type(bt_spec.as_str());
+	auto* bt = scopes.get_base_type(bt_spec.name.text);
 	if (bt == nullptr)
 	{
 		auto descr = Error::FromToken(bt_spec.name);
-		descr.Message = fmt::format("The type '{}' is undefined",bt->name);
+		descr.Message = fmt::format("The type '{}' is undefined",bt_spec.name.text);
 		Error::SemanticError(descr);
 		bt = &error_base_type;
 		succ = false;
@@ -73,12 +74,6 @@ void TypeCreator::visit(FptrTypeSpec& fptr)
 	RETURN(Type(std::move(ret_vp), std::move(value_ptrs)));
 	//auto& ret = get(fptr.ret_type);
 	//std::vector<
-}
-
-std::pair<Type,bool> create_type(TypeSpec& ts, Scopes& scopes,NamespaceStmt& ns)
-{
-	TypeCreator tc(ts, scopes,ns);
-	return tc.create_type();
 }
 
 

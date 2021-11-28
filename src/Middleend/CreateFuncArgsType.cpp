@@ -3,9 +3,12 @@
 
 void CreateFuncArgsType::visit(NamespaceStmt& ns)
 {
-	scopes.descend();
-	for (auto& stmt : ns.stmts) stmt->accept(*this);
-	scopes.go_to_root();
+	int size_before_pasting = ns.stmts.size();
+	for (size_t i = 0; i < size_before_pasting; i++)
+	{
+		auto& stmt = ns.stmts[i];
+		stmt->accept(*this);
+	}
 }
 
 void CreateFuncArgsType::visit(FuncDefStmt& def)
@@ -22,13 +25,22 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 	for (int i = 0; i<def.decl->arg_list.size(); i++)
 	{
 		auto& arg = def.decl->arg_list[i];
-		auto [a, succ_a] = create_type(*arg.first, scopes, ns);
+		// Don't try to create a type for a generic parameter.
+		if (std::find_if(def.decl->generic_list.begin(), def.decl->generic_list.end(), [&](GenericInfo& t) {return t.name.text == arg->type_spec->as_str(); }) != def.decl->generic_list.end())
+			continue;
+		auto [a, succ_a] = create_type(*arg->type_spec, scopes, ns);
 		if (!succ_a)
 		{
-			auto descr = Error::FromToken(arg.second);
-			descr.Message = fmt::format("In type of argument '{}' of function '{}'", arg.second.text,def.decl->name.text);
+			auto descr = Error::FromToken(arg->name);
+			descr.Message = fmt::format("In type of argument '{}' of function '{}'", arg->name.text,def.decl->name.text);
 			Error::Info(descr);
 		}
-		arg.first->semantic_type = std::move(a);
+		arg->type_spec->semantic_type = std::move(a);
 	}
+}
+
+void create_func_args_type(Scopes& sc, NamespaceStmt& ns)
+{
+	CreateFuncArgsType cfat(sc, ns);
+	ns.accept(cfat);
 }
