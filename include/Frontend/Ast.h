@@ -47,7 +47,7 @@ struct IAstVisitor
 	virtual void visit(struct DeclMvStmt& decl_mv) { };
 	virtual void visit(struct DeclInitStmt& decl_init) {};
 	virtual void visit(struct IdentExpr& ident) {};
-	virtual void visit(struct NamespaceStmt& namespace_stmt) {};
+	virtual void visit(struct NamespaceStmt& namespace_stmt); 
 	virtual void visit(struct FuncCallExpr& func_call_expr) {};
 	virtual void visit(struct FuncDeclStmt& func_decl) {};
 	virtual void visit(struct FuncDefStmt& func_def_stmt) {};
@@ -61,13 +61,14 @@ struct IAstVisitor
 	virtual void visit(struct FptrTypeSpec& fptr) {};
 	virtual void visit(struct ScopeTypeSpec& scope_spec) {};
 	virtual void visit(struct ImplicitCastExpr& ice) {};
-	virtual void visit(struct IfStmt& if_stmt) {};
-	virtual void visit(struct WhileStmt& while_stmt) {};
-	virtual void visit(struct ForStmt& for_stmt) {};
+	virtual void visit(struct IfStmt& if_stmt);
+	virtual void visit(struct WhileStmt& while_stmt);
+	virtual void visit(struct ForStmt& for_stmt);
 	virtual void visit(struct ContinueStmt& cont_stmt) {};
 	virtual void visit(struct ArraySubscriptExpr& subs) {};
 	virtual void visit(struct TernaryExpr& tern) {};
-	virtual void visit(struct MatchStmt& match) {};
+	virtual void visit(struct MatchStmt& match);
+	virtual void visit(struct ScopeStmt& sc);
 };
 
 struct Node
@@ -362,6 +363,19 @@ struct TypedStmt : Stmt
 	Type type;
 };
 
+struct ScopeStmt : Stmt
+{
+	ScopeStmt(std::vector<uptr<Stmt>>&& stmts)
+		:stmts(mv(stmts)) {}
+	std::vector<uptr<Stmt>> stmts;
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt)
+	{
+		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);
+		return uptr<Stmt>(new ScopeStmt(mv(stmts_cpy)));
+	}
+};
+
 struct DeclOpStmt : TypedStmt
 {
 	DeclOpStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
@@ -589,12 +603,37 @@ struct ReturnStmt : Stmt
 	}
 };
 
+void IAstVisitor::visit(struct NamespaceStmt& namespace_stmt) { for (auto& p : namespace_stmt.stmts) p->accept(*this); };
+void IAstVisitor::visit(struct IfStmt& if_stmt) {
+	for (auto& p : if_stmt.if_stmts) p->accept(*this);
+	for (auto& elif : if_stmt.all_elif_stmts)
+	{
+		for (auto& p : elif) p->accept(*this);
+	}
+	for (auto& p : if_stmt.else_stmts) p->accept(*this);
+};
 
+void IAstVisitor::visit(struct WhileStmt& while_stmt) {
+	for (auto& p : while_stmt.stmts) p->accept(*this);
+};
 
+void IAstVisitor::visit(struct ForStmt& for_stmt) {
+	for_stmt.decl_stmt->accept(*this);
+	for (auto& p : for_stmt.stmts) p->accept(*this);
+};
 
+void IAstVisitor::visit(struct MatchStmt& match) {
+	for (auto& case_ : match.match_cases)
+	{
+		case_.decl_stmt->accept(*this);
+		for (auto& p : case_.body)
+		{
+			p->accept(*this);
+		}
+	}
+};
 
-
-
+void IAstVisitor::visit(struct ScopeStmt& sc) { for (auto& p : sc.stmts) p->accept(*this); };
 
 
 

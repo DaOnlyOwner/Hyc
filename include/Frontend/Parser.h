@@ -51,7 +51,8 @@ public:
 	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);
 	MatchCase parse_match_case(bool in_loop);
 	std::unique_ptr<Stmt> parse_namespace_stmt();
-	std::unique_ptr<Stmt> parse_if_stmt();
+	std::unique_ptr<Stmt> parse_if_stmt(bool in_loop=false);
+	std::unique_ptr<Stmt> parse_new_scope(bool in_loop=false);
 	std::unique_ptr<Stmt> parse_while_loop_stmt();
 	std::unique_ptr<Stmt> parse_for_loop_stmt();
 	//std::unique_ptr<Stmt> parse_switch_stmt();

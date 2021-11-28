@@ -91,6 +91,13 @@ void ExpandScopes::visit(MatchStmt& match)
 	}
 }
 
+void ExpandScopes::visit(ScopeStmt& sc)
+{
+	scopes.descend();
+	for (auto& p : sc.stmts) p->accept(*this);
+	scopes.ascend();
+}
+
 void expand_scopes(NamespaceStmt& ns, Scopes& sc)
 {
 	ExpandScopes es(sc);

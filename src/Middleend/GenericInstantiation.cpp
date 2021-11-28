@@ -1,6 +1,7 @@
 #include "GenericInstantiation.h"
 #include "DebugPrint.h"
 #include <algorithm>
+#include "Messages.h"
 
 namespace
 {
@@ -82,10 +83,11 @@ void GenericInst::visit(BaseTypeSpec& bt)
 	if (defined == nullptr)
 	{
 		// Don't try to check generic type parameters passed in 
-		if (contains(generic_params, bt.name.text)) RETURN(false);
-		auto descr = Error::FromToken(bt.name);
-		descr.Message = fmt::format("The type '{}' is undefined", bt.name.text);
-		Error::SemanticError(descr);
+		if (contains(generic_params, bt.name.text))
+		{
+			RETURN(false);
+		}
+		Messages::inst().trigger_4_e1(bt.name);
 		RETURN(false);
 	}
 
@@ -107,9 +109,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 			{
 				if (arg.default_type == nullptr)
 				{
-					auto descr = Error::FromToken(bt.name);
-					descr.Message = fmt::format("No type parameter given for generic type '{}'", arg.name.text);
-					Error::SemanticError(descr);
+					Messages::inst().trigger_4_e2(bt.name, arg.name.text);
 					RETURN(false);
 				}
 				arg.default_type->accept(*this);
@@ -142,10 +142,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 	*/
 	if (defined->generic_params.size() < bt.generic_list.size())
 	{
-		auto descr = Error::FromToken(bt.name);
-		descr.Message = fmt::format("The type '{}' was given more generic types for instantiation than the definition specifies.", bt.as_str());
-		descr.Hint = fmt::format("In the instantiation the type was given '{}' generic parameters, while the definition has only '{}'", bt.generic_list.size(), defined->generic_params.size());
-		Error::SemanticError(descr);
+		Messages::inst().trigger_4_e3(bt.name, bt.as_str(), bt.generic_list.size(), defined->generic_params.size());
 		RETURN(false);
 	}
 
@@ -158,15 +155,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 			// Its not a default argument
 			if (t.default_type == nullptr)
 			{
-				auto descr = Error::FromToken(bt.name);
-				std::string num = "";
-				if (i == 0) num = "first";
-				else if (i == 2) num = "second";
-				else if (i == 3) num = "third";
-				else if (i == 4) num = "fourth";
-				else if (i > 4) num = fmt::format("{}th", i + 1);
-				descr.Message = fmt::format("No type specified for the '{}' argument in instantitation of generic type '{}'", num, defined->name.text);
-				Error::SemanticError(descr);
+				Messages::inst().trigger_4_e4(bt.name, i,defined->name.text);
 				RETURN(false); // Dont go any further
 			}
 			// It is a default argument.

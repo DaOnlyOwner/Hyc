@@ -1,5 +1,6 @@
 #include "CreateFuncArgsType.h"
 #include "TypeCreator.h"
+#include "Messages.h"
 
 void CreateFuncArgsType::visit(NamespaceStmt& ns)
 {
@@ -17,9 +18,7 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 	def.decl->ret_type->semantic_type = std::move(r);
 	if (!succ)
 	{
-		auto descr = Error::FromToken(def.decl->ret_type->get_ident_token());
-		descr.Message = fmt::format("In return type of function '{}'", def.decl->name.text);
-		Error::Info(descr);
+		Messages::inst().trigger_3_i1(def.decl->ret_type->get_ident_token(), def.decl->name.text);
 	}
 
 	for (int i = 0; i<def.decl->arg_list.size(); i++)
@@ -31,9 +30,7 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 		auto [a, succ_a] = create_type(*arg->type_spec, scopes, ns);
 		if (!succ_a)
 		{
-			auto descr = Error::FromToken(arg->name);
-			descr.Message = fmt::format("In type of argument '{}' of function '{}'", arg->name.text,def.decl->name.text);
-			Error::Info(descr);
+			Messages::inst().trigger_3_i2(arg->name, def.decl->name.text);
 		}
 		arg->type_spec->semantic_type = std::move(a);
 	}

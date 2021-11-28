@@ -637,6 +637,8 @@ std::unique_ptr<Stmt> Parser::parse_allowed_loop_stmt()
 	auto la3 = tkns.lookahead(3).type;
 	switch (la1)
 	{
+	case Token::Specifier::BraceL:
+		return parse_new_scope(true);
 	case Token::Specifier::KwMatch:
 		return parse_match_stmt(true);
 	case Token::Specifier::KwContinue:
@@ -648,7 +650,7 @@ std::unique_ptr<Stmt> Parser::parse_allowed_loop_stmt()
 	case Token::Specifier::KwWhile:
 		return parse_while_loop_stmt();
 	case Token::Specifier::KwIf:
-		return parse_if_stmt();
+		return parse_if_stmt(true);
 	case Token::Specifier::Ident:
 	{
 		if (la2 == Token::Specifier::Asterix // e.g. int*
@@ -695,7 +697,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse_func_def_list()
 }
 
 // e.g if(a) {b;} elif(c){} else{}
-std::unique_ptr<Stmt> Parser::parse_if_stmt()
+std::unique_ptr<Stmt> Parser::parse_if_stmt(bool in_loop)
 {
 	tkns.match_token(Token::Specifier::KwIf);
 	tkns.match_token(Token::Specifier::RParenL);
@@ -728,12 +730,12 @@ std::unique_ptr<Stmt> Parser::parse_if_stmt()
 		if (tkns.lookahead(1).type == Token::Specifier::BraceL)
 		{
 			tkns.eat(); // {
-			elif_stmts = parse_allowed_func_stmts();
+			elif_stmts = in_loop ? parse_allowed_func_stmts() : parse_allowed_loop_stmts();
 			tkns.match_token(Token::Specifier::BraceR);
 		}
 		else if (tkns.lookahead(1).type != Token::Specifier::KwElif && tkns.lookahead(1).type != Token::Specifier::KwElse)
 		{
-			elif_stmts.push_back(parse_allowed_func_stmt());
+			elif_stmts.push_back(in_loop ? parse_allowed_func_stmt() : parse_allowed_loop_stmt());
 		}
 
 		all_elif_stmts.push_back(std::move(elif_stmts));
@@ -748,18 +750,25 @@ std::unique_ptr<Stmt> Parser::parse_if_stmt()
 		if (tkns.lookahead(1).type == Token::Specifier::BraceL)
 		{
 			tkns.eat(); // {
-			else_stmts = parse_allowed_func_stmts();
+			else_stmts = in_loop?parse_allowed_loop_stmts() : parse_allowed_func_stmts();
 			tkns.match_token(Token::Specifier::BraceR);
 		}
 		else if (tkns.lookahead(1).type != Token::Specifier::KwElif && tkns.lookahead(1).type != Token::Specifier::KwElse)
 		{
-			else_stmts.push_back(parse_allowed_func_stmt());
+			else_stmts.push_back(in_loop? parse_allowed_loop_stmt() : parse_allowed_func_stmt());
 		}
 	}
 	
 	return std::make_unique<IfStmt>(mv(if_expr), mv(if_stmts), mv(elif_exprs), mv(all_elif_stmts), mv(else_stmts));
 }
 
+std::unique_ptr<Stmt> Parser::parse_new_scope(bool in_loop)
+{
+	tkns.match_token(Token::Specifier::BraceL);
+	std::vector<uptr<Stmt>> stmts = in_loop ? parse_allowed_loop_stmts() : parse_allowed_func_stmts();
+	tkns.match_token(Token::Specifier::BraceR);
+	return std::make_unique<ScopeStmt>(mv(stmts));
+}
 
 std::unique_ptr<Stmt> Parser::parse_while_loop_stmt()
 {

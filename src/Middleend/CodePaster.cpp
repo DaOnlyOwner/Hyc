@@ -1,6 +1,7 @@
 #include "CodePaster.h"
 #include <iterator>
 #include <cassert>
+#include "Messages.h"
 namespace
 {
 	std::string get_str(const std::string& name, const std::vector<std::string>& to_paste)
@@ -36,9 +37,7 @@ void CodePaster::visit(BaseTypeSpec& bt)
 	{
 		if (!bt.generic_list.empty())
 		{
-			auto descr = Error::FromToken(bt.name);
-			descr.Message = fmt::format("type '{}': A generic type parameter cannot be generic itself", bt.name.text);
-			Error::SemanticError(descr);
+			Messages::inst().trigger_code_paster_e1(bt.name);
 			return;
 		}
 		int arg = std::distance(it,must_replace->end())-1;

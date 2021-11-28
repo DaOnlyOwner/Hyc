@@ -18,16 +18,7 @@ private:
 
 	virtual void visit(struct CollectionStmt& coll_def) override;
 	virtual void visit(struct BaseTypeSpec& bts) override;
-	/*
-	virtual void visit(struct NamespaceStmt& namespace_stmt) override;
-	virtual void visit(struct FuncDefStmt& func_def) override;
-	virtual void visit(struct IfStmt& if_stmt) override;
-	virtual void visit(struct WhileStmt& while_stmt) override;
-	virtual void visit(struct ForStmt& for_stmt) override;
-	virtual void visit(struct MatchStmt& match) override;
-	virtual void visit(struct DeclStmt& decl_stmt) override;
-	void visit(BaseTypeSpec& bt) override;
-	*/
+	virtual void visit(struct NamespaceStmt& ns) override;
 };
 
 void check_default_type_arg(NamespaceStmt& ns, Scopes& sc);

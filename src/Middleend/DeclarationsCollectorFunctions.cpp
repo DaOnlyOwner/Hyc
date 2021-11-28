@@ -1,6 +1,6 @@
 #include "DeclarationsCollectorFunctions.h"
 #include <algorithm>
-#include "TypeCreator.h"
+#include "Messages.h"
 
 namespace
 {
@@ -30,11 +30,8 @@ void DeclarationsCollectorFunctions::visit(FuncDefStmt& func_def_stmt)
 {
 	bool succ = scopes.add(&func_def_stmt);
 	if (!succ) {
-		auto descr = Error::FromToken(func_def_stmt.decl->name);
 		auto proto = get_function_proto(func_def_stmt);
-		descr.Message = fmt::format("The function '{}' is already defined.", proto);
-		descr.Hint = "You have multiple definitions of the same function with the same arguments. Maybe change this function name? Note, that the return types don't play a role in detecting wether the function has been defined before, only the name and the arguments.";
-		Error::SemanticError(descr);
+		Messages::inst().trigger_5_e1(func_def_stmt.decl->name, proto);
 	}
 }
 

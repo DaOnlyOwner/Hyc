@@ -11,6 +11,8 @@
 #include "DeclarationsCollectorFunctions.h"
 #include "CreateFuncArgsType.h"
 #include "GenericInstantiation.h"
+#include "DefaultTypeArgChecker.h"
+#include "Desugar.h"
 
 namespace
 {
@@ -72,7 +74,9 @@ TEST_CASE("DEBUG")
 	auto [_3, parsed] = parse(filename_coll);
 	Scopes sc;
 	expand_scopes(*parsed, sc);
+	desugar(*parsed);
 	collect_types(*parsed,sc);
+	check_default_type_arg(*parsed, sc);
 	create_func_args_type(sc, *parsed);
 	bool changed = true;
 	// Loop as long as the AST keeps expanding (new types instantiated from generics)

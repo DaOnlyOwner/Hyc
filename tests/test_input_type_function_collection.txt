@@ -26,9 +26,9 @@ struct F<T1,T2=D<A>>
    T2 t3;
 }
 
-struct H<T,T2=T>
+struct H<T=A,T,T2=T2>
 {
-
+   int a;
 }
 
 struct G<T>
