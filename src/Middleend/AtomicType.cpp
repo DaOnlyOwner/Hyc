@@ -10,11 +10,11 @@ Type error_type{ &error_base_type };
 
 bool Type::operator==(const Type& other) const
 {
-	if (other.type_info.size() != type_info.size()) return false;
-	for (int i = 0; i < type_info.size(); i++)
+	if (other.stored_types.size() != stored_types.size()) return false;
+	for (int i = 0; i < stored_types.size(); i++)
 	{
-		auto& [kind, acc] = type_info[i];
-		auto& [okind, oacc] = other.type_info[i];
+		auto& [kind, acc] = stored_types[i];
+		auto& [okind, oacc] = other.stored_types[i];
 		if (kind != okind) return false;
 		switch (kind)
 		{
@@ -60,37 +60,61 @@ Type::Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
 
 void Type::reverse()
 {
-	std::reverse(type_info.begin(), type_info.end());
+	std::reverse(stored_types.begin(), stored_types.end());
+}
+
+bool Type::is_pointer_type() const
+{
+	return stored_types.back().first == TypeKind::Pointer;
+}
+
+bool Type::is_base_type() const
+{
+	return stored_types.back().first == TypeKind::Base;
 }
 
 void Type::promote_pointer()
 {
-	type_info.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
+	stored_types.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
 }
 
 void Type::promote_base(BaseType* base)
 {
-	type_info.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
+	//if (base->name == "int") pred_type = PredefinedType::Int;
+	//else if (base->name == "uint") pred_type = PredefinedType::UInt;
+	//else if (base->name == "half") pred_type = PredefinedType::Half;
+	//else if (base->name == "uhalf") pred_type = PredefinedType::UHalf;
+	//else if (base->name == "short") pred_type = PredefinedType::Short;
+	//else if (base->name == "ushort") pred_type = PredefinedType::UShort;
+	//else if (base->name == "char") pred_type = PredefinedType::Char;
+	//else if (base->name == "uchar") pred_type = PredefinedType::UChar;
+	//else if (base->name == "bool") pred_type = PredefinedType::Bool;
+	//else if (base->name == "float") pred_type = PredefinedType::Float;
+	//else if (base->name == "double") pred_type = PredefinedType::Double;
+	//else if (base->name == "quad") pred_type = PredefinedType::Quad;
+	//else if (base->name == "void") pred_type == PredefinedType::Void;
+	//else pred_type = PredefinedType::None;
+	stored_types.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
 }
 
 void Type::promote_array(uint64_t amount)
 {
-	type_info.push_back(std::make_pair(TypeKind::Array, TypeVariant(ArrayType{ amount })));
+	stored_types.push_back(std::make_pair(TypeKind::Array, TypeVariant(ArrayType{ amount })));
 }
 
 void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
 {
-	type_info.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
+	stored_types.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
 ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes)
 {
-	if (other.type_info.size() != type_info.size()) return ConversionType::NeedsCasting;
+	if (other.stored_types.size() != stored_types.size()) return ConversionType::NeedsCasting;
 	ConversionType ctype = ConversionType::ImplicitCasting;
-	for (int i = 0; i < type_info.size(); i++)
+	for (int i = 0; i < stored_types.size(); i++)
 	{
-		auto& [kind, acc] = type_info[i];
-		auto& [okind, oacc] = other.type_info[i];
+		auto& [kind, acc] = stored_types[i];
+		auto& [okind, oacc] = other.stored_types[i];
 		if (kind != okind)
 		{
 			if (kind == TypeKind::Array && okind == TypeKind::Pointer) continue; // Array to pointer is implicitly casted
@@ -107,7 +131,7 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 			BaseType* obt = std::get<BaseType*>(oacc);
 			if (bt == obt)
 			{
-				ctype = ConversionType::Same;
+				ctype = ConversionType::None;
 			}
 			else
 			{
@@ -131,7 +155,7 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 				Type& t = *fp.args[j];
 				Type& ot = *ofp.args[j];
 				if (t != ot) return ConversionType::NeedsCasting;
-				ctype = ConversionType::Same;
+				ctype = ConversionType::None;
 			}
 			break;
 		}
@@ -142,7 +166,7 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 std::string Type::as_str() const 
 {
 	std::string out = "";
-	for (auto& [kind,var] : type_info)
+	for (auto& [kind,var] : stored_types)
 	{
 		switch (kind)
 		{
@@ -171,9 +195,53 @@ std::string Type::as_str() const
 	return out;
 }
 
+std::pair<ConversionType, ConversionType> Type::type_cast_to_more_general(PredefinedType t1, PredefinedType t2)
+{
+	int wt1 = (int)t1;
+	int wt2 = (int)t2;
+	if (wt1 < wt2) return std::make_pair(ConversionType::ImplicitCasting, ConversionType::None);
+	else if (wt1 > wt2) return std::make_pair(ConversionType::None, ConversionType::ImplicitCasting);
+	else return std::make_pair(ConversionType::None, ConversionType::None);
+}
+
+bool Type::is_numeric(PredefinedType pt)
+{
+	switch (pt)
+	{
+	case PredefinedType::Int:
+		return true;
+	case PredefinedType::UInt:
+		return true;
+	case PredefinedType::Half:
+		return true;
+	case PredefinedType::UHalf:
+		return true;
+	case PredefinedType::Short:
+		return true;
+	case PredefinedType::UShort:
+		return true;
+	case PredefinedType::Char:
+		return true;
+	case PredefinedType::UChar:
+		return true;
+	case PredefinedType::Bool:
+		return true;
+	case PredefinedType::Float:
+		return false;
+	case PredefinedType::Double:
+		return false;
+	case PredefinedType::Quad:
+		return false;
+	case PredefinedType::Void:
+		return false;
+	default:
+		break;
+	}
+}
+
 BaseType* Type::get_base_type() const
 {
-	for (auto& ti : type_info)
+	for (auto& ti : stored_types)
 	{
 		if (ti.first == TypeKind::Base) return std::get<BaseType*>(ti.second);
 	}

@@ -104,10 +104,17 @@ std::vector<Function> Scopes::get_all_funcs(const std::string& name)
 	return out;
 }*/
 
-std::optional<std::pair<CollectionStmt*, BaseType*>> Scopes::get_type_both(const std::string & str)
+Scopes::Scopes()
 {
-	auto out = at_root().get_current_entry().table.get_type(str);
-	ret();
+	/*predefined_types = 
+	{
+		{new CollectionStmt(Token(Token::Specifier::Integer,"int"))}
+	}*/
+}
+
+std::optional<std::pair<CollectionStmt*, BaseType*>> Scopes::get_type_both(const std::string & str) const
+{
+	auto out = m_collection[0].table.get_type(str);
 	return out;
 }
 

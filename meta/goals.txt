@@ -102,6 +102,7 @@ void a(int a{0},int b)
   -> copying: a(=b);
 - disallow parameters like int[4] in parser
 - operator as -> need special parsing and handling in the semantic checking.
+- disallow overloading of operators with atomic types.
 
 Avoided, but want to implement:
 - Structs, union def inside structs, unions, namespaces

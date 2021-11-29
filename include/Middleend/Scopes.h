@@ -25,10 +25,12 @@ return nullptr;
 
 */
 
+
+
 class Scopes
 {
 public:
-	Scopes() = default;
+	Scopes();
 	Scopes(const Scopes&) = delete;
 	Scopes& operator=(const Scopes&) = delete;
 
@@ -46,14 +48,17 @@ public:
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
-	bool is_type_defined(const std::string& t) { return get_type_both(t).has_value(); }
+	bool is_type_defined(const std::string& t) const { return get_type_both(t).has_value(); }
+	bool is_type_predefined(const BaseType& bt) const { return std::find_if(predefined_types.begin(), predefined_types.end(), [&](auto& p) {return p.get() == &bit; }) != predefined_types.end(); }
+	PredefinedType get_predefined_type(const BaseType& bt);
 
-	std::optional<std::pair<CollectionStmt*, BaseType*>> get_type_both(const std::string& str);
+
+	std::optional<std::pair<CollectionStmt*, BaseType*>> get_type_both(const std::string& str) const;
 	CollectionStmt* get_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().first : nullptr; }
 	BaseType* get_base_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().second : nullptr; }
 
-	static const Type& get_primitive_type(const std::string name) { return m_predefined_types[name]; };
-	static const Type& get_primitive_type(Primitive::Specifier primitive) { return m_predefined_types[Primitive::Translate(primitive)]; }
+	static const Type& get_primitive_type(const std::string name) { return predefined_types[name]; };
+	static const Type& get_primitive_type(Primitive::Specifier primitive) { return predefined_types[Primitive::Translate(primitive)]; }
 
 
 	/*template<typename Pred>
@@ -113,7 +118,7 @@ private:
 	}
 
 
-	static std::unordered_map<std::string, Type> m_predefined_types;
+	static std::vector<std::unique_ptr<CollectionStmt>> predefined_types;
 };
 
 

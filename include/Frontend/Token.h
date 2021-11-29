@@ -94,6 +94,9 @@ struct Token
 	Token(Specifier ttype, const std::string& text, const std::string& file, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
 		:type(ttype), text(text), file(file), lineNo(lineNo), colNo(colNo), lineNoEnd(lineNoEnd), colNoEnd(colNoEnd){}
 
+	Token(Specifier ttype, const std::string& text)
+		:type(ttype),text(text),file(""),lineNo(0),colNo(0),lineNoEnd(0),colNoEnd(0){}
+
 	Token() = default;
 
 	Specifier type;

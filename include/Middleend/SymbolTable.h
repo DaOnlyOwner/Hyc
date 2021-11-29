@@ -94,7 +94,7 @@ public:
 
 	bool add(FuncDefStmt* fn);
 
-	std::optional<std::pair<CollectionStmt*,BaseType*>> get_type(const std::string& name)
+	std::optional<std::pair<CollectionStmt*,BaseType*>> get_type(const std::string& name) const
 	{
 		auto it = collections.find(name);
 		if (it != collections.end()) return { { it->second.stmt,it->second.bt.get()} };
