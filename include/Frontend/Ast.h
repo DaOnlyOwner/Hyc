@@ -250,7 +250,7 @@ struct PrefixOpExpr : Expr
 	uptr<Expr> lh;
 
 	// Semantic annotations
-	struct Function* sem_unary_op = nullptr;
+	FuncDeclStmt* sem_unary_op = nullptr;
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr)
@@ -436,6 +436,10 @@ struct CollectionStmt : Stmt
 {
 	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
 		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
+
+	CollectionStmt(const std::string& name, CollectionType ctype = CollectionType::Struct)
+		:name(Token(Token::Specifier::Ident, name)), stmts{}, generic_params{},ct(ct){}
+
 	Token name;
 	std::vector<uptr<Stmt>> stmts;
 	std::vector<GenericInfo> generic_params;
@@ -520,6 +524,8 @@ struct FuncDeclStmt : Stmt
 {
 	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
 		: ret_type(mv(ret_type)), name(mv(name)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<uptr<DeclStmt>>&& arg_list)
+		:ret_type(mv(ret_type)),name(mv(name)),arg_list(mv(arg_list)),generic_list{}{}
 	uptr<TypeSpec> ret_type;
 	Token name;
 	std::vector<uptr<DeclStmt>> arg_list;

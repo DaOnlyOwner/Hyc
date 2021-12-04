@@ -23,27 +23,26 @@ enum class ConversionType
 
 enum class PredefinedType
 {
-	Int=8,
-	UInt=7,
-	Half=6,
-	UHalf=5,
-	Short=4,
-	UShort=3,
-	Char=2,
-	UChar=1,
 	Bool=0,
+	UShort=1,
+	UHalf=2,
+	UChar=3,
+	UInt=4,
+	Char=5,
+	Short=6,
+	Half=7,
+	Int=8,
 	Float=9,
 	Double=10,
 	Quad=11,
-	// TODO Check for void* and don't allow creation of void type
 	Void=12,
 };
 
 struct Type
 {
-	typedef std::variant<struct BaseType*, struct PointerType, struct ArrayType, struct FunctionPointerType> TypeVariant;
+	typedef std::variant<struct CollectionStmt*, struct PointerType, struct ArrayType, struct FunctionPointerType> TypeVariant;
 
-	Type(BaseType* bt);
+	Type(CollectionStmt* bt);
 	Type(uint64_t amount);
 	Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
 	Type() = default;
@@ -57,15 +56,16 @@ struct Type
 	bool operator!=(const Type& other) const { return !(*this == other); };
 
 	void promote_pointer();
-	void promote_base(BaseType* bt);
+	void promote_base(CollectionStmt* bt);
 	void promote_array(uint64_t amount);
 	void promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
 	void reverse();
+	void pop();
 	bool is_pointer_type() const;
 	bool is_base_type() const;
-	bool must_be_inferred() const { return is_base_type() && get_base_type()->name == "auto"; }
+	bool must_be_inferred() const;
 
-	BaseType* get_base_type() const;
+	CollectionStmt* get_base_type() const;
 	//PredefinedType pred_type;
 
 	// Also account for cast operators later
@@ -74,6 +74,8 @@ struct Type
 
 	static std::pair<ConversionType, ConversionType> type_cast_to_more_general(PredefinedType t1, PredefinedType t2);
 	static bool is_numeric(PredefinedType pt);
+	static bool is_unsigned_numeric(PredefinedType pt);
+	static bool is_signed_numeric(PredefinedType pt);
 };
 
 struct ArrayType
@@ -85,11 +87,6 @@ struct FunctionPointerType
 {
 	ValuePtr<Type> return_type;
 	std::vector<ValuePtr<Type>> args;
-};
-
-struct BaseType
-{
-	std::string name;
 };
 
 struct PointerType

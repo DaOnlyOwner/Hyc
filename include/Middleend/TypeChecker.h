@@ -37,6 +37,15 @@ private:
 	virtual void visit(struct MatchStmt& match) override;
 	virtual void visit(struct ScopeStmt& sc) override;
 
+	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_void(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_member_acc(Type& tlh, Type& trh, BinOpExpr& bin_op);
+
+
 	Scopes& scopes;
 	NamespaceStmt& ns;
 };

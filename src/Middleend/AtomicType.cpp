@@ -5,7 +5,7 @@
 #include <Scopes.h>
 #include <cassert>
 
-BaseType error_base_type{ "__error_type__" };
+CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
 
 bool Type::operator==(const Type& other) const
@@ -21,7 +21,7 @@ bool Type::operator==(const Type& other) const
 		case TypeKind::Pointer:
 			break;
 		case TypeKind::Base:
-			if (std::get<BaseType*>(acc)->name != std::get<BaseType*>(oacc)->name) return false;
+			if (std::get<CollectionStmt*>(acc)->name.text != std::get<CollectionStmt*>(oacc)->name.text) return false;
 			break;
 		case TypeKind::Array:
 			if (std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return false;
@@ -43,7 +43,7 @@ bool Type::operator==(const Type& other) const
 	return true;
 }
 
-Type::Type(BaseType* base)
+Type::Type(CollectionStmt* base)
 {
 	promote_base(base);
 }
@@ -73,27 +73,15 @@ bool Type::is_base_type() const
 	return stored_types.back().first == TypeKind::Base;
 }
 
+bool Type::must_be_inferred() const { return is_base_type() && get_base_type()->name.text == "auto"; }
+
 void Type::promote_pointer()
 {
 	stored_types.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
 }
 
-void Type::promote_base(BaseType* base)
+void Type::promote_base(CollectionStmt* base)
 {
-	//if (base->name == "int") pred_type = PredefinedType::Int;
-	//else if (base->name == "uint") pred_type = PredefinedType::UInt;
-	//else if (base->name == "half") pred_type = PredefinedType::Half;
-	//else if (base->name == "uhalf") pred_type = PredefinedType::UHalf;
-	//else if (base->name == "short") pred_type = PredefinedType::Short;
-	//else if (base->name == "ushort") pred_type = PredefinedType::UShort;
-	//else if (base->name == "char") pred_type = PredefinedType::Char;
-	//else if (base->name == "uchar") pred_type = PredefinedType::UChar;
-	//else if (base->name == "bool") pred_type = PredefinedType::Bool;
-	//else if (base->name == "float") pred_type = PredefinedType::Float;
-	//else if (base->name == "double") pred_type = PredefinedType::Double;
-	//else if (base->name == "quad") pred_type = PredefinedType::Quad;
-	//else if (base->name == "void") pred_type == PredefinedType::Void;
-	//else pred_type = PredefinedType::None;
 	stored_types.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
 }
 
@@ -127,16 +115,16 @@ ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes
 		case TypeKind::Base:
 		{
 			std::array<std::string, (int)Primitive::Specifier::Count> primitives = { "u8","u16","u32","uint","s8","s16","s32","int","float","double" };
-			BaseType* bt = std::get<BaseType*>(acc);
-			BaseType* obt = std::get<BaseType*>(oacc);
+			CollectionStmt* bt = std::get<CollectionStmt*>(acc);
+			CollectionStmt* obt = std::get<CollectionStmt*>(oacc);
 			if (bt == obt)
 			{
 				ctype = ConversionType::None;
 			}
 			else
 			{
-				bool contains = std::find(primitives.begin(), primitives.end(), bt->name) != primitives.end();
-				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name) != primitives.end();
+				bool contains = std::find(primitives.begin(), primitives.end(), bt->name.text) != primitives.end();
+				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name.text) != primitives.end();
 				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
 			}
 		}
@@ -173,7 +161,7 @@ std::string Type::as_str() const
 		case TypeKind::Array:
 			out += fmt::format("[{}]", std::get<ArrayType>(var).amount);
 		case TypeKind::Base:
-			out += std::get<BaseType*>(var)->name;
+			out += std::get<CollectionStmt*>(var)->name.text;
 		case TypeKind::Pointer:
 			out += "*";
 		case TypeKind::FunctionPointer:
@@ -202,6 +190,11 @@ std::pair<ConversionType, ConversionType> Type::type_cast_to_more_general(Predef
 	if (wt1 < wt2) return std::make_pair(ConversionType::ImplicitCasting, ConversionType::None);
 	else if (wt1 > wt2) return std::make_pair(ConversionType::None, ConversionType::ImplicitCasting);
 	else return std::make_pair(ConversionType::None, ConversionType::None);
+}
+
+void Type::pop()
+{
+	stored_types.pop_back();
 }
 
 bool Type::is_numeric(PredefinedType pt)
@@ -239,11 +232,11 @@ bool Type::is_numeric(PredefinedType pt)
 	}
 }
 
-BaseType* Type::get_base_type() const
+CollectionStmt* Type::get_base_type() const
 {
 	for (auto& ti : stored_types)
 	{
-		if (ti.first == TypeKind::Base) return std::get<BaseType*>(ti.second);
+		if (ti.first == TypeKind::Base) return std::get<CollectionStmt*>(ti.second);
 	}
 
 	assert(false);

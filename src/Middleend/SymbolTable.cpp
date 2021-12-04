@@ -39,3 +39,20 @@ bool SymbolTable::add(FuncDefStmt* fn)
 	}
 	return false;
 }
+
+bool SymbolTable::add(BaseType* for_coll, DeclStmt* decl)
+{
+	auto it = decl_in_collection.find(for_coll);
+	if (it == decl_in_collection.end())
+	{
+		decl_in_collection[for_coll] = { {decl->name.text,decl} };
+		return true;
+	}
+	else
+	{
+		auto& coll_decls = it->second;
+		auto succ = coll_decls.insert({ decl->name.text,decl });
+		return succ.second;
+	}
+
+}

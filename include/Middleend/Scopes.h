@@ -6,17 +6,6 @@
 #include "PerfectHashmap.h"
 #include <unordered_map>
 
-#define GET_ELEM_BY_NAME_AND_PRED_SCOPES(symbol_table_func)\
-size_t father = get_entry(m_current_index).father;\
-for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)\
-{\
-	t_entry& e = get_entry(i);\
-	auto elem = e.table.##symbol_table_func##(name, pred);\
-	if (elem != nullptr) return elem;\
-}\
-return nullptr;
-
-
 /*
 	r
   / .. \
@@ -24,8 +13,6 @@ return nullptr;
 /_\ .. /_\
 
 */
-
-
 
 class Scopes
 {
@@ -40,22 +27,20 @@ public:
 
 	//Variable* add(Variable* v) { return get_current_entry().table.add(v); }
 	//Type* add(Type* mt) { return get_current_entry().table.add(mt); }
-	bool add(FuncDefStmt* fn) { return get_current_entry().table.add(fn); }
-	bool add(CollectionStmt* cs) { 
-		// The current entry should always be the top level
-		return get_current_entry().table.add(cs); }
+	bool add(FuncDefStmt* fn) { return top_level.add(fn); }
+	bool add(CollectionStmt* cs) {	return top_level.add(cs); }
+	bool add(CollectionStmt* cs, DeclStmt* decl) { return top_level.add(cs, decl); }
 
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
-	bool is_type_defined(const std::string& t) const { return get_type_both(t).has_value(); }
-	bool is_type_predefined(const BaseType& bt) const { return std::find_if(predefined_types.begin(), predefined_types.end(), [&](auto& p) {return p.get() == &bit; }) != predefined_types.end(); }
-	PredefinedType get_predefined_type(const BaseType& bt);
+	bool is_type_defined(const std::string& t) const { return get_top_level_entry().table.get_type(t) != nullptr; }
+	bool is_type_predefined(CollectionStmt* bt) const { return std::find_if(predefined_types.begin(), predefined_types.end(), [&](auto& p) {return p.get() == bit; }) != predefined_types.end(); }
+	PredefinedType get_predefined_type(CollectionStmt* bt);
 
 
-	std::optional<std::pair<CollectionStmt*, BaseType*>> get_type_both(const std::string& str) const;
-	CollectionStmt* get_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().first : nullptr; }
-	BaseType* get_base_type(const std::string& name) { auto out = get_type_both(name); return out.has_value() ? out.value().second : nullptr; }
+	CollectionStmt* get_type(const std::string& name) { return get_top_level_entry().table.get_type(name); }
+	DeclStmt* get_decl_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_for(cs, name); }
 
 	static const Type& get_primitive_type(const std::string name) { return predefined_types[name]; };
 	static const Type& get_primitive_type(Primitive::Specifier primitive) { return predefined_types[Primitive::Translate(primitive)]; }
@@ -89,12 +74,6 @@ public:
 	void go_to_root() { m_current_index = 0; }
 	bool go_to_father(int amount);
 
-	Scopes& at_root() { save(); go_to_root(); return *this; }
-	Scopes& at_father(int i = 1) { save(); go_to_father(i); return *this; }
-	void ret() { m_current_index = savepoint; }
-	void save() { savepoint = m_current_index; }
-
-
 private:
 	struct t_entry
 	{
@@ -105,20 +84,34 @@ private:
 		SymbolTable table;
 	};
 
+	SymbolTable top_level;
 	std::vector<t_entry> m_collection;
 	int m_current_index = -1;
 	int savepoint = -1;
-	t_entry& get_current_entry()
+	t_entry& get_current_entry() 
 	{
 		return m_collection[m_current_index];
 	}
+
+	const t_entry& get_current_entry() const
+	{
+		return m_collection[m_current_index];
+	}
+
+	const t_entry& get_top_level_entry() const
+	{
+		return m_collection[0];
+	}
+
 	t_entry& get_entry(int index)
 	{
 		return m_collection[index];
 	}
 
+	static std::vector<CollectionStmt> predefined_types;
+	static std::vector<FuncDefStmt> predefined_funcs;
 
-	static std::vector<std::unique_ptr<CollectionStmt>> predefined_types;
+	static bool predefined_types_init;
 };
 
 

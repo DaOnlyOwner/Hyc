@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cassert>
 /*
 	This file provides the datastructure of a token which is fed to the parser.
 */
@@ -107,6 +108,35 @@ struct Token
 	size_t lineNoEnd;
 	size_t colNoEnd;
 
+
+	static Specifier SplitCompound(Specifier compound)
+	{
+		switch (compound)
+		{
+		case Token::Specifier::PercentEqual:
+			return Specifier::Percent;
+		case Token::Specifier::CaretEqual:
+			return Specifier::Caret;
+		case Token::Specifier::SlEqual:
+			return Specifier::ShiftLeft;
+		case Token::Specifier::SrEqual:
+			return Specifier::ShiftRight;
+		case Token::Specifier::OrEqual:
+			return Specifier::Or;
+		case Token::Specifier::AmpersandEqual:
+			return Specifier::Ampersand;
+		case Token::Specifier::PlusEqual:
+			return Specifier::Plus;
+		case Token::Specifier::MinusEqual:
+			return Specifier::Minus;
+		case Token::Specifier::AsterixEqual:
+			return Specifier::Asterix;
+		case Token::Specifier::SlashEqual:
+			return Specifier::Slash;
+		default:
+			assert(false);
+		}
+	}
 
 	static std::string Translate(Specifier ttype)
 	{

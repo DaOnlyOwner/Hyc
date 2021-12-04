@@ -86,19 +86,26 @@ public:
 
 	bool add(CollectionStmt* cs)
 	{
-		CollectionInfo info;
-		info.bt = std::unique_ptr<BaseType>(new BaseType{ cs->name.text });
-		info.stmt = cs;
-		return collections.insert({ cs->name.text,std::move(info) }).second;
+		return collections.insert({ cs->name.text,cs }).second;
 	}
 
 	bool add(FuncDefStmt* fn);
+	bool add(CollectionStmt* for_coll, DeclStmt* decl);
 
-	std::optional<std::pair<CollectionStmt*,BaseType*>> get_type(const std::string& name) const
+	CollectionStmt* get_type(const std::string& name) const
 	{
 		auto it = collections.find(name);
-		if (it != collections.end()) return { { it->second.stmt,it->second.bt.get()} };
-		return std::nullopt;
+		if (it != collections.end()) return it->second;
+		return nullptr;
+	}
+
+	DeclStmt* get_decl_for(CollectionStmt* bt, const std::string& name)
+	{
+		auto it = decl_in_collection.find(bt);
+		assert(it != decl_in_collection.end());
+		auto decl_it = it->second.find(name);
+		if (decl_it == it->second.end()) return nullptr;
+		else return decl_it->second;
 	}
 
 	/*Type* get_type(const std::string& name)
@@ -129,14 +136,10 @@ public:
 	}*/
 
 private:
-	struct CollectionInfo
-	{
-		CollectionStmt* stmt;
-		std::unique_ptr<BaseType> bt;
-	};
 	//std::unordered_map<std::string, std::unique_ptr<Variable>> variables;
 	//std::unordered_map<std::string, std::unique_ptr<Type>> types;
-	std::unordered_map<std::string, CollectionInfo> collections;
+	std::unordered_map<std::string, CollectionStmt*> collections;
+	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, DeclStmt*>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
 };

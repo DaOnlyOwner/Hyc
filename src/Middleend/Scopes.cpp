@@ -2,15 +2,9 @@
 #include <cassert>
 #include "Operators.h"
 
-#define GET_ELEM_BY_NAME(symbol_table_func)\
-int father = get_entry(m_current_index).father;\
-for (int i = m_current_index; i >= 0; father = get_entry(m_current_index).father)\
-{\
-	t_entry& e = get_entry(i);\
-	auto* elem = e.table.symbol_table_func(name);\
-	if (elem != nullptr) return elem;\
-}\
-return nullptr;
+
+bool Scopes::predefined_types_init = false;
+std::vector<std::unique_ptr<CollectionStmt>> Scopes::predefined_types{};
 
 /*Variable* Scopes::get_var(const std::string & name)
 {
@@ -106,17 +100,44 @@ std::vector<Function> Scopes::get_all_funcs(const std::string& name)
 
 Scopes::Scopes()
 {
-	/*predefined_types = 
+	if (!predefined_types_init)
 	{
-		{new CollectionStmt(Token(Token::Specifier::Integer,"int"))}
-	}*/
+		predefined_types =
+		{
+			CollectionStmt("int"),
+			CollectionStmt("float"),
+			CollectionStmt("double"),
+			CollectionStmt("quad"),
+			CollectionStmt("uint"),
+			CollectionStmt("half"),
+			CollectionStmt("uhalf"),
+			CollectionStmt("short"),
+			CollectionStmt("ushort"),
+			CollectionStmt("bool"),
+			CollectionStmt("char"),
+			CollectionStmt("uchar"),
+			CollectionStmt("void")
+		};
+
+		for (int i = 0; i < predefined_types.size()-1 /*dont go over void*/; i++)
+		{
+			CollectionStmt& coll = predefined_types[i];
+			auto lhs = std::make_unique<DeclStmt>(std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident, coll.name.text), nullptr, {}),Token(Token::Specifier::Ident,"lhs"));
+			DeclStmt rhs(&coll);
+			std::string ops[] = { "+","-","/","*" };
+			for (const std::string& op : ops)
+			{
+				auto decl = std::make_unique<FuncDeclStmt>(Type(&coll), fmt::format("${}", op))
+			}
+		}
+
+		predefined_types_init = true;
+
+
+
+	}
 }
 
-std::optional<std::pair<CollectionStmt*, BaseType*>> Scopes::get_type_both(const std::string & str) const
-{
-	auto out = m_collection[0].table.get_type(str);
-	return out;
-}
 
 void Scopes::ascend()
 {

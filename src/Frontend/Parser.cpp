@@ -135,6 +135,7 @@ namespace
 	} };
 	DEF_BIN_OP(member, Group2, false);
 	DEF_PREFIX_OP(unary, Group3);
+	// TODO: Cast
 	DEF_BIN_OP(cast, Group3, false);
 	DEF_BIN_OP(ind_addr_of, Group3, true);
 	DEF_BIN_OP(mult, Group5, false);
@@ -175,7 +176,7 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::Plus, unary);
 	ADD_OP(Token::Specifier::ExclMark, unary);
 	ADD_OP(Token::Specifier::Tilde, unary);
-	ADD_OP(Token::Specifier::KwAs, cast);
+	//ADD_OP(Token::Specifier::KwAs, cast);
 	ADD_OP(Token::Specifier::Asterix, unary);
 	ADD_OP(Token::Specifier::Ampersand, unary);
 	ADD_OP(Token::Specifier::Percent, unary);
