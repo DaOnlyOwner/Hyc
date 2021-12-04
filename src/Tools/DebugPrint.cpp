@@ -32,6 +32,11 @@ void Error::Info(const ErrorDescription& descr)
 	print(descr, fmt::color::cadet_blue, "Info");
 }
 
+void Error::Warning(const ErrorDescription& descr)
+{
+	print(descr, fmt::color::orange, "Warning");
+}
+
 void Error::SyntacticalError(const ErrorDescription& descr)
 {
 	print(descr, fmt::color::red, "Syntax Error");

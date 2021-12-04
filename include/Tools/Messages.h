@@ -28,11 +28,42 @@ public:
 	void trigger_5_e1(const Token& from, const std::string& proto);
 	void trigger_code_paster_e1(const Token& from);
 
+	void trigger_6_e1(const Token& from, const std::string& expr);
+
+	void trigger_6_e2(const Token& from, const std::string& expr);
+
+	void trigger_6_e3(const Token& from, const std::string& t);
+
+	void trigger_6_e4(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e5(const Token& from);
+
+	void trigger_6_w1(const Token& from, const std::string& expr);
+
+	void trigger_6_e6(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e7(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e8(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e9(const Token& from, const std::string& expr);
+
+	void trigger_6_e10(const Token& from);
+
+	void trigger_6_e11(const Token& from, const std::string& expr);
+
+	void trigger_6_e12(const Token& from, const std::string& t, const std::string& member);
+
+	void trigger_6_e13(const Token& from, const std::string& t);
+
+	void trigger_6_e14(const Token& from, const std::string& expr);
+
 private:
 	Messages() = default;
 
 	void semantic_error(const Token& tk, const std::string& msg, const std::string& hint = "");
 	void info(const Token& tk, const std::string& msg, const std::string& hint = "");
+	void warning(const Token& tk, const std::string& msg, const std::string& hint = "");
 	struct to_comp
 	{
 		std::string file;
@@ -50,5 +81,5 @@ private:
 	}
 
 
-	std::set<to_comp> semantic_errors;
+	std::set<to_comp> messages;
 };

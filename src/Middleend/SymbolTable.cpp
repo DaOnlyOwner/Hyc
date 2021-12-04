@@ -40,7 +40,7 @@ bool SymbolTable::add(FuncDefStmt* fn)
 	return false;
 }
 
-bool SymbolTable::add(BaseType* for_coll, DeclStmt* decl)
+bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl)
 {
 	auto it = decl_in_collection.find(for_coll);
 	if (it == decl_in_collection.end())

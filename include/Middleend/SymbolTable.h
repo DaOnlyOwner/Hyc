@@ -92,6 +92,7 @@ public:
 	bool add(FuncDefStmt* fn);
 	bool add(CollectionStmt* for_coll, DeclStmt* decl);
 
+
 	CollectionStmt* get_type(const std::string& name) const
 	{
 		auto it = collections.find(name);
@@ -108,6 +109,16 @@ public:
 		else return decl_it->second;
 	}
 
+	template<typename Pred>
+	FuncDefStmt* get_func(const std::string& name, Pred pred)
+	{
+		auto it = functions.find(name);
+		if (it == functions.end()) return nullptr;
+		auto& vars = it->second;
+		auto& it2 = std::find_if(vars.begin(), vars.end(), [&](FuncDefStmt* func) {return pred(*func->decl); });
+		if (it2 != vars.end()) return it2->get();
+		return nullptr;
+	}
 	/*Type* get_type(const std::string& name)
 	{
 		auto it = types.find(name);
@@ -115,16 +126,6 @@ public:
 		return it->second.get();
 	}
 
-	template<typename Pred>
-	Function* get_func(const std::string& name, Pred pred)
-	{
-		auto it = functions.find(name);
-		if (it == functions.end()) return nullptr;
-		auto& vars = it->second;
-		auto& it2 = std::find_if(vars.begin(), vars.end(), [&](auto& func) {return pred(*func); });
-		if (it2 != vars.end()) return it2->get();
-		return nullptr;
-	}
 
 	std::vector<Function> get_funcs(const std::string& name)
 	{

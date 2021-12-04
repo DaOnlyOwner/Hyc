@@ -79,7 +79,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 	Type t = get(pre_op.lh);
 	if (t.must_be_inferred())
 		// Prefix operation: must have a type.
-		Messages::inst().trigger_6();
+		Messages::inst().trigger_6_e1(pre_op.op,pre_op.lh->as_str());
 	if (is_pred(scopes,t))
 	{
 		switch (pre_op.op.type)
@@ -88,7 +88,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 			RETURN(t);
 		case Token::Specifier::Minus:
 			auto pt = scopes.get_predefined_type(t.get_base_type());
-			if (Type::is_unsigned_numeric(pt))
+			if (Type::is_unsigned_integer(pt))
 			{
 				auto converted = (PredefinedType)((int)pt + 4);
 				RETURN(translate(scopes, pt));
@@ -102,7 +102,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 			if (!t.is_pointer_type())
 			{
 				// Error: no indirection for non pointer.
-				Messages::inst().trigger_6();
+				Messages::inst().trigger_6_e2(pre_op.op,pre_op.lh->as_str());
 				RETURN(error_type);
 			}
 			t.pop();
@@ -113,18 +113,18 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 		}
 	}
 
+	// Overloaded
 	std::string operator_name = fmt::format("${}", pre_op.op.text);
-	std::vector<Type> args = { t };
-	FuncDeclStmt* fds = scopes.get_func(operator_name, args);
+	FuncDefStmt* fds = scopes.get_func(operator_name, [&](const FuncDeclStmt& decl) {return decl.arg_list.size() == 1 && decl.arg_list[0]->type == t; });
 	if (fds == nullptr)
 	{
 		// Error: Operator not defined for types. 
-		Messages::inst().trigger_6_e5();
+		Messages::inst().trigger_6_e3(pre_op.op,t.as_str());
 		RETURN(error_type);
 	}
-	pre_op.sem_unary_op = fds;
-	pre_op.sem_type = fds->ret_type->semantic_type;
-	RETURN(fds->ret_type->semantic_type);
+	pre_op.sem_unary_op = fds->decl.get();
+	pre_op.sem_type = fds->decl->ret_type->semantic_type;
+	RETURN(fds->decl->ret_type->semantic_type);
 }
 
 void TypeChecker::visit(PostfixOpExpr& post_op)
@@ -132,7 +132,7 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 	auto t = get(post_op.rh);
 	if (t.must_be_inferred())
 	{
-		Messages::inst().trigger_6();
+		Messages::inst().trigger_6_e1(post_op.op,post_op.rh->as_str());
 		RETURN(error_type);
 	}
 	if (post_op.op.type == Token::Specifier::DoublePlus)
@@ -252,8 +252,8 @@ bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpEx
 			&& bin_op.op.type != Token::Specifier::PlusEqual
 			&& bin_op.op.type != Token::Specifier::MinusEqual)
 		{
-			// Only plus, minus and = op are specified for pointer arithmetic
-			Messages::inst().trigger_6_e3(bin_op.op);
+			// Only plus, minus and = += -= ops are specified for pointer arithmetic
+			Messages::inst().trigger_6_e4(bin_op.op,tlh.as_str(),trh.as_str());
 			ret(error_type);
 		}
 
@@ -262,12 +262,13 @@ bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpEx
 			auto* ptr = dynamic_cast<IntegerLiteralExpr*>(base_expr.get());
 			if (!ptr)
 			{
-				Messages::inst().trigger_6();
+				// Ptrs may only be assigned integer literals
+				Messages::inst().trigger_6_e5(bin_op.op);
 				ret(error_type);
-			}// Ptrs may only be assigned integer literals
+			}
 			if (ptr && ptr->integer_literal.text != "0")
 			{
-				Messages::inst().trigger_6(); // Only nullptr assignment allowed on pointers.
+				Messages::inst().trigger_6_e5(bin_op.op); // Only nullptr assignment allowed on pointers.
 				ret(error_type);
 			}
 		}
@@ -307,20 +308,85 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 		case Token::Specifier::DoubleEqual:
 		case Token::Specifier::NotEqual:
 		{
+			if(Type::is_signed_integer(plh) && Type::is_unsigned_integer(prh))
+			{
+				// Signed op unsigned warning: cast to signed
+				Messages::inst().trigger_6_w1(bin_op.op,bin_op.rh->as_str());
+			}
+			else if (Type::is_signed_integer(prh) && Type::is_unsigned_integer(plh))
+			{
+				Messages::inst().trigger_6_w1(bin_op.op, bin_op.lh->as_str());
+			}
+
+
 			if (clh == ConversionType::ImplicitCasting)
 			{
 				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), trh);
 				bin_op.lh = std::move(ice);
-				bin_op.sem_type = trh;
 				tlh = trh;
 			}
 			else if (crh == ConversionType::ImplicitCasting)
 			{
 				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.lh), tlh);
 				bin_op.rh = std::move(ice);
-				bin_op.sem_type = tlh;
 				trh = tlh;
 			}
+			if (bin_op.op.type == Token::Specifier::Less
+				|| bin_op.op.type == Token::Specifier::Greater
+				|| bin_op.op.type == Token::Specifier::LessEql
+				|| bin_op.op.type == Token::Specifier::GreaterEql
+				|| bin_op.op.type == Token::Specifier::NotEqual
+				|| bin_op.op.type == Token::Specifier::DoubleEqual)
+			{
+				Type t(scopes.get_type("bool"));
+				bin_op.sem_type = t;
+				RETURN(t,true);
+			}
+
+			else if (bin_op.op.type == Token::Specifier::ThreeWay)
+			{
+				Type t(scopes.get_type("int"));
+				bin_op.sem_type = t;
+				RETURN(t,true);
+			}
+
+			else if (bin_op.op.type == Token::Specifier::ShiftLeft
+				|| bin_op.op.type == Token::Specifier::ShiftRight
+				|| bin_op.op.type == Token::Specifier::Caret
+				|| bin_op.op.type == Token::Specifier::Or
+				|| bin_op.op.type == Token::Specifier::Ampersand)
+			{
+				auto prh = scopes.get_predefined_type(trh.get_base_type());
+				if (!Type::is_integer(prh))
+				{
+					Messages::inst().trigger_6_e6(bin_op.op,tlh.as_str(),trh.as_str());
+					bin_op.sem_type = error_type;
+					RETURN(error_type,true);
+				}
+				bin_op.sem_type = trh;
+				RETURN(trh,true);
+			}
+
+			else
+			{
+				bin_op.sem_type = tlh;
+				RETURN(tlh,true);
+			}
+
+		}
+		break;
+		case Token::Specifier::DoubleAmpersand:
+		case Token::Specifier::DoubleOr:
+		{
+			if (plh == PredefinedType::Bool && prh == PredefinedType::Bool)
+			{
+				bin_op.sem_type = tlh;
+				RETURN(tlh);
+			}
+			// && and || need to have types bool as lhs and rhs
+			Messages::inst().trigger_6_e7(bin_op.op,tlh.as_str(),trh.as_str());
+			bin_op.sem_type = error_type;
+			RETURN(error_type,true);
 		}
 		break;
 		case Token::Specifier::PercentEqual:
@@ -351,8 +417,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			auto outer = BinOpExpr(Token(Token::Specifier::Equal, "="), std::move(bin_op.lh), std::move(inner));
 			bin_op = std::move(outer);
 			bin_op.sem_type = trh;
-			ret(trh);
-			return true;
+			RETURN(trh, true);
 		}
 		// For this case always take the lhs
 		case Token::Specifier::Equal:
@@ -364,8 +429,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), tlh);
 				bin_op.rh = std::move(ice);
 				bin_op.sem_type = tlh;
-				ret(tlh);
-				return true;
+				RETURN(tlh, true);
 			}
 		}
 		break;
@@ -374,22 +438,10 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 		default:
 		{
 			// Error: unsupported operation type for type and type. 
-			Messages::inst().trigger_6();
-			ret(error_type);
-			return true;
+			Messages::inst().trigger_6_e8(bin_op.op,tlh.as_str(),trh.as_str());
+			RETURN(error_type, true);
 		}
 		}
-
-		FuncDefStmt* fds = scopes.get_func(fmt::format("${}", bin_op.op.text), { tlh,trh });
-		if (fds == nullptr)
-		{
-			// Error: operator not defined.
-			Messages::inst().trigger_6_e1(bin_op.op, tlh.as_str(), trh.as_str());
-			ret(error_type);
-		}
-		bin_op.sem_bin_op = fds->decl.get();
-		bin_op.sem_type = fds->decl->ret_type->semantic_type;
-		ret(fds->decl->ret_type->semantic_type);
 	}
 	return is_pred_types;
 }
@@ -404,7 +456,7 @@ bool TypeChecker::handle_bin_op_void(Type& tlh, Type& trh, BinOpExpr& bin_op)
 		if (scopes.get_predefined_type(tlh.get_base_type()) == PredefinedType::Void)
 		{
 			// No operation specified for type void.
-			Messages::inst().trigger_6_e5(bin_op.op, true);
+			Messages::inst().trigger_6_e9(bin_op.op, bin_op.lh->as_str());
 			was_void = true;
 		}
 	}
@@ -414,14 +466,13 @@ bool TypeChecker::handle_bin_op_void(Type& tlh, Type& trh, BinOpExpr& bin_op)
 		if (scopes.get_predefined_type(trh.get_base_type()) == PredefinedType::Void)
 		{
 			// No operation specified for type void.
-			Messages::inst().trigger_6_e5(bin_op.op, false);
+			Messages::inst().trigger_6_e9(bin_op.op, bin_op.rh->as_str());
 			was_void = true;
 		}
 	}
 	if (was_void)
 	{
-		ret(error_type);
-		return true;
+		RETURN(error_type, true);
 	}
 	return false;
 }
@@ -432,17 +483,17 @@ bool TypeChecker::handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& b
 	{
 
 		if (bin_op.op.type == Token::Specifier::Equal
-			|| bin_op.op.type == Token::Specifier::NotEqual)
+			|| bin_op.op.type == Token::Specifier::NotEqual
+			|| bin_op.op.type == Token::Specifier::DoubleEqual)
 		{
 			auto bool_type = Type(scopes.get_type("bool"));
 			bin_op.sem_type = bool_type;
-			RETURN(bool_type);
+			RETURN(bool_type,true);
 		}
 
-		// Every operation except == and != are not allowed on pointers
+		// Every operation except =, == and != are not allowed on pointers
 		Messages::inst().trigger_6_e4(bin_op.op, tlh.as_str(), trh.as_str());
-		ret(error_type);
-		return true;
+		RETURN(error_type, true);
 	}
 	return false;
 }
@@ -456,19 +507,28 @@ bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op
 			&& bin_op.op.type != Token::Specifier::Hashtag)
 		{
 			// Cannot infer type when operator is not = or #.
-			Messages::inst().trigger_6_e3();
-			ret(error_type);
+			Messages::inst().trigger_6_e10(bin_op.op);
+			RETURN(error_type,true);
 		}
-		return true;
+	
+		auto* ptrlh = dynamic_cast<IdentExpr*>(bin_op.lh.get());
+		if (!ptrlh)
+		{
+			Messages::inst().trigger_6_e15(bin_op.op, bin_op.lh->as_str());
+			RETURN(error_type, true);
+		}
+
+		// TODO: Get the decl stmt and assign a type to it.
+		ptrlh->sem_type = trh;
+		RETURN(trh);
 	}
 
 	// When the rhs has no type yet, it's an error
 	if (trh.must_be_inferred())
 	{
 		// Type of rhs must be known.
-		Messages::inst().trigger_6_e4();
-		ret(error_type);
-		return true;
+		Messages::inst().trigger_6_e11(bin_op.op,bin_op.rh->as_str());
+		RETURN(error_type,true);
 	}
 	return false;
 }
@@ -477,17 +537,16 @@ bool TypeChecker::handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_o
 {
 	// Overloaded operators
 	std::string operator_name = fmt::format("${}", bin_op.op.text);
-	std::vector<Type> args = { tlh,trh };
-	FuncDeclStmt* fds = scopes.get_func(operator_name, args);
+	FuncDefStmt* fds = scopes.get_func(operator_name, [&](const FuncDeclStmt& decl) {return decl.arg_list.size() == 2 && decl.arg_list[0]->type == tlh && decl.arg_list[1]->type == trh; });
 	if (fds == nullptr)
 	{
 		// Error: Operator not defined for types. 
-		Messages::inst().trigger_6_e5();
+		Messages::inst().trigger_6_e4(bin_op.op,tlh.as_str(),trh.as_str());
 		ret(error_type);
 		return true;
 	}
-	bin_op.sem_bin_op = fds;
-	ret(fds->ret_type->semantic_type);
+	bin_op.sem_bin_op = fds->decl.get();
+	ret(fds->decl->ret_type->semantic_type);
 	return true;
 }
 
@@ -502,29 +561,24 @@ bool TypeChecker::handle_bin_op_member_acc(Type& tlh, Type& trh, BinOpExpr& bin_
 			cpy_tlh.pop();
 		if (!cpy_tlh.is_base_type())
 		{
-			Messages::inst().trigger_6(); // Pointer and other types do not have members
-			ret(error_type);
-			return true;
+			Messages::inst().trigger_6_e13(bin_op.op,cpy_tlh.as_str()); // Pointer and other types do not have members
+			RETURN(error_type,true);
 		}
 		auto* ident_lh = dynamic_cast<IdentExpr*>(bin_op.rh.get());
 		if (ident_lh == nullptr)
 		{
 			// Error: a->b or a.b <-- b needs to be an identifier.
-			Messages::inst().trigger_6();
-			ret(error_type);
-			return true;
+			Messages::inst().trigger_6_e14(bin_op.op,bin_op.rh->as_str());
+			RETURN(error_type,true);
 		}
 		DeclStmt* decl = scopes.get_decl_for(trh.get_base_type(), ident_lh->ident.text);
 		if (decl == nullptr)
 		{
 			// Error: no member named "decl->name" in trh
-			Messages::inst().trigger_6();
-			ret(error_type);
-			return true;
+			Messages::inst().trigger_6_e12(bin_op.op,cpy_tlh.as_str(),decl->name.text);
+			RETURN(error_type,true);
 		}
-
-		ret(decl->type_spec->semantic_type);
-		return true;
+		RETURN(decl->type_spec->semantic_type,true)
 		// TODO: Look up member (lhs) and get it's type
 	}
 	return false;

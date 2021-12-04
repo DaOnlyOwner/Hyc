@@ -118,23 +118,7 @@ Scopes::Scopes()
 			CollectionStmt("uchar"),
 			CollectionStmt("void")
 		};
-
-		for (int i = 0; i < predefined_types.size()-1 /*dont go over void*/; i++)
-		{
-			CollectionStmt& coll = predefined_types[i];
-			auto lhs = std::make_unique<DeclStmt>(std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident, coll.name.text), nullptr, {}),Token(Token::Specifier::Ident,"lhs"));
-			DeclStmt rhs(&coll);
-			std::string ops[] = { "+","-","/","*" };
-			for (const std::string& op : ops)
-			{
-				auto decl = std::make_unique<FuncDeclStmt>(Type(&coll), fmt::format("${}", op))
-			}
-		}
-
 		predefined_types_init = true;
-
-
-
 	}
 }
 
