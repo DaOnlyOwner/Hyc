@@ -53,7 +53,7 @@ void TypeChecker::visit(FloatLiteralExpr& lit)
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	RETURN(Type(scopes.get_type("int")));
+	RETURN(Type(scopes.get_type("uint")));
 }
 
 // TODO: Handle =: *a = 3; <-- here *a needs to be an lvalue.
@@ -70,7 +70,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 	handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
 	handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
 	handled = handled || handle_bin_op_member_acc(tlh, trh, bin_op);
-	if (handled)
+	if (!handled)
 		handle_bin_op_overloads(tlh, trh, bin_op);
 }
 
@@ -96,7 +96,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 			if (Type::is_unsigned_integer(pt))
 			{
 				auto converted = (PredefinedType)((int)pt + 4);
-				RETURN(translate(scopes, pt));
+				RETURN(translate(scopes, converted));
 			}
 			pre_op.sem_type = t;
 			RETURN(t);
@@ -124,6 +124,8 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 			t.promote_pointer();
 			pre_op.sem_type = t;
 			RETURN(t);
+		default:
+			assert(false);
 		}
 	}
 
@@ -160,8 +162,13 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 void TypeChecker::visit(IdentExpr& ident)
 {
 	// TODO: Function pointers
-	auto* bt = scopes.get_type(ident.name.text);
-	RETURN(Type(bt));
+	auto* decl = scopes.get_variable(ident.name.text);
+	if (decl->type_spec == nullptr)
+	{
+		RETURN(Type());
+	}
+	ident.sem_type = decl->type;
+	RETURN(decl->type);
 }
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
@@ -202,8 +209,14 @@ void TypeChecker::visit(ExprStmt& expr_stmt)
 
 void TypeChecker::visit(DeclStmt& decl_stmt)
 {
-	bool succ = scopes.add(&decl_stmt);
-	if (!succ)
+	if (decl_stmt.type_spec != nullptr)
+	{
+		auto [t, succ] = create_type(*decl_stmt.type_spec, scopes, ns, false);
+		assert(succ);
+		decl_stmt.type = t;
+	}
+	bool succAdd = scopes.add(&decl_stmt);
+	if (!succAdd)
 	{
 		Messages::inst().trigger_6_e17(decl_stmt.name);
 	}
@@ -347,16 +360,15 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				Messages::inst().trigger_6_w1(bin_op.op, bin_op.lh->as_str());
 			}
 
-
 			if (clh == ConversionType::ImplicitCasting)
 			{
-				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), trh);
+				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.lh), trh);
 				bin_op.lh = std::move(ice);
 				tlh = trh;
 			}
 			else if (crh == ConversionType::ImplicitCasting)
 			{
-				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.lh), tlh);
+				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), tlh);
 				bin_op.rh = std::move(ice);
 				trh = tlh;
 			}
@@ -449,6 +461,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			RETURN_VAL(trh, true);
 		}
 		// For this case always take the lhs
+		case Token::Specifier::Hashtag:
 		case Token::Specifier::Equal:
 		{
 			// For e.g. a = 4 -> always take the type of the lhs and cast the rhs to the lhs.
@@ -460,6 +473,8 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				bin_op.sem_type = tlh;
 				RETURN_VAL(tlh, true);
 			}
+			bin_op.sem_type = trh; // Doesn't matter wether I return tlh or trh
+			RETURN_VAL(trh, true);
 		}
 		break;
 		case Token::Specifier::KwAs:
@@ -567,6 +582,7 @@ bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op
 		DeclStmt* decl = scopes.get_variable(ptrlh->name.text);
 		decl->type = trh;
 		ptrlh->sem_type = trh;
+		bin_op.sem_type = trh;
 		RETURN_VAL(trh,true);
 	}
 
@@ -611,21 +627,22 @@ bool TypeChecker::handle_bin_op_member_acc(Type& tlh, Type& trh, BinOpExpr& bin_
 			Messages::inst().trigger_6_e13(bin_op.op,cpy_tlh.as_str()); // Pointer and other types do not have members
 			RETURN_VAL(error_type,true);
 		}
-		auto* ident_lh = dynamic_cast<IdentExpr*>(bin_op.rh.get());
-		if (ident_lh == nullptr)
+		auto* ident_rh = dynamic_cast<IdentExpr*>(bin_op.rh.get());
+		if (ident_rh == nullptr)
 		{
 			// Error: a->b or a.b <-- b needs to be an identifier.
 			Messages::inst().trigger_6_e14(bin_op.op,bin_op.rh->as_str());
 			RETURN_VAL(error_type,true);
 		}
-		DeclStmt* decl = scopes.get_decl_for(trh.get_base_type(), ident_lh->name.text);
+		DeclStmt* decl = scopes.get_decl_for(trh.get_base_type(), ident_rh->name.text);
 		if (decl == nullptr)
 		{
 			// Error: no member named "decl->name" in trh
-			Messages::inst().trigger_6_e12(bin_op.op,cpy_tlh.as_str(),decl->name.text);
+			Messages::inst().trigger_6_e12(bin_op.op,cpy_tlh.as_str(),ident_rh->name.text);
 			RETURN_VAL(error_type,true);
 		}
-		RETURN_VAL(decl->type_spec->semantic_type,true)
+		ident_rh->sem_type = decl->type;
+		RETURN_VAL(decl->type,true)
 		// TODO: Look up member (lhs) and get it's type
 	}
 	return false;

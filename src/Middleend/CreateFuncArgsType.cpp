@@ -33,6 +33,7 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 			Messages::inst().trigger_3_i2(arg->name, def.decl->name.text);
 		}
 		arg->type_spec->semantic_type = std::move(a);
+		arg->type = arg->type_spec->semantic_type;
 	}
 }
 

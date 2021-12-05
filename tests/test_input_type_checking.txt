@@ -1,0 +1,36 @@
+struct B
+{
+
+}
+
+struct A
+{
+   B* a;
+   int** c;
+}
+
+int test(int a, int b)
+{
+   int t1 := a + b;
+   uint t2 := a + b;
+   t3 := a + b;
+   auto t4;
+   t4 = 3+3;
+   auto t5;
+   t5 # 4+4;
+   uint t6 := 3 + -3;
+   t7 := 3 + -3;
+}
+
+int ptrs()
+{
+   A a;
+   B b;
+   a.a = &b;
+   int c;
+   d := &c;
+   a.c = &d;
+
+}
+
+

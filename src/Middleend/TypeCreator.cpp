@@ -4,9 +4,9 @@
 #include <cassert>
 #include "ValuePtr.h"
 
-std::pair<Type, bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns)
+std::pair<Type, bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns, bool instantiate_generic)
 {
-	TypeCreator tc(ts, scopes, ns);
+	TypeCreator tc(ts, scopes, ns, instantiate_generic);
 	auto type = tc.get(ts);
 	type.reverse();
 	return { std::move(type),tc.get_succ()};
@@ -28,7 +28,7 @@ void TypeCreator::visit(PointerTypeSpec& pt_spec)
 
 void TypeCreator::visit(BaseTypeSpec& bt_spec)
 {
-	instantiate_generic(bt_spec, scopes,ns); // instantiate already emits an error
+	if (inst_generics) instantiate_generic(bt_spec, scopes,ns); // instantiate already emits an error
 	auto* bt = scopes.get_type(bt_spec.name.text);
 	if (bt == nullptr)
 	{

@@ -23,14 +23,14 @@ private:
 	virtual void visit(DeclStmt& stmt) override;
 	virtual void visit(CollectionStmt& stmt) override;
 	virtual void visit(BaseTypeSpec& bt_spec) override;
-	virtual void visit(struct IfStmt& if_stmt) override;
-	virtual void visit(struct WhileStmt& while_stmt) override;
-	virtual void visit(struct ForStmt& for_stmt) override;
-	virtual void visit(struct MatchStmt& match) override;
+	virtual void visit(IfStmt& if_stmt) override;
+	virtual void visit(WhileStmt& while_stmt) override;
+	virtual void visit(ForStmt& for_stmt) override;
+	virtual void visit(MatchStmt& match) override;
 
 	Scopes& scopes;
 	NamespaceStmt& top_level;
-	std::vector<GenericInfo>* generic_params;
+	std::vector<GenericInfo>* generic_params=nullptr;
 	bool new_elem = false;
 	size_t entry_stmt = 0;
 };

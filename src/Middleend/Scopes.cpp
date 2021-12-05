@@ -6,85 +6,7 @@ bool Scopes::predefined_types_init = false;
 std::vector<CollectionStmt> Scopes::predefined_types;
 std::unordered_map<CollectionStmt*, PredefinedType> Scopes::coll_to_predef={};
 
-/*Variable* Scopes::get_var(const std::string & name)
-{
-	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
-	{
-		t_entry& e = get_entry(i);
-		auto* elem = e.table.get_var(name);
-		if (elem != nullptr) return elem;
-	}
-	return nullptr;
-}
-
-
-std::unordered_map<std::string,Type> Scopes::m_predefined_types 
-{
-	{"u8",Type("u8")},
-	{"u16",Type("u16")},
-	{"u32",Type("u32")},
-	{"uint",Type("uint")},
-	{"s8",Type("s8")},
-	{"s16",Type("s16")},
-	{"s32",Type("s32")},
-	{"int",Type("int")},
-	{"float",Type("float")},
-	{"double",Type("double")}
-};
-
-
-Scopes::Scopes()
-{
-	for (int i = 0; i < (int)UnaryOp::Specifier::Count; i++)
-	{
-		UnaryOp::Specifier spec = (UnaryOp::Specifier)i;
-		for (int j = 0; j < (int)Primitive::Specifier::Count; j++)
-		{
-			Primitive::Specifier pspec = (Primitive::Specifier)j;
-			Type rt;
-			if (spec == UnaryOp::Specifier::Minus)
-				rt = j <= 3 ? get_primitive_type((Primitive::Specifier)(j + 4)) : get_primitive_type(pspec);
-			else rt = get_primitive_type(pspec);
-			Function* fn = new Function(UnaryOp::Translate(spec), std::vector<Type>{get_primitive_type(pspec)}, std::move(rt));
-			auto& e = get_entry(0);
-			e.table.add(fn);
-		}
-	}
-
-
-	for (int i = 0; i < (int)BinOp::Specifier::Count; i++)
-	{
-		BinOp::Specifier spec = (BinOp::Specifier)i;
-		for (int t0 = 0; t0 < (int)Primitive::Specifier::Count; t0++)
-		{
-			Primitive::Specifier lh = (Primitive::Specifier)t0;
-			for (int t1 = 0; t1 < (int)Primitive::Specifier::Count; t1++)
-			{
-				Primitive::Specifier rh = (Primitive::Specifier)t1;
-				auto& e = get_entry(0);
-				std::vector<Type> args = { get_primitive_type(lh),get_primitive_type(rh) };
-				Function* op = new Function(BinOp::Translate(spec), std::move(args), get_primitive_type(rh));
-				e.table.add(op);
-			}
-		}
-	}
-}
-
-Type* Scopes::get_type(const std::string& name)
-{
-	auto it = m_predefined_types.find(name);
-	if (it != m_predefined_types.end()) return &it->second;
-
-
-	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
-	{
-		t_entry& e = get_entry(i);
-		auto* elem = e.table.get_type(name);
-		if (elem != nullptr) return elem;
-	}
-	return nullptr;
-}
-
+/*
 std::vector<Function> Scopes::get_all_funcs(const std::string& name)
 {
 	std::vector<Function> out;
@@ -102,7 +24,6 @@ Scopes::Scopes()
 {
 	if (!predefined_types_init)
 	{
-
 		predefined_types.emplace_back("int");
 		predefined_types.emplace_back("float");
 		predefined_types.emplace_back("double");
@@ -132,6 +53,11 @@ Scopes::Scopes()
 		coll_to_predef[&predefined_types[12]] = PredefinedType::Void;
 
 		predefined_types_init = true;
+	}
+
+	for (auto& p : predefined_types)
+	{
+		add(&p);
 	}
 }
 

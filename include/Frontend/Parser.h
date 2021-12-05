@@ -51,8 +51,8 @@ public:
 	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);
 	MatchCase parse_match_case(bool in_loop);
 	std::unique_ptr<Stmt> parse_namespace_stmt();
-	std::unique_ptr<Stmt> parse_if_stmt(bool in_loop=false);
-	std::unique_ptr<Stmt> parse_new_scope(bool in_loop=false);
+	std::unique_ptr<Stmt> parse_if_stmt(bool in_loop);
+	std::unique_ptr<Stmt> parse_new_scope(bool in_loop);
 	std::unique_ptr<Stmt> parse_while_loop_stmt();
 	std::unique_ptr<Stmt> parse_for_loop_stmt();
 	//std::unique_ptr<Stmt> parse_switch_stmt();
@@ -61,10 +61,8 @@ public:
 	std::unique_ptr<Stmt> parse_allowed_top_level_stmt();
 	std::unique_ptr<Stmt> parse_allowed_namespace_stmt();
 	std::vector<std::unique_ptr<Stmt>> parse_func_def_list();
-	std::unique_ptr<Stmt> parse_allowed_loop_stmt();
-	std::vector<std::unique_ptr<Stmt>> parse_allowed_loop_stmts();
-	std::unique_ptr<Stmt> parse_allowed_func_stmt();
-	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts();
+	std::unique_ptr<Stmt> parse_allowed_func_stmt(bool in_loop=false);
+	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts(bool in_loop);
 	std::unique_ptr<TypeSpec> parse_type_spec();
 	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();

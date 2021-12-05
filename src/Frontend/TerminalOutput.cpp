@@ -122,13 +122,13 @@ void TerminalOutput::visit(FloatLiteralExpr& lit)
 void TerminalOutput::visit(IntegerLiteralExpr& lit)
 {
 	make_indent();
-	out += fmt::format("IntegerLiteralExpr: '{}'\n", lit.integer_literal.text);
+	out += fmt::format("IntegerLiteralExpr: '{}', semantic_type='{}'\n", lit.integer_literal.text,lit.sem_type.as_str());
 }
 
 void TerminalOutput::visit(BinOpExpr& bin_op)
 {
 	make_indent();
-	out += fmt::format("BinOpExpr: '{}'\n", bin_op.op.text);
+	out += fmt::format("BinOpExpr: '{}', semantic_type='{}'\n", bin_op.op.text, bin_op.sem_type.as_str());
 	indent++;
 	bin_op.lh->accept(*this);
 	bin_op.rh->accept(*this);
@@ -138,7 +138,7 @@ void TerminalOutput::visit(BinOpExpr& bin_op)
 void TerminalOutput::visit(PrefixOpExpr& pre_op)
 {
 	make_indent();
-	out+=fmt::format("PrefixOpExpr: '{}'\n", pre_op.op.text);
+	out+=fmt::format("PrefixOpExpr: '{}', semantic_type='{}'\n", pre_op.op.text,pre_op.sem_type.as_str());
 	indent++;
 	pre_op.lh->accept(*this);
 	indent--;
@@ -147,7 +147,7 @@ void TerminalOutput::visit(PrefixOpExpr& pre_op)
 void TerminalOutput::visit(PostfixOpExpr& post_op)
 {
 	make_indent();
-	out += fmt::format("PostfixOpExpr: '{}'\n", post_op.op.text);
+	out += fmt::format("PostfixOpExpr: '{}', semantic_type='{}'\n", post_op.op.text,post_op.sem_type.as_str());
 	indent++;
 	post_op.rh->accept(*this);
 	indent--;
@@ -186,7 +186,7 @@ void TerminalOutput::visit(IdentExpr& name)
 	std::string gargs = "";
 	for (auto& expr : name.generic_params)
 		gargs += fmt::format("{}, ", expr->as_str());
-	out += fmt::format("IdentExpr: name='{}', generic_params='{}'\n", name.name.text,gargs);
+	out += fmt::format("IdentExpr: name='{}', generic_params='{}', semantic_type='{}'\n", name.name.text,gargs,name.sem_type.as_str());
 }
 
 void TerminalOutput::visit(NamespaceStmt& namespace_stmt)
@@ -259,7 +259,7 @@ void TerminalOutput::visit(ExprStmt& expr_stmt)
 void TerminalOutput::visit(DeclStmt& decl_stmt)
 {
 	make_indent();
-	out += fmt::format("DeclStmt: name='{}', type='{}'\n", decl_stmt.name.text, decl_stmt.type_spec ? decl_stmt.type_spec->as_str() : "");
+	out += fmt::format("DeclStmt: name='{}', type='{}', semantic_type='{}'\n", decl_stmt.name.text, decl_stmt.type_spec ? decl_stmt.type_spec->as_str() : "",decl_stmt.type.as_str());
 }
 
 void TerminalOutput::visit(PointerTypeSpec& pt_spec)
@@ -280,7 +280,7 @@ void TerminalOutput::visit(ArrayTypeSpec& at_spec)
 void TerminalOutput::visit(ImplicitCastExpr& ice)
 {
 	make_indent();
-	out += fmt::format("DeclStmt: cast_to_type='{}'\n", ice.sem_type.as_str());
+	out += fmt::format("ImplicitCastExpr: cast_to_type='{}'\n", ice.sem_type.as_str());
 	indent++;
 	ice.expr->accept(*this);
 	indent--;

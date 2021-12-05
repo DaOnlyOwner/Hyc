@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <Scopes.h>
 #include <cassert>
-#include "..\..\include\Middleend\AtomicType.h"
 
 CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
@@ -66,33 +65,37 @@ void Type::reverse()
 
 bool Type::is_pointer_type() const
 {
-	return stored_types.back().first == TypeKind::Pointer;
+	return !not_specified && stored_types.back().first == TypeKind::Pointer;
 }
 
 bool Type::is_base_type() const
 {
-	return stored_types.back().first == TypeKind::Base;
+	return !not_specified && stored_types.back().first == TypeKind::Base;
 }
 
-bool Type::must_be_inferred() const { return is_base_type() && get_base_type()->name.text == "auto"; }
+bool Type::must_be_inferred() const { return not_specified; }
 
 void Type::promote_pointer()
 {
+	not_specified = false;
 	stored_types.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
 }
 
 void Type::promote_base(CollectionStmt* base)
 {
+	not_specified = false;
 	stored_types.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
 }
 
 void Type::promote_array(uint64_t amount)
 {
+	not_specified = false;
 	stored_types.push_back(std::make_pair(TypeKind::Array, TypeVariant(ArrayType{ amount })));
 }
 
 void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
 {
+	not_specified = false;
 	stored_types.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
@@ -161,10 +164,13 @@ std::string Type::as_str() const
 		{
 		case TypeKind::Array:
 			out += fmt::format("[{}]", std::get<ArrayType>(var).amount);
+			break;
 		case TypeKind::Base:
 			out += std::get<CollectionStmt*>(var)->name.text;
+			break;
 		case TypeKind::Pointer:
 			out += "*";
+			break;
 		case TypeKind::FunctionPointer:
 			const FunctionPointerType& fp = std::get<FunctionPointerType>(var);
 			std::string args = "";
@@ -179,6 +185,7 @@ std::string Type::as_str() const
 				}
 			}
 			out += fmt::format("fptr({};{})", args, fp.return_type->as_str());
+			break;
 		}
 	}
 	return out;
@@ -305,6 +312,7 @@ bool Type::is_signed_integer(PredefinedType pt)
 
 CollectionStmt* Type::get_base_type() const
 {
+	if (not_specified) return nullptr;
 	for (auto& ti : stored_types)
 	{
 		if (ti.first == TypeKind::Base) return std::get<CollectionStmt*>(ti.second);

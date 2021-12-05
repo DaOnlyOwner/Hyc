@@ -96,7 +96,7 @@ void Messages::trigger_6_e3(const Token& from, const std::string& t)
 
 void Messages::trigger_6_e4(const Token& from,const std::string& t1, const std::string& t2)
 {
-	semantic_error(from, fmt::format("The operator '{}' is not specified for types '{}' and '{}'", t1, t2));
+	semantic_error(from, fmt::format("The operator '{}' is not specified for types '{}' and '{}'", from.text, t1, t2));
 }
 
 void Messages::trigger_6_e5(const Token& from)
@@ -106,7 +106,7 @@ void Messages::trigger_6_e5(const Token& from)
 
 void Messages::trigger_6_w1(const Token& from, const std::string& expr)
 {
-	warning(from, fmt::format("Casting type of expression '{}' to signed numeric", expr));
+	warning(from, fmt::format("Casting type of expression '{}' to signed integer", expr));
 }
 
 void Messages::trigger_6_e6(const Token& from, const std::string& t1, const std::string& t2)

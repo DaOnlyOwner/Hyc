@@ -18,7 +18,6 @@ namespace
 	}
 }
 
-
 void GenericInst::visit(NamespaceStmt& stmt)
 {
 	int size_before_pasting = stmt.stmts.size();

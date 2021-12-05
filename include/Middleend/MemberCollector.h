@@ -5,14 +5,15 @@
 class MemberCollector : public IAstVisitor
 {
 public:
-	MemberCollector(Scopes& sc)
-		:scopes(sc){}
+	MemberCollector(Scopes& sc,NamespaceStmt& ns)
+		:scopes(sc),ns(ns){}
 private:
 	virtual void visit(CollectionStmt& coll_def) override;
 	virtual void visit(DeclStmt& decl) override;
-	virtual void visit(FuncDeclStmt& fdecl) override;
+	virtual void visit(FuncDefStmt& fdecl) override;
 	
 	Scopes& scopes;
+	NamespaceStmt& ns;
 	CollectionStmt* current_collection;
 };
 

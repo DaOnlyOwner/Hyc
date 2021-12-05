@@ -22,7 +22,6 @@ namespace
 
 void DeclarationsCollectorFunctions::visit(NamespaceStmt& ns)
 {
-	scopes.descend();
 	for (auto& stmt : ns.stmts) stmt->accept(*this);
 }
 

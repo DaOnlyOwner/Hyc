@@ -37,12 +37,12 @@ public:
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
-	bool is_type_defined(const std::string& t) const { return get_top_level_entry().table.get_type(t) != nullptr; }
+	bool is_type_defined(const std::string& t) const { return top_level.get_type(t) != nullptr; }
 	bool is_type_predefined(CollectionStmt* bt) const { return std::find_if(predefined_types.begin(), predefined_types.end(), [&](auto& p) {return &p == bt; }) != predefined_types.end(); }
 	PredefinedType get_predefined_type(CollectionStmt* bt) { auto it = coll_to_predef.find(bt); assert(it != coll_to_predef.end()); return it->second; }
 
 
-	CollectionStmt* get_type(const std::string& name) { return get_top_level_entry().table.get_type(name); }
+	CollectionStmt* get_type(const std::string& name) { return top_level.get_type(name); }
 	DeclStmt* get_decl_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_for(cs, name); }
 	DeclStmt* get_variable(const std::string& name);
 	

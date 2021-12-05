@@ -45,12 +45,13 @@ struct Type
 	Type(CollectionStmt* bt);
 	Type(uint64_t amount);
 	Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
-	Type() = default;
+	Type() { not_specified = true; }
 	Type(const Type&) = default;
 	Type& operator=(const Type&) = default;
 
 	// E.g. int* == [(BaseType("int"),TypeKind::Base),(PointerType,TypeKind::Pointer)]
 	std::vector<std::pair<TypeKind, TypeVariant>> stored_types;
+	bool not_specified = false;
 
 	bool operator==(const Type& other) const;
 	bool operator!=(const Type& other) const { return !(*this == other); };
