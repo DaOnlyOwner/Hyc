@@ -58,6 +58,8 @@ public:
 
 	void trigger_6_e14(const Token& from, const std::string& expr);
 
+	void trigger_6_e15(const Token& from, const std::string& expr);
+
 private:
 	Messages() = default;
 

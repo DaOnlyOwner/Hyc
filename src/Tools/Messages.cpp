@@ -161,7 +161,7 @@ void Messages::trigger_6_e14(const Token& from, const std::string& expr)
 
 void Messages::trigger_6_e15(const Token& from, const std::string& expr)
 {
-	semantic_error(from, fmt::format("Can only infer type when the right hand side is an identifier, here is '{}'",
+	semantic_error(from, fmt::format("Can only infer type when the left hand side is an identifier, here is '{}'",
 		expr));
 }
 

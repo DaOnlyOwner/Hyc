@@ -197,7 +197,7 @@ void Type::pop()
 	stored_types.pop_back();
 }
 
-bool Type::is_numeric(PredefinedType pt)
+bool Type::is_integer(PredefinedType pt)
 {
 	switch (pt)
 	{

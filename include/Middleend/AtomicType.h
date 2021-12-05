@@ -73,9 +73,9 @@ struct Type
 	std::string as_str() const ;
 
 	static std::pair<ConversionType, ConversionType> type_cast_to_more_general(PredefinedType t1, PredefinedType t2);
-	static bool is_numeric(PredefinedType pt);
-	static bool is_unsigned_numeric(PredefinedType pt);
-	static bool is_signed_numeric(PredefinedType pt);
+	static bool is_integer(PredefinedType pt);
+	static bool is_unsigned_integer(PredefinedType pt);
+	static bool is_signed_integer(PredefinedType pt);
 };
 
 struct ArrayType

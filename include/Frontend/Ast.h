@@ -14,6 +14,7 @@
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 #define IMPL_CLONE(u) uptr<u> clone() const override 
+#define IMPL_ASSTR virtual std::string as_str() const override
 #define CPY_VEC(name_from,name_to, type) std::vector<type> name_to; for(auto& p : name_from) name_to.push_back(p->clone());
 
 template <typename TRet, typename TArg>
@@ -85,6 +86,7 @@ struct Expr : Node
 	// Semantic annotations:
 	Type sem_type;
 	virtual	uptr<Expr> clone() const = 0;
+	virtual std::string as_str() const = 0;
 };
 
 struct IntegerLiteralExpr : Expr
@@ -98,6 +100,10 @@ struct IntegerLiteralExpr : Expr
 	EvalIntegerResult eval_res;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new IntegerLiteralExpr(*this)); }
+	IMPL_ASSTR
+	{
+		return integer_literal.text;
+	}
 };
 
 
@@ -240,6 +246,11 @@ struct BinOpExpr : Expr
 		return uptr<Expr>(new BinOpExpr(op,lh->clone(),rh->clone()));
 	}
 
+	IMPL_ASSTR
+	{
+		return fmt::format("{}{}{}",lh->as_str(),op.text,rh->as_str());
+	}
+
 };
 
 struct PrefixOpExpr : Expr
@@ -255,6 +266,10 @@ struct PrefixOpExpr : Expr
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr)
 	{ return uptr<Expr>(new PrefixOpExpr(op, lh->clone())); }
+	IMPL_ASSTR
+	{
+		return fmt::format("{}{}",op.text,lh->as_str());
+	}
 };
 
 struct PostfixOpExpr : Expr
@@ -265,6 +280,10 @@ struct PostfixOpExpr : Expr
 	uptr<Expr> rh;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new PostfixOpExpr(op, rh->clone())); }
+	IMPL_ASSTR
+	{
+		return fmt::format("{}{}",rh->as_str(),op.text);
+	}
 };
 
 
@@ -275,6 +294,10 @@ struct FloatLiteralExpr : Expr
 	Token float_literal;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new FloatLiteralExpr(*this)); }
+	IMPL_ASSTR
+	{
+		return float_literal.text;
+	}
 };
 
 struct TypeSpec;
@@ -285,6 +308,10 @@ struct IdentExpr : Expr
 	Token ident;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new IdentExpr(*this)); }
+	IMPL_ASSTR
+	{
+		return ident.text;
+	}
 };
 
 struct FuncCallArg
@@ -316,15 +343,47 @@ struct FuncCallExpr : Expr
 
 	return uptr<Expr>(new FuncCallExpr(from->clone(),mv(arg_list_cpy),mv(generic_params_cpy))); 
 	}
+	IMPL_ASSTR
+	{
+		std::string gl = "<";
+		if (!generic_params.empty())
+		{
+			gl += generic_params[0]->as_str();
+		}
+
+		for (int i = 1; i < generic_params.size(); i++)
+		{
+			auto& ts = generic_params[i];
+			gl += "," + ts->as_str();
+		}
+		gl += ">";
+
+		std::string args = "";
+		if (!arg_list.empty())
+		{
+			args += arg_list[0].expr->as_str();
+		}
+
+		for (int i = 1; i < arg_list.size(); i++)
+		{
+			args += fmt::format(", {}", arg_list[i]);
+		}
+
+		return fmt::format("{}{}({})", from->as_str(), generic_params.empty() ? "" : gl, args);
+	}
 };
 
 struct ArraySubscriptExpr : Expr
 {
 	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)
 		:from(mv(from)), inner(mv(inner)){}
-		uptr<Expr> from, inner;
-		IMPL_VISITOR;
-		IMPL_CLONE(Expr) { return uptr<Expr>(new ArraySubscriptExpr(from->clone(), inner->clone())); }
+	uptr<Expr> from, inner;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new ArraySubscriptExpr(from->clone(), inner->clone())); }
+	IMPL_ASSTR
+	{
+		return fmt::format("{}[{}]",from->as_str(),inner->as_str());
+	}
 };
 
 struct TernaryExpr : Expr
@@ -334,6 +393,10 @@ struct TernaryExpr : Expr
 	uptr<Expr> fst, snd, trd;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new TernaryExpr(fst->clone(), snd->clone(), trd->clone())); }
+	IMPL_ASSTR
+	{
+		return fmt::format("{} ? {} : {}",fst->as_str(),snd->as_str(),trd->as_str());
+	}
 };
 
 
@@ -348,6 +411,10 @@ struct ImplicitCastExpr : Expr
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new ImplicitCastExpr(expr->clone(), Type(sem_type))); }
+	IMPL_ASSTR
+	{
+		return expr->as_str();
+	}
 };
 
 

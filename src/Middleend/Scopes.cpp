@@ -4,7 +4,22 @@
 
 
 bool Scopes::predefined_types_init = false;
-std::vector<std::unique_ptr<CollectionStmt>> Scopes::predefined_types{};
+std::vector<CollectionStmt> Scopes::predefined_types= {
+			CollectionStmt("int"),
+			CollectionStmt("float"),
+			CollectionStmt("double"),
+			CollectionStmt("quad"),
+			CollectionStmt("uint"),
+			CollectionStmt("half"),
+			CollectionStmt("uhalf"),
+			CollectionStmt("short"),
+			CollectionStmt("ushort"),
+			CollectionStmt("bool"),
+			CollectionStmt("char"),
+			CollectionStmt("uchar"),
+			CollectionStmt("void")
+};
+std::unordered_map<CollectionStmt*, PredefinedType> Scopes::coll_to_predef={};
 
 /*Variable* Scopes::get_var(const std::string & name)
 {
@@ -102,26 +117,23 @@ Scopes::Scopes()
 {
 	if (!predefined_types_init)
 	{
-		predefined_types =
-		{
-			CollectionStmt("int"),
-			CollectionStmt("float"),
-			CollectionStmt("double"),
-			CollectionStmt("quad"),
-			CollectionStmt("uint"),
-			CollectionStmt("half"),
-			CollectionStmt("uhalf"),
-			CollectionStmt("short"),
-			CollectionStmt("ushort"),
-			CollectionStmt("bool"),
-			CollectionStmt("char"),
-			CollectionStmt("uchar"),
-			CollectionStmt("void")
-		};
+		coll_to_predef[&predefined_types[0]] = PredefinedType::Int;
+		coll_to_predef[&predefined_types[1]] = PredefinedType::Float;
+		coll_to_predef[&predefined_types[2]] = PredefinedType::Double;
+		coll_to_predef[&predefined_types[3]] = PredefinedType::Quad;
+		coll_to_predef[&predefined_types[4]] = PredefinedType::UInt;
+		coll_to_predef[&predefined_types[5]] = PredefinedType::Half;
+		coll_to_predef[&predefined_types[6]] = PredefinedType::UHalf;
+		coll_to_predef[&predefined_types[7]] = PredefinedType::Short;
+		coll_to_predef[&predefined_types[8]] = PredefinedType::UShort;
+		coll_to_predef[&predefined_types[9]] = PredefinedType::Bool;
+		coll_to_predef[&predefined_types[10]] = PredefinedType::Char;
+		coll_to_predef[&predefined_types[11]] = PredefinedType::UChar;
+		coll_to_predef[&predefined_types[12]] = PredefinedType::Void;
+
 		predefined_types_init = true;
 	}
 }
-
 
 void Scopes::ascend()
 {

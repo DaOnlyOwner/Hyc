@@ -36,30 +36,20 @@ public:
 	//Type* get_type(const std::string& name);
 	bool is_type_defined(const std::string& t) const { return get_top_level_entry().table.get_type(t) != nullptr; }
 	bool is_type_predefined(CollectionStmt* bt) const { return std::find_if(predefined_types.begin(), predefined_types.end(), [&](auto& p) {return p.get() == bit; }) != predefined_types.end(); }
-	PredefinedType get_predefined_type(CollectionStmt* bt);
+	PredefinedType get_predefined_type(CollectionStmt* bt) { auto it = coll_to_predef.find(bt); assert(it != coll_to_predef.end()); return it->second; }
 
 
 	CollectionStmt* get_type(const std::string& name) { return get_top_level_entry().table.get_type(name); }
 	DeclStmt* get_decl_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_for(cs, name); }
 
-	static const Type& get_primitive_type(const std::string name) { return predefined_types[name]; };
-	static const Type& get_primitive_type(Primitive::Specifier primitive) { return predefined_types[Primitive::Translate(primitive)]; }
-
-
-	/*template<typename Pred>
-	Function* get_func(const std::string& name, Pred pred)
+	
+	template<typename Pred>
+	FuncDefStmt* get_func(const std::string& name, Pred pred)
 	{
-		int father = get_entry(m_current_index).father;
-		for (int i = m_current_index; i >= 0; i = get_entry(i).father)
-		{
-			t_entry& e = get_entry(i);
-			auto elem = e.table.get_func(name, pred);
-			if (elem != nullptr) return elem;
-		}
-		return nullptr;
+		top_level.get_func(name, pred);
 	}
 
-	std::vector<Function> get_all_funcs(const std::string& name);*/
+	/*std::vector<Function> get_all_funcs(const std::string& name); */
 
 
 	void ascend();
@@ -110,6 +100,7 @@ private:
 
 	static std::vector<CollectionStmt> predefined_types;
 	static std::vector<FuncDefStmt> predefined_funcs;
+	static std::unordered_map<CollectionStmt*, PredefinedType> coll_to_predef;
 
 	static bool predefined_types_init;
 };
