@@ -2,23 +2,8 @@
 #include <cassert>
 #include "Operators.h"
 
-
 bool Scopes::predefined_types_init = false;
-std::vector<CollectionStmt> Scopes::predefined_types= {
-			CollectionStmt("int"),
-			CollectionStmt("float"),
-			CollectionStmt("double"),
-			CollectionStmt("quad"),
-			CollectionStmt("uint"),
-			CollectionStmt("half"),
-			CollectionStmt("uhalf"),
-			CollectionStmt("short"),
-			CollectionStmt("ushort"),
-			CollectionStmt("bool"),
-			CollectionStmt("char"),
-			CollectionStmt("uchar"),
-			CollectionStmt("void")
-};
+std::vector<CollectionStmt> Scopes::predefined_types;
 std::unordered_map<CollectionStmt*, PredefinedType> Scopes::coll_to_predef={};
 
 /*Variable* Scopes::get_var(const std::string & name)
@@ -117,6 +102,21 @@ Scopes::Scopes()
 {
 	if (!predefined_types_init)
 	{
+
+		predefined_types.emplace_back("int");
+		predefined_types.emplace_back("float");
+		predefined_types.emplace_back("double");
+		predefined_types.emplace_back("quad");
+		predefined_types.emplace_back("uint");
+		predefined_types.emplace_back("half");
+		predefined_types.emplace_back("uhalf");
+		predefined_types.emplace_back("short");
+		predefined_types.emplace_back("ushort");
+		predefined_types.emplace_back("bool");
+		predefined_types.emplace_back("char");
+		predefined_types.emplace_back("uchar");
+		predefined_types.emplace_back("void");
+
 		coll_to_predef[&predefined_types[0]] = PredefinedType::Int;
 		coll_to_predef[&predefined_types[1]] = PredefinedType::Float;
 		coll_to_predef[&predefined_types[2]] = PredefinedType::Double;
@@ -135,6 +135,17 @@ Scopes::Scopes()
 	}
 }
 
+DeclStmt* Scopes::get_variable(const std::string& name)
+{
+	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	{
+		t_entry& e = get_entry(i);
+		auto* elem = e.table.get_variable(name);
+		if (elem != nullptr) return elem;
+	}
+	return nullptr;
+}
+
 void Scopes::ascend()
 {
 	t_entry& current = get_current_entry();
@@ -143,7 +154,7 @@ void Scopes::ascend()
 
 // Expands the tree, allocates a new node and descends to it
 
-int Scopes::expand()
+int64_t Scopes::expand()
 {
 	auto indexTablePair = t_entry(m_current_index, SymbolTable());
 	m_collection.push_back(std::move(indexTablePair));
@@ -170,11 +181,11 @@ void Scopes::descend()
 	else ++m_current_index;
 }
 
-void Scopes::descend(size_t nthChild)
+void Scopes::descend(int64_t nthChild)
 {
 	// Iterate until we find the nth node that points to the current index
 	int count = 0;
-	for (int i = m_current_index; i < m_collection.size(); i++)
+	for (int64_t i = m_current_index; i < m_collection.size(); i++)
 	{
 		auto& e = get_entry(i);
 		count += e.father == m_current_index;

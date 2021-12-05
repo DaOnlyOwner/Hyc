@@ -57,11 +57,9 @@ namespace
 	PrefixOperation<Expr> ident{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 	{
 			auto& l = parser.overall_parser->get_lexer();
-			uptr<Expr> ident_expr = std::make_unique<IdentExpr>(Token(token));
-			// It's actually a function call
+			std::vector<uptr<TypeSpec>> generic_params;
 			if (l.lookahead(1).type == Token::Specifier::GenFCallOpen)
 			{
-				std::vector<uptr<TypeSpec>> generic_params;
 				l.eat(); // <
 				auto fst = parser.overall_parser->parse_type_spec();
 				generic_params.push_back(mv(fst));
@@ -71,29 +69,8 @@ namespace
 					generic_params.push_back(parser.overall_parser->parse_type_spec());
 				}
 				l.match_token(Token::Specifier::GenFCallClose); // >
-				l.match_token(Token::Specifier::RParenL);
-				std::vector<FuncCallArg> arg_list;
-				// Parse an argument list:
-				while (l.lookahead(1).type != Token::Specifier::RParenR && l.lookahead(1).type != Token::Specifier::Eof)
-				{
-					FuncCallArg arg;
-					if (l.lookahead(1).type == Token::Specifier::Hashtag)
-					{
-						l.eat();
-						arg.moved = true;
-					}
-					else arg.moved = false;
-					arg.expr = parser.parse();
-					arg_list.push_back(mv(arg));
-					if (l.lookahead(1).type == Token::Specifier::Comma)
-						l.eat();
-				}
-
-				l.match_token(Token::Specifier::RParenR); // ')'
-
-				return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(ident_expr), mv(arg_list), mv(generic_params)));
 			}
-			return ident_expr;
+			return std::make_unique<IdentExpr>(token,mv(generic_params));
 	} };
 
 	// Precedence  right_assoc?  Parsing function
@@ -123,7 +100,7 @@ namespace
 
 			l.match_token(Token::Specifier::RParenR); // ')'
 
-			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(lh), mv(arg_list),std::vector<uptr<TypeSpec>>{}));
+			return static_cast<uptr<Expr>>(std::make_unique<FuncCallExpr>(mv(lh), mv(arg_list)));
 		}
 
 		else if (token.type == Token::Specifier::BracketL)

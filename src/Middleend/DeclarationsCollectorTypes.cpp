@@ -6,8 +6,7 @@ namespace
 	template<typename T>
 	void add(DeclarationsCollectorTypes& t, Scopes& scopes, T& s, const Token& name)
 	{
-		bool succ = scopes.at_root().add(&s);
-		scopes.ret();
+		bool succ = scopes.add(&s);
 		if (!succ)
 		{
 			Messages::inst().trigger_1_e1(name, name.text);

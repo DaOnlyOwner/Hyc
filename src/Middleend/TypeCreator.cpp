@@ -29,7 +29,7 @@ void TypeCreator::visit(PointerTypeSpec& pt_spec)
 void TypeCreator::visit(BaseTypeSpec& bt_spec)
 {
 	instantiate_generic(bt_spec, scopes,ns); // instantiate already emits an error
-	auto* bt = scopes.get_base_type(bt_spec.name.text);
+	auto* bt = scopes.get_type(bt_spec.name.text);
 	if (bt == nullptr)
 	{
 		//auto descr = Error::FromToken(bt_spec.name);

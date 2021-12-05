@@ -1,6 +1,11 @@
 #include "SymbolTable.h"
 #include "TypeCreator.h"
 
+bool SymbolTable::add(CollectionStmt* cs)
+{
+	return collections.insert({ cs->name.text,cs }).second;
+}
+
 bool SymbolTable::add(FuncDefStmt* fn)
 {
 	auto it = functions.find(fn->decl->name.text);
@@ -55,4 +60,32 @@ bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl)
 		return succ.second;
 	}
 
+}
+
+bool SymbolTable::add(DeclStmt* decl)
+{
+	return variables.insert({ decl->name.text,decl }).second;
+}
+
+CollectionStmt* SymbolTable::get_type(const std::string& name) const
+{
+	auto it = collections.find(name);
+	if (it != collections.end()) return it->second;
+	return nullptr;
+}
+
+DeclStmt* SymbolTable::get_decl_for(CollectionStmt* bt, const std::string& name)
+{
+	auto it = decl_in_collection.find(bt);
+	assert(it != decl_in_collection.end());
+	auto decl_it = it->second.find(name);
+	if (decl_it == it->second.end()) return nullptr;
+	else return decl_it->second;
+}
+
+DeclStmt* SymbolTable::get_variable(const std::string& name)
+{
+	auto it = variables.find(name);
+	if (it != variables.end()) return it->second;
+	return nullptr;
 }

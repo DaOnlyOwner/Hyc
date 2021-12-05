@@ -86,7 +86,7 @@ void Messages::trigger_6_e1(const Token& from, const std::string& expr)
 
 void Messages::trigger_6_e2(const Token& from, const std::string& expr)
 {
-	semantic_error(from, fmt::format("No indirection for non pointer type in expression '{}'", expr));
+	semantic_error(from, fmt::format("No indirection for non pointer type, in expression '{}'", expr),"If you are trying to dereference a function pointer, you can't do that, calling a function pointer looks like a regular function call.");
 }
 
 void Messages::trigger_6_e3(const Token& from, const std::string& t)
@@ -163,6 +163,23 @@ void Messages::trigger_6_e15(const Token& from, const std::string& expr)
 {
 	semantic_error(from, fmt::format("Can only infer type when the left hand side is an identifier, here is '{}'",
 		expr));
+}
+
+void Messages::trigger_6_e16(const Token& from, const std::string& t1, const std::string& t2)
+{
+	semantic_error(from, fmt::format("Cannot assign type '{}' to type '{}'",
+		t1,t2));
+}
+
+void Messages::trigger_6_e17(const Token& from)
+{
+	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope",
+		from.text));
+}
+
+void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
+{
+	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));
 }
 
 

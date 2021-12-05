@@ -180,10 +180,13 @@ void TerminalOutput::visit(DeclInitStmt& decl_init)
 	indent--;
 }
 
-void TerminalOutput::visit(IdentExpr& ident)
+void TerminalOutput::visit(IdentExpr& name)
 {
 	make_indent();
-	out += fmt::format("IdentExpr: name='{}'\n", ident.ident.text);
+	std::string gargs = "";
+	for (auto& expr : name.generic_params)
+		gargs += fmt::format("{}, ", expr->as_str());
+	out += fmt::format("IdentExpr: name='{}', generic_params='{}'\n", name.name.text,gargs);
 }
 
 void TerminalOutput::visit(NamespaceStmt& namespace_stmt)
@@ -198,28 +201,26 @@ void TerminalOutput::visit(NamespaceStmt& namespace_stmt)
 	indent--;
 }
 
-void TerminalOutput::visit(FuncCallExpr& func_call_expr)
+void TerminalOutput::visit(FuncCallExpr& func_op)
 {
-	std::string gargs = "";
-	for (auto& expr : func_call_expr.generic_params)
-		gargs += fmt::format("{}, ", expr->as_str());
 	make_indent();
-	out+=fmt::format("FuncCallExpr: generic_params={}\n",gargs);
+	out += "FuncOpCallExpr\n";
+
 	indent++;
-	func_call_expr.from->accept(*this);
+	func_op.from->accept(*this);
 	indent--;
 
 	make_indent();
 	out += "Args:\n";
 	indent++;
-	for (int i = 0; i < func_call_expr.arg_list.size(); i++)
+	for (int i = 0; i < func_op.arg_list.size(); i++)
 	{
-		if (func_call_expr.arg_list[i].moved)
+		if (func_op.arg_list[i].moved)
 		{
 			make_indent();
 			out += "#\n";
 		}
-		func_call_expr.arg_list[i].expr->accept(*this);
+		func_op.arg_list[i].expr->accept(*this);
 	}
 	indent--;
 }

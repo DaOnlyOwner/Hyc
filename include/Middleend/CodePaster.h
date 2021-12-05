@@ -18,7 +18,7 @@ private:
 	virtual void visit(FuncDeclStmt& stmt) override;
 	virtual void visit(DeclStmt& stmt) override;
 	virtual void visit(CollectionStmt& stmt) override;
-	void visit(BaseTypeSpec& bt);
+	void visit(BaseTypeSpec& bt) override;
 
 	Scopes& scopes;
 	Stmt& stmt;

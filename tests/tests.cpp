@@ -13,6 +13,8 @@
 #include "GenericInstantiation.h"
 #include "DefaultTypeArgChecker.h"
 #include "Desugar.h"
+#include "MemberCollector.h"
+#include "TypeChecker.h"
 
 namespace
 {
@@ -88,6 +90,8 @@ TEST_CASE("DEBUG")
 		parsed->accept(gi);
 	}
 	collect_funcs(*parsed, sc);
+	collect_members(*parsed, sc);
+	check_type(*parsed, sc);
 	TerminalOutput to;
 	parsed->accept(to);
 	fmt::print("{}", to.get_format_str());

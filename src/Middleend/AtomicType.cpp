@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <Scopes.h>
 #include <cassert>
+#include "..\..\include\Middleend\AtomicType.h"
 
 CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
@@ -229,6 +230,76 @@ bool Type::is_integer(PredefinedType pt)
 		return false;
 	default:
 		break;
+	}
+}
+
+bool Type::is_unsigned_integer(PredefinedType pt)
+{
+	switch (pt)
+	{
+	case PredefinedType::Bool:
+		return false;
+	case PredefinedType::UShort:
+		return true;
+	case PredefinedType::UHalf:
+		return true;
+	case PredefinedType::UChar:
+		return true;
+	case PredefinedType::UInt:
+		return true;
+	case PredefinedType::Char:
+		return false;
+	case PredefinedType::Short:
+		return false;
+	case PredefinedType::Half:
+		return false;
+	case PredefinedType::Int:
+		return false;
+	case PredefinedType::Float:
+		return false;
+	case PredefinedType::Double:
+		return false;
+	case PredefinedType::Quad:
+		return false;
+	case PredefinedType::Void:
+		return false;
+	default:
+		assert(false);
+	}
+}
+
+bool Type::is_signed_integer(PredefinedType pt)
+{
+	switch (pt)
+	{
+	case PredefinedType::Bool:
+		return false;
+	case PredefinedType::UShort:
+		return false;
+	case PredefinedType::UHalf:
+		return false;
+	case PredefinedType::UChar:
+		return false;
+	case PredefinedType::UInt:
+		return false;
+	case PredefinedType::Char:
+		return true;
+	case PredefinedType::Short:
+		return true;
+	case PredefinedType::Half:
+		return true;
+	case PredefinedType::Int:
+		return true;
+	case PredefinedType::Float:
+		return false;
+	case PredefinedType::Double:
+		return false;
+	case PredefinedType::Quad:
+		return false;
+	case PredefinedType::Void:
+		return false;
+	default:
+		assert(false);
 	}
 }
 

@@ -60,6 +60,12 @@ public:
 
 	void trigger_6_e15(const Token& from, const std::string& expr);
 
+	void trigger_6_e16(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e17(const Token& from);
+
+	void trigger_7_e1(const Token& from, const std::string& coll_name);
+
 private:
 	Messages() = default;
 

@@ -4,7 +4,7 @@
 
 void CreateFuncArgsType::visit(NamespaceStmt& ns)
 {
-	int size_before_pasting = ns.stmts.size();
+	size_t size_before_pasting = ns.stmts.size();
 	for (size_t i = 0; i < size_before_pasting; i++)
 	{
 		auto& stmt = ns.stmts[i];

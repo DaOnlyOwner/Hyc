@@ -15,3 +15,5 @@ private:
 	Scopes& scopes;
 	CollectionStmt* current_collection;
 };
+
+void collect_members(NamespaceStmt& ns, Scopes& sc);

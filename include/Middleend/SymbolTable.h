@@ -84,30 +84,18 @@ public:
 		return it->second.get();
 	}*/
 
-	bool add(CollectionStmt* cs)
-	{
-		return collections.insert({ cs->name.text,cs }).second;
-	}
+	bool add(CollectionStmt* cs);
 
 	bool add(FuncDefStmt* fn);
 	bool add(CollectionStmt* for_coll, DeclStmt* decl);
+	bool add(DeclStmt* decl);
 
 
-	CollectionStmt* get_type(const std::string& name) const
-	{
-		auto it = collections.find(name);
-		if (it != collections.end()) return it->second;
-		return nullptr;
-	}
+	CollectionStmt* get_type(const std::string& name) const;
 
-	DeclStmt* get_decl_for(CollectionStmt* bt, const std::string& name)
-	{
-		auto it = decl_in_collection.find(bt);
-		assert(it != decl_in_collection.end());
-		auto decl_it = it->second.find(name);
-		if (decl_it == it->second.end()) return nullptr;
-		else return decl_it->second;
-	}
+	DeclStmt* get_decl_for(CollectionStmt* bt, const std::string& name);
+
+	DeclStmt* get_variable(const std::string& name);
 
 	template<typename Pred>
 	FuncDefStmt* get_func(const std::string& name, Pred pred)
@@ -115,8 +103,8 @@ public:
 		auto it = functions.find(name);
 		if (it == functions.end()) return nullptr;
 		auto& vars = it->second;
-		auto& it2 = std::find_if(vars.begin(), vars.end(), [&](FuncDefStmt* func) {return pred(*func->decl); });
-		if (it2 != vars.end()) return it2->get();
+		auto it2 = std::find_if(vars.begin(), vars.end(), [&](FuncDefStmt* func) {return pred(*func->decl); });
+		if (it2 != vars.end()) return *it2;
 		return nullptr;
 	}
 	/*Type* get_type(const std::string& name)
@@ -143,4 +131,5 @@ private:
 	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, DeclStmt*>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
+	std::unordered_map<std::string, DeclStmt*> variables;
 };

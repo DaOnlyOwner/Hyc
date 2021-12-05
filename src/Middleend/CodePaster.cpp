@@ -59,9 +59,8 @@ void CodePaster::visit(CollectionStmt& stmt)
 	must_replace = &stmt.generic_params;
 	for (auto& s : pasted->stmts) s->accept(*this);
 	auto* ptr = pasted.get();
-	bool succ = scopes.at_root().add(ptr);
+	bool succ = scopes.add(ptr);
 	// If no success we have already pasted
 	if (succ)
 		top_level.stmts.push_back(std::move(pasted));
-	scopes.ret();
 }

@@ -47,7 +47,7 @@ struct IAstVisitor
 	virtual void visit(struct DeclCpyStmt& decl_cpy) {};
 	virtual void visit(struct DeclMvStmt& decl_mv) { };
 	virtual void visit(struct DeclInitStmt& decl_init) {};
-	virtual void visit(struct IdentExpr& ident) {};
+	virtual void visit(struct IdentExpr& name) {};
 	virtual void visit(struct NamespaceStmt& namespace_stmt); 
 	virtual void visit(struct FuncCallExpr& func_call_expr) {};
 	virtual void visit(struct FuncDeclStmt& func_decl) {};
@@ -303,45 +303,18 @@ struct FloatLiteralExpr : Expr
 struct TypeSpec;
 struct IdentExpr : Expr
 {
+	IdentExpr(const Token& token, std::vector<uptr<TypeSpec>>&& generic_params)
+		: name(token), generic_params(mv(generic_params)) {}
 	IdentExpr(const Token& token)
-		: ident(token) {}
-	Token ident;
-	IMPL_VISITOR;
-	IMPL_CLONE(Expr) { return uptr<Expr>(new IdentExpr(*this)); }
-	IMPL_ASSTR
-	{
-		return ident.text;
-	}
-};
-
-struct FuncCallArg
-{
-	uptr<Expr> expr;
-	bool moved;
-};
-
-struct FuncCallExpr : Expr
-{
-	FuncCallExpr(uptr<Expr>&& from, std::vector<FuncCallArg>&& arg_list, std::vector<uptr<TypeSpec>>&& generic_params)
-		: from(mv(from)), arg_list(mv(arg_list)),generic_params(mv(generic_params)) {}
-	uptr<Expr> from;
-	std::vector<FuncCallArg> arg_list; // bool: wether the given arg is moved into the parameter.
+		:name(token), generic_params{}{}
+	Token name;
 	std::vector<uptr<TypeSpec>> generic_params;
-	// Semantic annotations:
-	struct Function* sem_function = nullptr;
 
 
 	IMPL_VISITOR;
-	IMPL_CLONE(Expr)
-	{
-	std::vector<FuncCallArg> arg_list_cpy;
-	for (int i = 0; i < arg_list.size(); i++)
-	{
-		arg_list_cpy.push_back({ arg_list[i].expr->clone(),arg_list[i].moved });
-	}
-	CPY_VEC(generic_params, generic_params_cpy, uptr<TypeSpec>);
-
-	return uptr<Expr>(new FuncCallExpr(from->clone(),mv(arg_list_cpy),mv(generic_params_cpy))); 
+	IMPL_CLONE(Expr) {
+		CPY_VEC(generic_params, gp_copy, uptr<TypeSpec>);
+		return uptr<Expr>(new IdentExpr(name, mv(gp_copy)));
 	}
 	IMPL_ASSTR
 	{
@@ -357,7 +330,36 @@ struct FuncCallExpr : Expr
 			gl += "," + ts->as_str();
 		}
 		gl += ">";
+		return name.text + (generic_params.empty() ? "" : gl);
+	}
+};
 
+struct FuncCallArg
+{
+	uptr<Expr> expr;
+	bool moved;
+};
+
+struct FuncCallExpr : Expr
+{
+	FuncCallExpr(uptr<Expr>&& from, std::vector<FuncCallArg>&& arg_list)
+		: from(mv(from)), arg_list(mv(arg_list)) {}
+	uptr<Expr> from;
+	std::vector<FuncCallArg> arg_list;
+
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+	std::vector<FuncCallArg> arg_list_cpy;
+	for (int i = 0; i < arg_list.size(); i++)
+	{
+		arg_list_cpy.push_back({ arg_list[i].expr->clone(),arg_list[i].moved });
+	}
+
+	return uptr<Expr>(new FuncCallExpr(from->clone(), mv(arg_list_cpy)));
+	}
+	IMPL_ASSTR
+	{
 		std::string args = "";
 		if (!arg_list.empty())
 		{
@@ -366,10 +368,11 @@ struct FuncCallExpr : Expr
 
 		for (int i = 1; i < arg_list.size(); i++)
 		{
-			args += fmt::format(", {}", arg_list[i]);
+			auto& arg = arg_list[i];
+			args += fmt::format(", {}", arg.moved?"#"+arg.expr->as_str():arg.expr->as_str());
 		}
 
-		return fmt::format("{}{}({})", from->as_str(), generic_params.empty() ? "" : gl, args);
+		return fmt::format("{}({})", from->as_str(), args);
 	}
 };
 
@@ -402,10 +405,10 @@ struct TernaryExpr : Expr
 
 struct ImplicitCastExpr : Expr
 {
-	ImplicitCastExpr(uptr<Expr> expr, Type&& t)
+	ImplicitCastExpr(uptr<Expr> expr, const Type& t)
 		:expr(mv(expr))
 	{
-		sem_type = mv(t);
+		sem_type = t;
 	}
 	uptr<Expr> expr;
 
@@ -504,12 +507,12 @@ struct CollectionStmt : Stmt
 	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
 		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
 
-	CollectionStmt(const std::string& name, CollectionType ctype = CollectionType::Struct)
+	CollectionStmt(const std::string& name, CollectionType ct = CollectionType::Struct)
 		:name(Token(Token::Specifier::Ident, name)), stmts{}, generic_params{},ct(ct){}
 
 	Token name;
-	std::vector<uptr<Stmt>> stmts;
 	std::vector<GenericInfo> generic_params;
+	std::vector<uptr<Stmt>> stmts;
 	CollectionType ct;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {

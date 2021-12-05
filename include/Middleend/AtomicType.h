@@ -93,5 +93,5 @@ struct PointerType
 {
 
 };
-extern BaseType error_base_type;
+extern CollectionStmt error_base_type;
 extern Type error_type;
