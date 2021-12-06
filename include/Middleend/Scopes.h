@@ -3,7 +3,6 @@
 #include "SymbolTable.h"
 #include <vector>
 #include "Primitive.h"
-#include "PerfectHashmap.h"
 #include <unordered_map>
 #include <cstdint>
 
@@ -32,8 +31,6 @@ public:
 	bool add(CollectionStmt* cs) {	return top_level.add(cs); }
 	bool add(CollectionStmt* cs, DeclStmt* decl) { return top_level.add(cs, decl); }
 	bool add(DeclStmt* decl) { return get_current_entry().table.add(decl); }
-
-
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
@@ -103,6 +100,8 @@ private:
 	static std::vector<CollectionStmt> predefined_types;
 	static std::vector<FuncDefStmt> predefined_funcs;
 	static std::unordered_map<CollectionStmt*, PredefinedType> coll_to_predef;
+	static DeclStmt declTrue;
+	static DeclStmt declFalse;
 
 	static bool predefined_types_init;
 };

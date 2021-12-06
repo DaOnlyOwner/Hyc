@@ -77,7 +77,7 @@ CollectionStmt* SymbolTable::get_type(const std::string& name) const
 DeclStmt* SymbolTable::get_decl_for(CollectionStmt* bt, const std::string& name)
 {
 	auto it = decl_in_collection.find(bt);
-	if(it == decl_in_collection.end()) return nullptr;
+	if(it == decl_in_collection.end()) return nullptr; 
 	auto decl_it = it->second.find(name);
 	if (decl_it == it->second.end()) return nullptr;
 	else return decl_it->second;

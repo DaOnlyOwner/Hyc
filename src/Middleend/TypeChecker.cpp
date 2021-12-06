@@ -3,6 +3,10 @@
 #include "Messages.h"
 #include "Token.h"
 
+
+#define RETURN_VAL_BIN_OP(p,val) bin_op.sem_type = p; RETURN_VAL(p,val);  
+#define RETURN_PREFIX_OP(p) pre_op.sem_type = p; RETURN(p); 
+
 namespace
 {
 	bool is_pred(const Scopes& scopes, const Type& t)
@@ -53,7 +57,9 @@ void TypeChecker::visit(FloatLiteralExpr& lit)
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	RETURN(Type(scopes.get_type("uint")));
+	Type t(scopes.get_type("uint"));
+	lit.sem_type = t;
+	RETURN(t);
 }
 
 // TODO: Handle =: *a = 3; <-- here *a needs to be an lvalue.
@@ -61,17 +67,20 @@ void TypeChecker::visit(IntegerLiteralExpr& lit)
 // Everything on the lhs needs to be an lvalue.
 void TypeChecker::visit(BinOpExpr& bin_op)
 {
-	auto tlh = get(bin_op.lh);
-	auto trh = get(bin_op.rh);
-	
-	bool handled = handle_bin_op_void(tlh, trh, bin_op);
-	handled = handled || handle_bin_op_predefined(tlh, trh, bin_op);
-	handled = handled || handle_bin_op_pointer_arithmetic(tlh, trh, bin_op);
-	handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
-	handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
-	handled = handled || handle_bin_op_member_acc(tlh, trh, bin_op);
+	bool handled = handle_bin_op_member_acc(bin_op);
 	if (!handled)
-		handle_bin_op_overloads(tlh, trh, bin_op);
+	{
+		auto tlh = get(bin_op.lh);
+		auto trh = get(bin_op.rh);
+		handled = handled || handle_bin_op_void(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_predefined(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_pointer_arithmetic(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_copy_move(tlh, trh, bin_op);
+		if (!handled)
+			handle_bin_op_overloads(tlh, trh, bin_op);
+	}
 }
 
 void TypeChecker::visit(PrefixOpExpr& pre_op)
@@ -81,52 +90,64 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 	{
 		// Prefix operation: must have a type.
 		Messages::inst().trigger_6_e1(pre_op.op, pre_op.lh->as_str());
-		RETURN(error_type);
+		RETURN_PREFIX_OP(error_type);
 	}
 	if (is_pred(scopes,t))
 	{
+		auto pt = scopes.get_predefined_type(t.get_base_type());
 		switch (pre_op.op.type)
 		{
 		case Token::Specifier::Plus:
-			pre_op.sem_type = t;
-			RETURN(t);
+			RETURN_PREFIX_OP(t);
 		case Token::Specifier::Minus:
 		{
-			auto pt = scopes.get_predefined_type(t.get_base_type());
 			if (Type::is_unsigned_integer(pt))
 			{
 				auto converted = (PredefinedType)((int)pt + 4);
-				RETURN(translate(scopes, converted));
+				auto trans = translate(scopes, converted);
+				RETURN_PREFIX_OP(trans);
 			}
 			pre_op.sem_type = t;
-			RETURN(t);
+			RETURN_PREFIX_OP(t);
 		}
 		case Token::Specifier::ExclMark:
 		{
+			if (pt != PredefinedType::Bool)
+			{
+				Messages::inst().trigger_6_e18(pre_op.op,t.as_str(),pre_op.lh->as_str());
+				RETURN_PREFIX_OP(error_type);
+			}
 			Type b(scopes.get_type("bool"));
-			pre_op.sem_type = b;
-			RETURN(b);
+			RETURN_PREFIX_OP(b);
 		}
 		case Token::Specifier::Tilde:
-			pre_op.sem_type = t;
-			RETURN(t);
-		case Token::Specifier::Asterix:
-			if (!t.is_pointer_type())
+			if (!Type::is_integer(pt))
 			{
-				// Error: no indirection for non pointer.
-				Messages::inst().trigger_6_e2(pre_op.op,pre_op.lh->as_str());
-				RETURN(error_type);
+				Messages::inst().trigger_6_e6_2(pre_op.op, t.as_str());
+				RETURN_PREFIX_OP(error_type);
 			}
-			t.pop();
-			pre_op.sem_type = t;
-			RETURN(t);
-		case Token::Specifier::Ampersand:
-			t.promote_pointer();
-			pre_op.sem_type = t;
-			RETURN(t);
+			RETURN_PREFIX_OP(t);
 		default:
-			assert(false);
+			break;
 		}
+	}
+	if (pre_op.op.type == Token::Specifier::Asterix)
+	{
+		if (!t.is_pointer_type())
+		{
+			// Error: no indirection for non pointer.
+			Messages::inst().trigger_6_e2(pre_op.op, pre_op.lh->as_str());
+			RETURN(error_type);
+		}
+		t.pop();
+		pre_op.sem_type = t;
+		RETURN(t);
+	}
+	if (pre_op.op.type == Token::Specifier::Ampersand)
+	{
+		t.promote_pointer();
+		pre_op.sem_type = t;
+		RETURN(t);
 	}
 
 	// Overloaded
@@ -149,6 +170,7 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 	if (t.must_be_inferred())
 	{
 		Messages::inst().trigger_6_e1(post_op.op,post_op.rh->as_str());
+		post_op.sem_type = error_type;
 		RETURN(error_type);
 	}
 	if (post_op.op.type == Token::Specifier::DoublePlus)
@@ -163,8 +185,15 @@ void TypeChecker::visit(IdentExpr& ident)
 {
 	// TODO: Function pointers
 	auto* decl = scopes.get_variable(ident.name.text);
-	if (decl->type_spec == nullptr)
+	if (!decl)
 	{
+		Messages::inst().trigger_6_e19(ident.name);
+		ident.sem_type = error_type;
+		RETURN(error_type);
+	}
+	if (decl->type_spec == nullptr && decl->type.must_be_inferred())
+	{
+		ident.sem_type = Type();
 		RETURN(Type());
 	}
 	ident.sem_type = decl->type;
@@ -179,6 +208,19 @@ void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
 {
+	auto* maybe_ident = dynamic_cast<IdentExpr*>(func_call_expr.from.get());
+	
+	// It's a func call expr
+	if (maybe_ident)
+	{
+
+	}
+
+	// It's a func ptr call (or a lambda call)
+	else
+	{
+
+	}
 }
 
 void TypeChecker::visit(FuncDeclStmt& func_decl)
@@ -287,6 +329,7 @@ bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpEx
 	{
 		auto& ptrtype = tlh.is_pointer_type() ? tlh : trh;
 		auto& base_expr = tlh.is_base_type() ? bin_op.lh : bin_op.rh;
+		auto& basetype = tlh.is_pointer_type() ? trh : tlh;
 
 		if (bin_op.op.type != Token::Specifier::Plus
 			&& bin_op.op.type != Token::Specifier::Minus
@@ -296,27 +339,28 @@ bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpEx
 		{
 			// Only plus, minus and = += -= ops are specified for pointer arithmetic
 			Messages::inst().trigger_6_e4(bin_op.op,tlh.as_str(),trh.as_str());
-			ret(error_type);
+			RETURN_VAL_BIN_OP(error_type, true);
 		}
 
-		if (bin_op.op.type == Token::Specifier::Equal)
+		if (bin_op.op.type == Token::Specifier::Equal || bin_op.op.type == Token::Specifier::Hashtag)
 		{
 			auto* ptr = dynamic_cast<IntegerLiteralExpr*>(base_expr.get());
 			if (!ptr)
 			{
 				// Ptrs may only be assigned integer literals
-				Messages::inst().trigger_6_e5(bin_op.op);
-				ret(error_type);
+				Messages::inst().trigger_6_e5(bin_op.op,base_expr->as_str(),basetype.as_str(),ptrtype.as_str());
+				RETURN_VAL_BIN_OP(error_type, true);
+
 			}
 			if (ptr && ptr->integer_literal.text != "0")
 			{
-				Messages::inst().trigger_6_e5(bin_op.op); // Only nullptr assignment allowed on pointers.
-				ret(error_type);
+				Messages::inst().trigger_6_e5(bin_op.op,base_expr->as_str(),basetype.as_str(),ptrtype.as_str()); 
+				RETURN_VAL_BIN_OP(error_type, true);
+
 			}
 		}
 
-		bin_op.sem_type = ptrtype;
-		ret(ptrtype);
+		RETURN_VAL_BIN_OP(ptrtype, true);
 	}
 	return is_pointer_arith;
 }
@@ -381,14 +425,14 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			{
 				Type t(scopes.get_type("bool"));
 				bin_op.sem_type = t;
-				RETURN_VAL(t,true);
+				RETURN_VAL_BIN_OP(t,true);
 			}
 
 			else if (bin_op.op.type == Token::Specifier::ThreeWay)
 			{
 				Type t(scopes.get_type("int"));
 				bin_op.sem_type = t;
-				RETURN_VAL(t,true);
+				RETURN_VAL_BIN_OP(t,true);
 			}
 
 			else if (bin_op.op.type == Token::Specifier::ShiftLeft
@@ -401,17 +445,14 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				if (!Type::is_integer(prh))
 				{
 					Messages::inst().trigger_6_e6(bin_op.op,tlh.as_str(),trh.as_str());
-					bin_op.sem_type = error_type;
-					RETURN_VAL(error_type,true);
+					RETURN_VAL_BIN_OP(error_type,true);
 				}
-				bin_op.sem_type = trh;
-				RETURN_VAL(trh,true);
+				RETURN_VAL_BIN_OP(trh,true);
 			}
 
 			else
 			{
-				bin_op.sem_type = tlh;
-				RETURN_VAL(tlh,true);
+				RETURN_VAL_BIN_OP(tlh,true);
 			}
 
 		}
@@ -421,13 +462,11 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 		{
 			if (plh == PredefinedType::Bool && prh == PredefinedType::Bool)
 			{
-				bin_op.sem_type = tlh;
-				RETURN_VAL(tlh,true);
+				RETURN_VAL_BIN_OP(tlh,true);
 			}
 			// && and || need to have types bool as lhs and rhs
 			Messages::inst().trigger_6_e7(bin_op.op,tlh.as_str(),trh.as_str());
-			bin_op.sem_type = error_type;
-			RETURN_VAL(error_type,true);
+			RETURN_VAL_BIN_OP(error_type,true);
 		}
 		break;
 		case Token::Specifier::PercentEqual:
@@ -457,8 +496,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			auto inner = std::make_unique<BinOpExpr>(op_inner, std::move(inner_lhs), std::move(bin_op.rh));
 			auto outer = BinOpExpr(Token(Token::Specifier::Equal, "="), std::move(bin_op.lh), std::move(inner));
 			bin_op = std::move(outer);
-			bin_op.sem_type = trh;
-			RETURN_VAL(trh, true);
+			RETURN_VAL_BIN_OP(trh, true);
 		}
 		// For this case always take the lhs
 		case Token::Specifier::Hashtag:
@@ -470,11 +508,9 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				// Cast the rhs to the lhs.
 				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), tlh);
 				bin_op.rh = std::move(ice);
-				bin_op.sem_type = tlh;
-				RETURN_VAL(tlh, true);
+				RETURN_VAL_BIN_OP(tlh, true);
 			}
-			bin_op.sem_type = trh; // Doesn't matter wether I return tlh or trh
-			RETURN_VAL(trh, true);
+			RETURN_VAL_BIN_OP(trh, true);
 		}
 		break;
 		case Token::Specifier::KwAs:
@@ -484,7 +520,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 		{
 			// Error: unsupported operation type for type and type. 
 			Messages::inst().trigger_6_e8(bin_op.op,tlh.as_str(),trh.as_str());
-			RETURN_VAL(error_type, true);
+			RETURN_VAL_BIN_OP(error_type, true);
 		}
 		}
 	}
@@ -517,7 +553,7 @@ bool TypeChecker::handle_bin_op_void(Type& tlh, Type& trh, BinOpExpr& bin_op)
 	}
 	if (was_void)
 	{
-		RETURN_VAL(error_type, true);
+		RETURN_VAL_BIN_OP(error_type, true);
 	}
 	return false;
 }
@@ -527,18 +563,20 @@ bool TypeChecker::handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& b
 	if (tlh.is_pointer_type() && trh.is_pointer_type())
 	{
 
-		if (bin_op.op.type == Token::Specifier::Equal
-			|| bin_op.op.type == Token::Specifier::NotEqual
+		if (bin_op.op.type == Token::Specifier::NotEqual
 			|| bin_op.op.type == Token::Specifier::DoubleEqual)
 		{
 			auto bool_type = Type(scopes.get_type("bool"));
-			bin_op.sem_type = bool_type;
-			RETURN_VAL(bool_type,true);
+			RETURN_VAL_BIN_OP(bool_type,true);
 		}
 
-		// Every operation except =, == and != are not allowed on pointers
-		Messages::inst().trigger_6_e4(bin_op.op, tlh.as_str(), trh.as_str());
-		RETURN_VAL(error_type, true);
+		bool succ = handle_bin_op_copy_move(tlh, trh,bin_op);
+		if (!succ)
+		{
+			// Every operation except =, == and != are not allowed on pointers
+			Messages::inst().trigger_6_e4(bin_op.op, tlh.as_str(), trh.as_str());
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
 	}
 	return false;
 }
@@ -552,8 +590,9 @@ bool TypeChecker::handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_o
 		if (tlh != trh)
 		{
 			Messages::inst().trigger_6_e16(bin_op.op, tlh.as_str(), trh.as_str());
-			RETURN_VAL(error_type, true);
+			RETURN_VAL_BIN_OP(error_type, true);
 		}
+		RETURN_VAL_BIN_OP(trh, true);
 	}
 	return is_copy_move;
 }
@@ -568,22 +607,21 @@ bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op
 		{
 			// Cannot infer type when operator is not = or #.
 			Messages::inst().trigger_6_e10(bin_op.op);
-			RETURN_VAL(error_type,true);
+			RETURN_VAL_BIN_OP(error_type,true);
 		}
 	
 		auto* ptrlh = dynamic_cast<IdentExpr*>(bin_op.lh.get());
 		if (!ptrlh)
 		{
 			Messages::inst().trigger_6_e15(bin_op.op, bin_op.lh->as_str());
-			RETURN_VAL(error_type, true);
+			RETURN_VAL_BIN_OP(error_type, true);
 		}
 
 		// TODO: Get the decl stmt and assign a type to it.
 		DeclStmt* decl = scopes.get_variable(ptrlh->name.text);
 		decl->type = trh;
 		ptrlh->sem_type = trh;
-		bin_op.sem_type = trh;
-		RETURN_VAL(trh,true);
+		RETURN_VAL_BIN_OP(trh,true);
 	}
 
 	// When the rhs has no type yet, it's an error
@@ -591,7 +629,7 @@ bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op
 	{
 		// Type of rhs must be known.
 		Messages::inst().trigger_6_e11(bin_op.op,bin_op.rh->as_str());
-		RETURN_VAL(error_type,true);
+		RETURN_VAL_BIN_OP(error_type,true);
 	}
 	return false;
 }
@@ -609,40 +647,42 @@ bool TypeChecker::handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_o
 		return true;
 	}
 	bin_op.sem_bin_op = fds->decl.get();
+	bin_op.sem_type = fds->decl->ret_type->semantic_type;
 	ret(fds->decl->ret_type->semantic_type);
 	return true;
 }
 
-bool TypeChecker::handle_bin_op_member_acc(Type& tlh, Type& trh, BinOpExpr& bin_op)
+bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 {
 	// . -> operators
 	if (bin_op.op.type == Token::Specifier::Dot
 		|| bin_op.op.type == Token::Specifier::MemAccess)
 	{
+		auto tlh = get(bin_op.lh);
 		auto cpy_tlh = tlh;
 		if (bin_op.op.type == Token::Specifier::MemAccess)
 			cpy_tlh.pop();
 		if (!cpy_tlh.is_base_type())
 		{
 			Messages::inst().trigger_6_e13(bin_op.op,cpy_tlh.as_str()); // Pointer and other types do not have members
-			RETURN_VAL(error_type,true);
+			RETURN_VAL_BIN_OP(error_type,true);
 		}
 		auto* ident_rh = dynamic_cast<IdentExpr*>(bin_op.rh.get());
 		if (ident_rh == nullptr)
 		{
 			// Error: a->b or a.b <-- b needs to be an identifier.
 			Messages::inst().trigger_6_e14(bin_op.op,bin_op.rh->as_str());
-			RETURN_VAL(error_type,true);
+			RETURN_VAL_BIN_OP(error_type,true);
 		}
-		DeclStmt* decl = scopes.get_decl_for(trh.get_base_type(), ident_rh->name.text);
+		DeclStmt* decl = scopes.get_decl_for(cpy_tlh.get_base_type(), ident_rh->name.text);
 		if (decl == nullptr)
 		{
 			// Error: no member named "decl->name" in trh
 			Messages::inst().trigger_6_e12(bin_op.op,cpy_tlh.as_str(),ident_rh->name.text);
-			RETURN_VAL(error_type,true);
+			RETURN_VAL_BIN_OP(error_type,true);
 		}
 		ident_rh->sem_type = decl->type;
-		RETURN_VAL(decl->type,true)
+		RETURN_VAL_BIN_OP(decl->type,true)
 		// TODO: Look up member (lhs) and get it's type
 	}
 	return false;

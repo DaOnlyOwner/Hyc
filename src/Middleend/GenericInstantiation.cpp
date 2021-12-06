@@ -96,7 +96,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 		// The definition is actually generic
 		if (!defined->generic_params.empty())
 		{
-			std::vector<std::string> to_paste;
+			std::vector<uptr<TypeSpec>> to_paste;
 			// If all generic type parameters are default arguments, we can instantiate something like:
 			/*
 			struct A<T1=int,T2=int>{}
@@ -112,9 +112,14 @@ void GenericInst::visit(BaseTypeSpec& bt)
 					RETURN(false);
 				}
 				arg.default_type->accept(*this);
-				to_paste.push_back(arg.default_type->as_str());
+				to_paste.push_back(arg.default_type->clone());
 			}
 			//std::reverse(to_paste.begin(), to_paste.end());
+			if (!to_paste.empty())
+			{
+				bt.name.text = get_str(bt.name.text, to_paste);
+				bt.generic_list.clear();
+			}
 			CodePaster paster(*defined, scopes, to_paste, top_level);
 			paster.paste();
 		}
@@ -145,7 +150,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 		RETURN(false);
 	}
 
-	std::vector<std::string> to_paste;
+	std::vector<uptr<TypeSpec>> to_paste;
 	for (int i = 0; i < defined->generic_params.size(); i++)
 	{
 		if (i >= bt.generic_list.size()) // It's maybe a default argument
@@ -161,7 +166,7 @@ void GenericInst::visit(BaseTypeSpec& bt)
 			t.default_type->accept(*this);
 
 			//if (!get(t.default_type)) { RETURN(false); } 
-			to_paste.push_back(t.default_type->as_str());
+			to_paste.push_back(t.default_type->clone());
 			continue;
 		}
 		auto& given_t = bt.generic_list[i];
@@ -173,10 +178,16 @@ void GenericInst::visit(BaseTypeSpec& bt)
 		}
 		*/
 		if (!get(given_t)) { RETURN(false); }
-		to_paste.push_back(given_t->as_str());
+		to_paste.push_back(given_t->clone());
 	}
 	//std::reverse(to_paste.begin(), to_paste.end());
 	
+	if (!to_paste.empty())
+	{
+		bt.name.text = get_str(bt.name.text, to_paste);
+		bt.generic_list.clear();
+	}
+
 	CodePaster code_paster(*defined, scopes, to_paste, top_level);
 	code_paster.paste();
 	RETURN(true);

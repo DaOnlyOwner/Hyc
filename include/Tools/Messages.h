@@ -36,11 +36,13 @@ public:
 
 	void trigger_6_e4(const Token& from, const std::string& t1, const std::string& t2);
 
-	void trigger_6_e5(const Token& from);
+	void trigger_6_e5(const Token& from, const std::string& expr, const std::string& t, const std::string& ptrtype);
 
 	void trigger_6_w1(const Token& from, const std::string& expr);
 
 	void trigger_6_e6(const Token& from, const std::string& t1, const std::string& t2);
+
+	void trigger_6_e6_2(const Token& from, const std::string& t1);
 
 	void trigger_6_e7(const Token& from, const std::string& t1, const std::string& t2);
 
@@ -63,6 +65,10 @@ public:
 	void trigger_6_e16(const Token& from, const std::string& t1, const std::string& t2);
 
 	void trigger_6_e17(const Token& from);
+
+	void trigger_6_e18(const Token& token, const std::string& t, const std::string& expr);
+
+	void trigger_6_e19(const Token& from);
 
 	void trigger_7_e1(const Token& from, const std::string& coll_name);
 

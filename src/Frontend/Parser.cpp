@@ -353,7 +353,8 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 		tkns.match_token(Token::Specifier::Semicolon);
 		auto ret_type = parse_type_spec();
 		tkns.match_token(Token::Specifier::RParenR);
-		return std::make_unique<FptrTypeSpec>(mv(args), mv(ret_type));
+		auto inner = parse_type_spec_part();
+		return std::make_unique<FptrTypeSpec>(mv(args), mv(ret_type),mv(inner));
 	}
 	return nullptr;
 }

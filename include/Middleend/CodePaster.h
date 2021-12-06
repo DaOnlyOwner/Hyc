@@ -2,12 +2,13 @@
 #include "Ast.h"
 #include "ValuePtr.h"
 #include "Scopes.h"
+#include "ValueStorage.h"
 
-class CodePaster : IAstVisitor
+class CodePaster : IAstVisitor, ValueStorage<uptr<TypeSpec>>
 {
 public:
-	CodePaster(Stmt& stmt, Scopes& scopes, const std::vector<std::string>& to_paste, NamespaceStmt& top_level)
-		:stmt(stmt), scopes(scopes), to_paste(to_paste),top_level(top_level) {}
+	CodePaster(Stmt& stmt, Scopes& scopes, const std::vector<uptr<TypeSpec>>& to_paste, NamespaceStmt& top_level)
+		:stmt(stmt), scopes(scopes), to_paste(to_paste),top_level(top_level),ValueStorage<uptr<TypeSpec>>(this) {}
 
 	void paste()
 	{
@@ -23,6 +24,8 @@ private:
 	Scopes& scopes;
 	Stmt& stmt;
 	NamespaceStmt& top_level;
-	const std::vector<std::string>& to_paste;
+	const std::vector<uptr<TypeSpec>>& to_paste;
 	std::vector<GenericInfo>* must_replace;
 };
+
+std::string get_str(const std::string& name, const std::vector<uptr<TypeSpec>>& to_paste);

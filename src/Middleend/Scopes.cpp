@@ -1,10 +1,11 @@
 #include "Scopes.h"
 #include <cassert>
-#include "Operators.h"
 
 bool Scopes::predefined_types_init = false;
 std::vector<CollectionStmt> Scopes::predefined_types;
 std::unordered_map<CollectionStmt*, PredefinedType> Scopes::coll_to_predef={};
+DeclStmt Scopes::declTrue{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"true") };
+DeclStmt Scopes::declFalse{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"false") };
 
 /*
 std::vector<Function> Scopes::get_all_funcs(const std::string& name)
@@ -53,16 +54,25 @@ Scopes::Scopes()
 		coll_to_predef[&predefined_types[12]] = PredefinedType::Void;
 
 		predefined_types_init = true;
+
+		declTrue.type = Type(&predefined_types[9]);
+		declFalse.type = Type(&predefined_types[9]);
 	}
 
 	for (auto& p : predefined_types)
 	{
 		add(&p);
 	}
+
+	top_level.add(&declTrue);
+	top_level.add(&declFalse);
+
 }
 
 DeclStmt* Scopes::get_variable(const std::string& name)
 {
+	auto tl = top_level.get_variable(name);
+	if (tl) return tl;
 	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
 	{
 		t_entry& e = get_entry(i);

@@ -99,9 +99,9 @@ void Messages::trigger_6_e4(const Token& from,const std::string& t1, const std::
 	semantic_error(from, fmt::format("The operator '{}' is not specified for types '{}' and '{}'", from.text, t1, t2));
 }
 
-void Messages::trigger_6_e5(const Token& from)
+void Messages::trigger_6_e5(const Token& from, const std::string& expr, const std::string& t, const std::string& ptrtype)
 {
-	semantic_error(from, "Only '0' (nullpointer) and other pointer values may be assigned to pointers");
+	semantic_error(from, fmt::format("Only '0' (nullpointer) and other pointer values may be assigned to pointers, here a variable of type '{}' was assigned '{}' which has type '{}'",ptrtype, expr,t));
 }
 
 void Messages::trigger_6_w1(const Token& from, const std::string& expr)
@@ -114,6 +114,13 @@ void Messages::trigger_6_e6(const Token& from, const std::string& t1, const std:
 	semantic_error(from, fmt::format("For atomic types: The types of operator '{}' must be integer, not '{}' and '{}'", 
 		from.text, t1,t2));
 }
+
+void Messages::trigger_6_e6_2(const Token& from, const std::string& t1)
+{
+	semantic_error(from, fmt::format("For atomic types: The types of operator '{}' must be integer, not '{}'",
+		from.text, t1));
+}
+
 
 void Messages::trigger_6_e7(const Token& from, const std::string& t1, const std::string& t2)
 {
@@ -176,6 +183,17 @@ void Messages::trigger_6_e17(const Token& from)
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope",
 		from.text));
 }
+
+void Messages::trigger_6_e18(const Token& from, const std::string& t, const std::string& expr)
+{
+	semantic_error(from, fmt::format("Wrong type '{}' of expression '{}' for operator '!'", t, expr),"Operator '!' needs type 'bool'");
+}
+
+void Messages::trigger_6_e19(const Token& from)
+{
+	semantic_error(from, fmt::format("Variable '{}' is undefined",from.text));
+}
+
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {

@@ -16,8 +16,8 @@ namespace
 		std::string str = fmt::format("===== {} =====\nHere:{}:{}",type,descr.Line,descr.From);
 		if (descr.Message != "") str += "\nMessage: " + descr.Message;
 		if (descr.Hint != "") str += "\nHint: " + descr.Hint;
-		str += fmt::format("\n===== {} =====\n\n",descr.File);
-		fmt::print(fg(c), "{}",str);
+		str += fmt::format("\n===== {} =====",descr.File);
+		fmt::print(fg(c), "{}\n\n",str);
 	}
 }
 

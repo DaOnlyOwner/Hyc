@@ -1,0 +1,10 @@
+struct A<T>
+{
+   T* t1;
+}
+
+
+int test()
+{
+   A<int*> a;
+}

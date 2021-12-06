@@ -117,8 +117,12 @@ struct GenericInfo
 
 struct TypeSpec : Node
 {
+	TypeSpec(uptr<TypeSpec> inner)
+		:inner(mv(inner)){}
 	virtual const Token& get_ident_token() const { throw std::runtime_error("Compiler bug, cannot get token"); };
 	virtual std::string as_str() const = 0;
+	void push_inner(uptr<TypeSpec>&& elems) { if (inner) inner->push_inner(mv(elems)); else inner = mv(elems); }
+	uptr<TypeSpec> inner = nullptr;
 	Type semantic_type;
 	virtual uptr<TypeSpec> clone() const = 0;
 };
@@ -126,20 +130,20 @@ struct TypeSpec : Node
 struct PointerTypeSpec : TypeSpec
 {
 	PointerTypeSpec(uptr<TypeSpec> inner)
-		:inner(mv(inner)) {}
-
-	uptr<TypeSpec> inner = nullptr;
+		:TypeSpec(mv(inner)) {}
 	virtual std::string as_str() const override { return "*" + (inner ? inner->as_str() : std::string()); }
 	IMPL_VISITOR;
 	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new PointerTypeSpec(inner?inner->clone():nullptr)); }
+
 };
 
 struct BaseTypeSpec : TypeSpec
 {
 	BaseTypeSpec(Token&& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
-		:name(name), inner(mv(inner)), generic_list(mv(generic_list)) {}
+		:name(mv(name)), TypeSpec(mv(inner)), generic_list(mv(generic_list)) {}
+	BaseTypeSpec(Token&& name)
+		:name(mv(name)), generic_list{},TypeSpec(nullptr){}
 	Token name;
-	uptr<TypeSpec> inner;
 	std::vector<uptr<TypeSpec>> generic_list;
 	virtual const Token& get_ident_token() const override { return name; }
 	virtual std::string as_str() const override {
@@ -170,8 +174,7 @@ struct BaseTypeSpec : TypeSpec
 struct ScopeTypeSpec : TypeSpec
 {
 	ScopeTypeSpec(uptr<TypeSpec>&& inner, uptr<BaseTypeSpec>&& base)
-		:inner(mv(inner)), base(mv(base)) {}
-	uptr<TypeSpec> inner;
+		:TypeSpec(mv(inner)), base(mv(base)) {}
 	uptr<BaseTypeSpec> base;
 
 	virtual std::string as_str() const override {
@@ -190,8 +193,8 @@ struct ScopeTypeSpec : TypeSpec
 
 struct FptrTypeSpec : TypeSpec
 {
-	FptrTypeSpec(std::vector<uptr<TypeSpec>>&& args, uptr<TypeSpec>&& ret_type)
-		:args(mv(args)), ret_type(mv(ret_type)) {}
+	FptrTypeSpec(std::vector<uptr<TypeSpec>>&& args, uptr<TypeSpec>&& ret_type, uptr<TypeSpec>&& inner)
+		:args(mv(args)), ret_type(mv(ret_type)),TypeSpec(mv(inner)){}
 	std::vector<uptr<TypeSpec>> args;
 	uptr<TypeSpec> ret_type;
 	virtual std::string as_str() const override {
@@ -212,7 +215,7 @@ struct FptrTypeSpec : TypeSpec
 	IMPL_CLONE(TypeSpec) {
 		std::vector<uptr<TypeSpec>> args_cpy;
 	for (auto& p : args) args_cpy.push_back(p->clone());
-		return uptr<TypeSpec>(new FptrTypeSpec(mv(args_cpy),ret_type->clone()));
+		return uptr<TypeSpec>(new FptrTypeSpec(mv(args_cpy),ret_type->clone(),inner->clone()));
 	}
 
 };
@@ -220,9 +223,8 @@ struct FptrTypeSpec : TypeSpec
 struct ArrayTypeSpec : TypeSpec
 {
 	ArrayTypeSpec(uptr<struct IntegerLiteralExpr> amount, uptr<TypeSpec> inner)
-		:amount(mv(amount)), inner(mv(inner)) {}
+		:amount(mv(amount)), TypeSpec(mv(inner)) {}
 	uptr<IntegerLiteralExpr> amount;
-	uptr<TypeSpec> inner;
 	virtual std::string as_str() const override { return fmt::format("[{}]", amount->integer_literal.text) + (inner ? inner->as_str() : std::string()); }
 	IMPL_VISITOR;
 	IMPL_CLONE(TypeSpec) { return uptr<TypeSpec>(new ArrayTypeSpec(uptr<IntegerLiteralExpr>(dynamic_cast<IntegerLiteralExpr*>(amount->clone().release())), inner?inner->clone():nullptr)); }

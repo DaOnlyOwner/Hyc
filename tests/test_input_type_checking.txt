@@ -9,6 +9,34 @@ struct A
    int** c;
 }
 
+struct C<T>
+{
+   T* t1;
+}
+
+void bool_test()
+{
+   b := 3 == 3;
+   b = true;
+}
+
+
+int generic_coll()
+{
+   C<int*> c;
+   int a;
+   int* a_ptr := &a;
+   int** a_ptr_ptr := &a_ptr;
+   c.t1 = a_ptr_ptr;
+
+   a_ptr_2 := &a;
+   a_ptr_ptr_2 := &a_ptr_2;
+   c.t1 = a_ptr_ptr_2;
+   C<C<int>> c2;
+   uint z := 3;
+   c2.t1->t1 = &z;
+}
+
 int test(int a, int b)
 {
    int t1 := a + b;
@@ -30,7 +58,7 @@ int ptrs()
    int c;
    d := &c;
    a.c = &d;
-
 }
+
 
 

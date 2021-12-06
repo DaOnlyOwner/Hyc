@@ -4,6 +4,7 @@
 
 void MemberCollector::visit(CollectionStmt& coll_def)
 {
+	if (!coll_def.generic_params.empty()) return; // Don't collect members of generic collections
 	current_collection = &coll_def;
 	for (auto& p : coll_def.stmts) p->accept(*this);
 }

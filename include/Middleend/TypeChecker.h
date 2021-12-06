@@ -38,7 +38,7 @@ private:
 	bool handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_op);
-	bool handle_bin_op_member_acc(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_member_acc(BinOpExpr& bin_op);
 	bool handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_op);
 
 
