@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <Scopes.h>
 #include <cassert>
+#include "Ast.h"
 
 CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
@@ -189,6 +190,11 @@ std::string Type::as_str() const
 		}
 	}
 	return out;
+}
+
+uptr<TypeSpec> Type::to_ast() const
+{
+
 }
 
 std::pair<ConversionType, ConversionType> Type::type_cast_to_more_general(PredefinedType t1, PredefinedType t2)

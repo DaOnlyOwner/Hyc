@@ -14,6 +14,8 @@ void CreateFuncArgsType::visit(NamespaceStmt& ns)
 
 void CreateFuncArgsType::visit(FuncDefStmt& def)
 {
+	// Don't instantiate generic func defs
+	if (!def.decl->generic_list.empty()) return;
 	auto [r,succ] = create_type(*def.decl->ret_type, scopes, ns);
 	def.decl->ret_type->semantic_type = std::move(r);
 	if (!succ)
@@ -25,8 +27,8 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 	{
 		auto& arg = def.decl->arg_list[i];
 		// Don't try to create a type for a generic parameter.
-		if (std::find_if(def.decl->generic_list.begin(), def.decl->generic_list.end(), [&](GenericInfo& t) {return t.name.text == arg->type_spec->as_str(); }) != def.decl->generic_list.end())
-			continue;
+		//if (std::find_if(def.decl->generic_list.begin(), def.decl->generic_list.end(), [&](GenericInfo& t) {return t.name.text == arg->type_spec->as_str(); }) != def.decl->generic_list.end())
+		//	continue;
 		auto [a, succ_a] = create_type(*arg->type_spec, scopes, ns);
 		if (!succ_a)
 		{

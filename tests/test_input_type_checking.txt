@@ -58,6 +58,9 @@ int ptrs()
    int c;
    d := &c;
    a.c = &d;
+   C<int> k;
+   C<int> k2;
+   k = k2;
 }
 
 

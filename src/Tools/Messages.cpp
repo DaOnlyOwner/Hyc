@@ -194,6 +194,10 @@ void Messages::trigger_6_e19(const Token& from)
 	semantic_error(from, fmt::format("Variable '{}' is undefined",from.text));
 }
 
+void Messages::trigger_6_e20(const Token& from, const std::string& expr)
+{
+	semantic_error(from, fmt::format("Cannot deduce type '{}' in function call '{}'", from.text,expr));
+}
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {
