@@ -9,7 +9,7 @@ public:
 	TypeChecker(Scopes& scopes,NamespaceStmt& ns)
 		:ValueStorage(this), scopes(scopes),ns(ns) {}
 private:
-	virtual void visit(FloatLiteralExpr& lit) override;
+	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
@@ -44,9 +44,12 @@ private:
 
 	Scopes& scopes;
 	NamespaceStmt& ns;
+
+	size_t new_elem_idx = 0;
 };
 
 void check_type(NamespaceStmt& ns, Scopes& sc);
+void check_type_repeat(NamespaceStmt& ns, Scopes& sc);
 
 //
 //	std::unique_ptr<Scopes> get_scopes()

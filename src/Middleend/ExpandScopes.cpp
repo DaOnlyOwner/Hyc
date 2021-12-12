@@ -2,12 +2,13 @@
 
 void ExpandScopes::visit(NamespaceStmt& namespace_stmt)
 {
-	scopes.expand();
-	for (auto& stmt : namespace_stmt.stmts)
+	if(entry == 0) scopes.expand();
+	for (int i = entry; i<namespace_stmt.stmts.size(); i++)
 	{
+		auto& stmt = namespace_stmt.stmts[i];
 		stmt->accept(*this);
 	}
-	scopes.ascend();
+	if(entry == 0) scopes.ascend();
 }
 
 void ExpandScopes::visit(FuncDefStmt& func_call_stmt)
@@ -98,8 +99,8 @@ void ExpandScopes::visit(ScopeStmt& sc)
 	scopes.ascend();
 }
 
-void expand_scopes(NamespaceStmt& ns, Scopes& sc)
+void expand_scopes(NamespaceStmt& ns, Scopes& sc, size_t entry)
 {
-	ExpandScopes es(sc);
+	ExpandScopes es(sc,entry);
 	ns.accept(es);
 }

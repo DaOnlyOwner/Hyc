@@ -5,6 +5,7 @@
 #include <Scopes.h>
 #include <cassert>
 #include "Ast.h"
+#include "Scopes.h"
 
 CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
@@ -54,6 +55,18 @@ Type::Type(uint64_t amount)
 	promote_array(amount);
 }
 
+bool Type::is_predefined(const Scopes& sc) const
+{
+	return is_base_type() && sc.is_type_predefined(get_base_type());
+}
+
+std::optional<PredefinedType> Type::to_pred(const Scopes& sc) const
+{
+	if (!is_predefined) return {};
+	return sc.get_predefined_type(get_base_type());
+}
+
+
 Type::Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
 {
 	promote_fptr(std::move(ret), std::move(args));
@@ -100,61 +113,61 @@ void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args
 	stored_types.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
-ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes)
-{
-	if (other.stored_types.size() != stored_types.size()) return ConversionType::NeedsCasting;
-	ConversionType ctype = ConversionType::ImplicitCasting;
-	for (int i = 0; i < stored_types.size(); i++)
-	{
-		auto& [kind, acc] = stored_types[i];
-		auto& [okind, oacc] = other.stored_types[i];
-		if (kind != okind)
-		{
-			if (kind == TypeKind::Array && okind == TypeKind::Pointer) continue; // Array to pointer is implicitly casted
-			return ConversionType::NeedsCasting;
-		}
-		switch (kind)
-		{
-		case TypeKind::Pointer:
-			break;
-		case TypeKind::Base:
-		{
-			std::array<std::string, (int)Primitive::Specifier::Count> primitives = { "u8","u16","u32","uint","s8","s16","s32","int","float","double" };
-			CollectionStmt* bt = std::get<CollectionStmt*>(acc);
-			CollectionStmt* obt = std::get<CollectionStmt*>(oacc);
-			if (bt == obt)
-			{
-				ctype = ConversionType::None;
-			}
-			else
-			{
-				bool contains = std::find(primitives.begin(), primitives.end(), bt->name.text) != primitives.end();
-				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name.text) != primitives.end();
-				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
-			}
-		}
-		break;
-		case TypeKind::Array:
-			if(std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return ConversionType::NeedsCasting;
-			break;
-		// Function pointers need to be exact
-		case TypeKind::FunctionPointer:
-			auto& fp = std::get<FunctionPointerType>(acc);
-			auto& ofp = std::get<FunctionPointerType>(oacc);
-			if (fp.args.size() != ofp.args.size()) return ConversionType::NeedsCasting;
-			if (*fp.return_type != *ofp.return_type) return ConversionType::NeedsCasting;
-			for (int j = 0; j < fp.args.size(); j++)
-			{
-				Type& t = *fp.args[j];
-				Type& ot = *ofp.args[j];
-				if (t != ot) return ConversionType::NeedsCasting;
-				ctype = ConversionType::None;
-			}
-			break;
-		}
-	}
-	return ctype;
-}
+//ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes)
+//{
+//	if (other.stored_types.size() != stored_types.size()) return ConversionType::NeedsCasting;
+//	ConversionType ctype = ConversionType::ImplicitCasting;
+//	for (int i = 0; i < stored_types.size(); i++)
+//	{
+//		auto& [kind, acc] = stored_types[i];
+//		auto& [okind, oacc] = other.stored_types[i];
+//		if (kind != okind)
+//		{
+//			if (kind == TypeKind::Array && okind == TypeKind::Pointer) continue; // Array to pointer is implicitly casted
+//			return ConversionType::NeedsCasting;
+//		}
+//		switch (kind)
+//		{
+//		case TypeKind::Pointer:
+//			break;
+//		case TypeKind::Base:
+//		{
+//			std::array<std::string, (int)Primitive::Specifier::Count> primitives = { "u8","u16","u32","uint","s8","s16","s32","int","float","double" };
+//			CollectionStmt* bt = std::get<CollectionStmt*>(acc);
+//			CollectionStmt* obt = std::get<CollectionStmt*>(oacc);
+//			if (bt == obt)
+//			{
+//				ctype = ConversionType::None;
+//			}
+//			else
+//			{
+//				bool contains = std::find(primitives.begin(), primitives.end(), bt->name.text) != primitives.end();
+//				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name.text) != primitives.end();
+//				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
+//			}
+//		}
+//		break;
+//		case TypeKind::Array:
+//			if(std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return ConversionType::NeedsCasting;
+//			break;
+//		// Function pointers need to be exact
+//		case TypeKind::FunctionPointer:
+//			auto& fp = std::get<FunctionPointerType>(acc);
+//			auto& ofp = std::get<FunctionPointerType>(oacc);
+//			if (fp.args.size() != ofp.args.size()) return ConversionType::NeedsCasting;
+//			if (*fp.return_type != *ofp.return_type) return ConversionType::NeedsCasting;
+//			for (int j = 0; j < fp.args.size(); j++)
+//			{
+//				Type& t = *fp.args[j];
+//				Type& ot = *ofp.args[j];
+//				if (t != ot) return ConversionType::NeedsCasting;
+//				ctype = ConversionType::None;
+//			}
+//			break;
+//		}
+//	}
+//	return ctype;
+//}
 
 std::string Type::as_str() const 
 {
@@ -192,10 +205,65 @@ std::string Type::as_str() const
 	return out;
 }
 
-uptr<TypeSpec> Type::to_ast() const
+std::unique_ptr<TypeSpec> Type::to_ast() const
 {
+	std::unique_ptr<TypeSpec> to_build;
+	
+	if (is_base_type())
+	{
+		auto coll = std::get<CollectionStmt*>(stored_types[0].second);
+		to_build = std::make_unique<BaseTypeSpec>(Token(coll->name));
+	}
+
+	else if (is_fptr_type())
+	{
+		auto& fptr = std::get<FunctionPointerType>(stored_types[0].second);
+		std::vector<uptr<TypeSpec>> args;
+		for (auto& arg : fptr.args)
+		{
+			args.push_back(arg->to_ast());
+		}
+		auto ret_type = fptr.return_type->to_ast();
+		to_build = std::make_unique<FptrTypeSpec>(std::move(args), std::move(ret_type),nullptr);
+	}
+
+	else if (must_be_inferred())
+	{
+		return nullptr;
+	}
+
+	assert(is_fptr_type() || is_base_type());
+
+	for (int i = 1; i < stored_types.size(); i++)
+	{
+		auto& st = stored_types[i];
+		if (st.first == TypeKind::Pointer)
+		{
+			to_build->push_inner(std::make_unique<PointerTypeSpec>(nullptr));
+		}
+
+		else if (st.first == TypeKind::Array)
+		{
+			uint64_t amount = std::get<ArrayType>(st.second).amount;
+			Token tk(Token::Specifier::Integer, std::to_string(amount));
+			EvalIntegerResult eir;
+			eir.Spec = Primitive::Specifier::uint;
+			eir.amount_uint = amount;
+			auto ile = std::make_unique<IntegerLiteralExpr>(tk, eir);
+			to_build->push_inner(std::make_unique<ArrayTypeSpec>(std::move(ile), nullptr));
+		}
+
+	}
+
+	return std::move(to_build);
 
 }
+
+bool Type::is_fptr_type() const
+{
+	return !not_specified && stored_types.back().first == TypeKind::FunctionPointer;
+}
+
 
 std::pair<ConversionType, ConversionType> Type::type_cast_to_more_general(PredefinedType t1, PredefinedType t2)
 {
@@ -315,6 +383,14 @@ bool Type::is_signed_integer(PredefinedType pt)
 		assert(false);
 	}
 }
+
+bool Type::is_decimal(PredefinedType pt)
+{
+	return pt == PredefinedType::Float
+		|| pt == PredefinedType::Double
+		|| pt == PredefinedType::Quad;
+}
+
 
 CollectionStmt* Type::get_base_type() const
 {

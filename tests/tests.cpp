@@ -86,25 +86,25 @@ int main(int argc, char* argv[])
 	//write_to(ROOT "/tests/required_output_parser_exprs.txt", out_expr);
 	//write_to(ROOT "/tests/required_output_parser_stmts.txt", out_stmt);
 
-	std::string filename_coll = ROOT "/tests/test_input_type_checking.txt";
+	std::string filename_coll = ROOT "/tests/test_input_type_checking_function_call.txt";
 	auto [_3, parsed] = parse(filename_coll);
+	if (!parsed)
+	{
+		fmt::print("Parsed was empty");
+		return -1;
+	}
 	Scopes sc;
-	expand_scopes(*parsed, sc);
 	desugar(*parsed);
 	collect_types(*parsed,sc);
-	check_default_type_arg(*parsed, sc);
+	bool error = check_default_type_arg(*parsed, sc);
+	if (error) { return -1; }
 	create_func_args_type(sc, *parsed);
-	// Loop as long as the AST keeps expanding (new types instantiated from generics)
-	GenericInst gi(sc, *parsed);
-	size_t n = 0;
-	while (parsed->stmts.size() > n)
-	{
-		n = parsed->stmts.size();
-		parsed->accept(gi);
-	}
+	instantiate_generic_repeat(*parsed, sc);
 	collect_funcs(*parsed, sc);
 	collect_members(*parsed, sc);
-	check_type(*parsed, sc);
+	int n = parsed->stmts.size();
+	check_type_repeat(*parsed, sc);
+
 	TerminalOutput to;
 	parsed->accept(to);
 	fmt::print("{}", to.get_format_str());

@@ -108,10 +108,18 @@ ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		0|([1-9]\d*)
-ident		[a-zA-Z_'`´][a-zA-Z_'`´0-9]* 
-integer 	({uhex}|{uoct}|{ubin}|{udec})
+ident		[a-zA-Z_][a-zA-Z_0-9]* 
+int_	 	({uhex}|{uoct}|{ubin}|{udec})i?
+uint		{int_}ui
+half		{int_}h
+uhalf		{int_}uh
+short		{int_}s
+ushort		{int_}us
+char		{int_}c
+uchar		{int_}uc
 float		\d*\.\d+([Ee][-+]\d+)?f
 double		\d*\.\d+([Ee][-+]\d+)?
+quad		\d*\.\d+([Ee][-+]\d+)?q
 plus    	"+"
 hashtag		"#"
 minus   	"-"
@@ -224,6 +232,7 @@ or_eql		"|="
 {integer}	{ push(Token::Specifier::Integer); }
 {float}   	{ push(Token::Specifier::Float); }
 {double}	{ push(Token::Specifier::Double); }
+{quad}		{ push(Token::Specifier::Quad); }
 {plus} 	  	{ push(Token::Specifier::Plus); }
 {minus}   	{ push(Token::Specifier::Minus); }
 {asterix} 	{ push(Token::Specifier::Asterix); }

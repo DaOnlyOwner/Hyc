@@ -199,6 +199,18 @@ void instantiate_generic(BaseTypeSpec& bt, Scopes& scopes, NamespaceStmt& ns)
 	gi.instantiate(bt);
 }
 
+void instantiate_generic_repeat(NamespaceStmt& ns, Scopes& sc)
+{
+	GenericInst gi(sc, ns);
+	size_t n = 0;
+	while (ns.stmts.size() > n)
+	{
+		n = ns.stmts.size();
+		ns.accept(gi);
+	}
+}
+
+
 //std::pair<bool,GenericInst> instantiate_generic(Scopes& scopes, NamespaceStmt& ns,size_t entry_stmt)
 //{
 //	GenericInst gi(scopes, ns,entry_stmt);

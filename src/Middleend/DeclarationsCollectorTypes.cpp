@@ -11,14 +11,12 @@ namespace
 		{
 			Messages::inst().trigger_1_e1(name, name.text);
 		}
-		scopes.descend();
 		for (auto& stmt : s.stmts) { stmt->accept(t); }
 	}
 }
 
 void DeclarationsCollectorTypes::visit(NamespaceStmt& namespace_stmt)
 {
-	scopes.descend();
 	for (auto& stmt : namespace_stmt.stmts) { stmt->accept(*this); }
 }
 

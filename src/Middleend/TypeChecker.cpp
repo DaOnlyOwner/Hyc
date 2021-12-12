@@ -3,6 +3,8 @@
 #include "Messages.h"
 #include "Token.h"
 #include "GenericInstantiation.h"
+#include "MemberCollector.h"
+#include "ExpandScopes.h"
 
 #define RETURN_VAL_BIN_OP(p,val) bin_op.sem_type = p; RETURN_VAL(p,val);  
 #define RETURN_PREFIX_OP(p) pre_op.sem_type = p; RETURN(p); 
@@ -48,16 +50,69 @@ namespace
 			assert(false);
 		}
 	}
+
+	void trigger_e6_21(const Token& name, const std::vector<FuncCallArg>& arg_list)
+	{
+		std::string args = "";
+		if (!arg_list.empty()) args += arg_list[0].expr->sem_type.as_str();
+		for (int i = 1; i < arg_list.size(); i++) args += ", " + arg_list[i].expr->sem_type.as_str();
+		Messages::inst().trigger_6_e21(name, args);
+	}
+
+
 }
 
-void TypeChecker::visit(FloatLiteralExpr& lit)
+void TypeChecker::visit(DecimalLiteralExpr& lit)
 {
-	assert(false);
+	switch (lit.type)
+	{
+	case DecimalLiteralType::Float:
+	{
+		Type t(scopes.get_type("float"));
+		lit.sem_type = t;
+		RETURN(t);
+	}
+	case DecimalLiteralType::Double:
+	{
+		Type t(scopes.get_type("double"));
+		lit.sem_type = t;
+		RETURN(t);
+	}
+	case DecimalLiteralType::Quad:
+	{
+		Type t(scopes.get_type("quad"));
+		lit.sem_type = t;
+		RETURN(t);
+	}
+	default:
+		assert(false);
+	}
 }
 
 void TypeChecker::visit(IntegerLiteralExpr& lit)
 {
-	Type t(scopes.get_type("uint"));
+	Type t;
+	switch (lit.type)
+	{
+	case IntegerLiteralType::Int:
+		t = Type(scopes.get_type("int"));
+	case IntegerLiteralType::Half:
+		t = Type(scopes.get_type("half"));
+	case IntegerLiteralType::Short:
+		t = Type(scopes.get_type("short"));
+	case IntegerLiteralType::Char:
+		t = Type(scopes.get_type("char"));
+	case IntegerLiteralType::UInt:
+		t = Type(scopes.get_type("uint"));
+	case IntegerLiteralType::UHalf:
+		t = Type(scopes.get_type("uhalf"));
+	case IntegerLiteralType::UShort:
+		t = Type(scopes.get_type("ushort"));
+	case IntegerLiteralType::UChar:
+		t = Type(scopes.get_type("uchar"));
+	default:
+		assert(false);
+	}
 	lit.sem_type = t;
 	RETURN(t);
 }
@@ -100,16 +155,7 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 		case Token::Specifier::Plus:
 			RETURN_PREFIX_OP(t);
 		case Token::Specifier::Minus:
-		{
-			if (Type::is_unsigned_integer(pt))
-			{
-				auto converted = (PredefinedType)((int)pt + 4);
-				auto trans = translate(scopes, converted);
-				RETURN_PREFIX_OP(trans);
-			}
-			pre_op.sem_type = t;
 			RETURN_PREFIX_OP(t);
-		}
 		case Token::Specifier::ExclMark:
 		{
 			if (pt != PredefinedType::Bool)
@@ -203,7 +249,10 @@ void TypeChecker::visit(IdentExpr& ident)
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 {
 	scopes.descend();
-	for (auto& p : namespace_stmt.stmts) p->accept(*this);
+	size_t size_before_pasting = namespace_stmt.stmts.size();
+	for (int i = new_elem_idx; i < size_before_pasting; i++) namespace_stmt.stmts[i]->accept(*this);
+	new_elem_idx = size_before_pasting;
+	scopes.go_to_root();
 }
 
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
@@ -215,7 +264,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 	{
 
 		std::for_each(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), [&](const FuncCallArg& arg) {
-			get(arg.expr);
+			arg.expr->accept(*this);
 			});
 
 		auto def = scopes.get_func(ident->name.text, [&](const FuncDeclStmt& decl) {
@@ -227,6 +276,13 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 			}
 			return true;
 			});
+
+		if (!def)
+		{
+			trigger_e6_21(ident->name, func_call_expr.arg_list);
+			func_call_expr.sem_type = error_type;
+			RETURN(error_type);
+		}
 
 		// It's a generic function, we instantiate the function first.
 		std::vector<Type> deduced_types;
@@ -271,7 +327,15 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 			else if (garg.default_type != nullptr)
 			{
-				deduced_types.push_back(garg.default_type->semantic_type);
+				auto& type_spec = garg.default_type;
+				auto [sem_type, succ] = create_type(*type_spec, scopes, ns);
+				if (!succ)
+				{
+					Messages::inst().trigger_4_e1(type_spec->get_ident_token());
+					func_call_expr.sem_type = error_type;
+					RETURN(error_type);
+				}
+				deduced_types.push_back(sem_type);
 			}
 
 			else
@@ -282,7 +346,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 		}
 
 		if (!deduced_types.empty())
-		{
+		{			
 			std::vector<uptr<TypeSpec>> ast_deduced_types;
 			std::transform(deduced_types.begin(), deduced_types.end(), std::back_inserter(ast_deduced_types), [&](const Type& t) {
 				return t.to_ast();
@@ -303,13 +367,37 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 				func_call_expr.sem_type = error_type;
 				RETURN(error_type);
 			}
+
+			// Make sure the args of the func call expr has the same types as the args of the selected generic function
+			if (func_call_expr.arg_list.size() != non_generic_def->decl->arg_list.size())
+			{
+				trigger_e6_21(ident->name, func_call_expr.arg_list);
+				func_call_expr.sem_type = error_type;
+				RETURN(error_type);
+			}
+
+			for (int i = 0; i < func_call_expr.arg_list.size(); i++)
+			{
+				auto& t1 = func_call_expr.arg_list[i].expr->sem_type;
+				auto& t2 = non_generic_def->decl->arg_list[i]->type;
+				if (t1 != t2)
+				{
+					trigger_e6_21(ident->name, func_call_expr.arg_list);
+					func_call_expr.sem_type = error_type;
+					RETURN(error_type);
+				}
+			}
+
+
 			func_call_expr.sem_type = t;
+			func_call_expr.def = def;
 			RETURN(t);
 		}
 
 		else
 		{
 			func_call_expr.sem_type = def->decl->ret_type->semantic_type;
+			func_call_expr.def = def;
 			RETURN(func_call_expr.sem_type);
 		}
 	}
@@ -317,7 +405,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 	// It's a func ptr call (or a lambda call)
 	else
 	{
-		// TODO
+		// TODO Func Ptr call
 		assert(false);
 	}
 }
@@ -793,4 +881,17 @@ void check_type(NamespaceStmt& ns, Scopes& sc)
 {
 	TypeChecker tc(sc, ns);
 	ns.accept(tc);
+}
+
+void check_type_repeat(NamespaceStmt& ns, Scopes& sc)
+{
+	TypeChecker tc(sc, ns);
+	size_t n = 0;
+	while (ns.stmts.size() > n)
+	{
+		expand_scopes(ns, sc, n);
+		n = ns.stmts.size();
+		ns.accept(tc);
+		collect_members(ns, sc, n);
+	}
 }

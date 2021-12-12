@@ -24,35 +24,89 @@ PrefixOperation<Expr> name{(int)ExprPrecedence::group, [](PrefixExprFnArgs)\
 		return static_cast<uptr<Expr>>(std::make_unique<PrefixOpExpr>(Token(token),parser.parse_internal((int)ExprPrecedence::group)));\
 	} }
 
+#define DEF_INTEGER_LIT(name, type)\
+PrefixOperation<Expr> name{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)\
+	{\
+			auto [succ,eval_res] = eval_integer_val(token,IntegerLiteralType::type);\
+			if (!succ)\
+			{\
+				auto descr = Error::FromToken(token);\
+				descr.Message = fmt::format("{} doesn't fit into an 64 bit integer", token.text);\
+				Error::SyntacticalError(descr);\
+			}\
+		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res,IntegerLiteralType::type));\
+	} };
+
+
 #define ADD_OP(op,name) expr_parser.add_operation(op,name)
 
 namespace
 {
 
-	std::pair<bool, EvalIntegerResult> eval_integer_val(const Token& token)
+	std::pair<bool, EvalIntegerResult> eval_integer_val(const Token& token, IntegerLiteralType ilt)
 	{
-		const std::string& integer_text = token.text;
+		static int map_to_bitwidth[(int)IntegerLiteralType::Count] = { 64,32,16,8,64,32,16,8 };
+		static bool map_to_signed[(int)IntegerLiteralType::Count] = { false,false,false,false,true,true,true,true };
+		std::string integer_text = token.text;
+		if (integer_text.back() == 'i'
+			|| integer_text.back() == 'ui'
+			|| integer_text.back() == 'h'
+			|| integer_text.back() == 'uh'
+			|| integer_text.back() == 's'
+			|| integer_text.back() == 'us'
+			|| integer_text.back() == 'c'
+			|| integer_text.back() == 'uc')
+			integer_text.pop_back();
 		errno = 0;
-		auto val = strtoull(token.text.c_str(), nullptr, 0);
+		auto val = strtoull(integer_text.c_str(), nullptr, 0);
+		int amount_bits = map_to_bitwidth[(int)ilt];
+		bool is_signed = map_to_signed[(int)ilt];
 		if (errno != 0)
 		{
-			return { false,{Primitive::Specifier::Count,0,0 } };
+			return { false,{0,0,0} };
 		}
-		return { true,{Primitive::Specifier::uint,val,0 } };
+		return { true,{amount_bits,val,is_signed} };
 	}
 
-	PrefixOperation<Expr> integer_lit{(int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+	PrefixOperation<Expr> int_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 	{
-			auto [succ,eval_res] = eval_integer_val(token);
+			auto [succ,eval_res] = eval_integer_val(token,IntegerLiteralType::Int);
 			if (!succ)
 			{
 				auto descr = Error::FromToken(token);
-				descr.Message = fmt::format("{} doesn't fit into an i64 or u64", token.text);
+				descr.Message = fmt::format("{} doesn't fit into an 64 bit integer", token.text);
 				descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
 				Error::SyntacticalError(descr);
 			}
 		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res));
 	} };
+
+	DEF_INTEGER_LIT(uint_lit, UInt);
+	DEF_INTEGER_LIT(uhalf_lit, UHalf);
+	DEF_INTEGER_LIT(ushort_lit, UShort);
+	DEF_INTEGER_LIT(uchar_lit, UChar);
+	DEF_INTEGER_LIT(int_lit, Int);
+	DEF_INTEGER_LIT(half_lit, Half);
+	DEF_INTEGER_LIT(short_lit, Short);
+	DEF_INTEGER_LIT(char_lit, Char);
+
+	PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+		{
+			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Float));
+		}
+	};
+
+	PrefixOperation<Expr> double_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+		{
+			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Double));
+		}
+	};
+
+	PrefixOperation<Expr> quad_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+		{
+			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Quad));
+		}
+	};
 
 	PrefixOperation<Expr> ident{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 	{
@@ -60,15 +114,15 @@ namespace
 			std::vector<uptr<TypeSpec>> generic_params;
 			if (l.lookahead(1).type == Token::Specifier::GenFCallOpen)
 			{
-				l.eat(); // <
+				l.eat(); // <.
 				auto fst = parser.overall_parser->parse_type_spec();
-				generic_params.push_back(mv(fst));
+				if(fst) generic_params.push_back(mv(fst));
 				while (l.lookahead(1).type == Token::Specifier::Comma)
 				{
 					l.eat(); // ,
 					generic_params.push_back(parser.overall_parser->parse_type_spec());
 				}
-				l.match_token(Token::Specifier::GenFCallClose); // >
+				l.match_token(Token::Specifier::GenFCallClose); // .>
 			}
 			return std::make_unique<IdentExpr>(token,mv(generic_params));
 	} };
@@ -190,9 +244,18 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::CaretEqual, assignment_move_etc);
 	ADD_OP(Token::Specifier::OrEqual, assignment_move_etc);
 	// TODO: Add #*, #/, #+ etc.
-	ADD_OP(Token::Specifier::KwThrow, throw_);
+	//ADD_OP(Token::Specifier::KwThrow, throw_);
 	ADD_OP(Token::Specifier::Ident, ident);
-	ADD_OP(Token::Specifier::Integer, integer_lit);
+	ADD_OP(Token::Specifier::Int, int_lit);
+	ADD_OP(Token::Specifier::Half, half_lit);
+	ADD_OP(Token::Specifier::Short, short_lit);
+	ADD_OP(Token::Specifier::Char, char_lit);
+	ADD_OP(Token::Specifier::UInt, uint_lit);
+	ADD_OP(Token::Specifier::UHalf, uhalf_lit);
+	ADD_OP(Token::Specifier::UShort, ushort_lit);
+	ADD_OP(Token::Specifier::UChar, uchar_lit);
+	ADD_OP(Token::Specifier::Double, double_lit);
+	ADD_OP(Token::Specifier::Quad, quad_lit);
 
 	file = filename;
 }

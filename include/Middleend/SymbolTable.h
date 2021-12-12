@@ -103,6 +103,7 @@ public:
 		auto it = functions.find(name);
 		if (it == functions.end()) return nullptr;
 		auto& vars = it->second;
+		if (vars.size() == 1 && !vars[0]->decl->generic_list.empty()) return vars[0];// If it's the only generic function in the list, return it.
 		auto it2 = std::find_if(vars.begin(), vars.end(), [&](FuncDefStmt* func) {return pred(*func->decl); });
 		if (it2 != vars.end()) return *it2;
 		return nullptr;

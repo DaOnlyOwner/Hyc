@@ -36,4 +36,5 @@ private:
 };
 
 void instantiate_generic(BaseTypeSpec& bt, Scopes& scopes, NamespaceStmt& ns);
+void instantiate_generic_repeat(NamespaceStmt& ns, Scopes& sc);
 //std::pair<bool, GenericInst> instantiate_generic(Scopes& scopes, NamespaceStmt& ns,size_t entry_stmt);

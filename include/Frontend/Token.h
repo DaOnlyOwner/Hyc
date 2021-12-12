@@ -9,7 +9,14 @@ struct Token
 {
 	// TODO: make this enum class.
 	enum class Specifier {
-		Integer,
+		UInt,
+		UHalf,
+		UShort,
+		UChar,
+		Int,
+		Half,
+		Short,
+		Char,
 		Float,
 		Double,
 		Slash,
@@ -83,7 +90,8 @@ struct Token
 		KwOperator,
 		KwAuto,
 		GenFCallOpen,
-		GenFCallClose
+		GenFCallClose,
+		Quad
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -142,8 +150,22 @@ struct Token
 	{
 		switch (ttype)
 		{
-		case Specifier::Integer:
+		case Specifier::Int:
 			return "Integer";
+		case Specifier::UInt:
+			return "Unsigned Integer";
+		case Specifier::UHalf:
+			return "Unsigned Half";
+		case Specifier::UShort:
+			return "Unsigned Short";
+		case Specifier::UChar:
+			return "Unsigned Char";
+		case Specifier::Half:
+			return "Half";
+		case Specifier::Short:
+			return "Short";
+		case Specifier::Char:
+			return "Char";
 		case Specifier::Float:
 			return "Float";
 		case Specifier::Double:
@@ -292,6 +314,8 @@ struct Token
 			return "<.";
 		case Specifier::GenFCallClose:
 			return ".>";
+		case Specifier::Quad:
+			return "quad";
 		}
 		return "Unknown";
 

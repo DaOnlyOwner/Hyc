@@ -4,7 +4,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB_RECURSE REFLEX_SRC "../lib/Re-flex/lib/*.cpp" "../lib/Re-flex/unicode/*.cpp") #Static sources
 
-add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 add_executable(Hyc_Tests ${FRONTEND_SRC} ${MIDDLEEND_SRC} ${BACKEND_SRC}
 ${TOOLS_SRC} ${REFLEX_SRC} ${FRONTEND_HEADERS} ${MIDDLEEND_HEADERS} ${BACKEND_HEADERS} ${TOOLS_HEADERS} tests.cpp)
 
@@ -26,4 +25,6 @@ set_property(TARGET Hyc_Tests PROPERTY CXX_STANDARD_REQUIRED ON)
 
 source_group("Embedded" FILES ${REFLEX_SRC})
 target_include_directories(Hyc_Tests PRIVATE ${TARGET_INC_DIRS})
+target_include_directories(Hyc_Tests PRIVATE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(Hyc_Tests fmt)
+target_link_libraries(Hyc_Tests ${LLVM_LIBS})

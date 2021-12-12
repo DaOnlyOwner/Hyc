@@ -1,0 +1,24 @@
+struct A<T>
+{
+    T* a;
+}
+
+A<int> test<T,T2,T3,T4=int>(T a, T2 b, T3 c)
+{
+   a_cpy := a;
+   b_cpy := b;
+   c_cpy := c;
+}
+
+int test2<T,T2>(T a, T b)
+{
+
+}
+
+int main()
+{
+   test<.uint.>(3,-3,3);
+   test2<.uint.>(-2,2);
+}
+
+

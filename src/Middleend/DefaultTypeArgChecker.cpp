@@ -2,28 +2,30 @@
 #include <unordered_set>
 #include "Messages.h"
 
-void DefaultTypeArgChecker::visit(CollectionStmt& ud)
+
+void DefaultTypeArgChecker::check(std::vector<GenericInfo>& gis, const Token& name, const std::string& t)
 {
 	bool ended = false;
 	std::unordered_set<std::string> types;
-	for (int i = ud.generic_params.size() - 1; i >= 0; i--)
+	for (int i = gis.size() - 1; i >= 0; i--)
 	{
-		auto& dt = ud.generic_params[i].default_type;
+		auto& dt = gis[i].default_type;
 
 		// Check if the default type is differs from the other generic parameters
 		if (dt)
 		{
-			for (auto& arg : ud.generic_params)
+			for (auto& arg : gis)
 			{
 				must_not_contain = &arg.name.text;
 				Token* tk;
 				if ((tk = get(dt)) != nullptr)
 				{
-					Messages::inst().trigger_2_e1(*tk, ud.generic_params[i].name.text, arg.name.text);
+					Messages::inst().trigger_2_e1(*tk, gis[i].name.text, arg.name.text);
+					error = true;
 				}
 			}
 		}
-		types.insert(ud.generic_params[i].name.text);
+		types.insert(gis[i].name.text);
 		if (dt == nullptr)
 		{
 			ended = true;
@@ -32,17 +34,22 @@ void DefaultTypeArgChecker::visit(CollectionStmt& ud)
 		{
 			if (ended)
 			{
-				Messages::inst().trigger_2_e2(ud.name,ud.generic_params[i].name.text,
-					ud.get_collection_type(), ud.name.text);
+				Messages::inst().trigger_2_e2(name, gis[i].name.text,
+					t, name.text);
+				error = true;
 			}
 		}
 	}
 
-	if (types.size() < ud.generic_params.size())
+	if (types.size() < gis.size())
 	{
-		Messages::inst().trigger_2_e3(ud.name, ud.get_collection_type());
+		Messages::inst().trigger_2_e3(name, t);
 	}
+}
 
+void DefaultTypeArgChecker::visit(CollectionStmt& ud)
+{
+	check(ud.generic_params, ud.name, ud.get_collection_type());
 }
 
 void DefaultTypeArgChecker::visit(BaseTypeSpec& bts)
@@ -63,13 +70,19 @@ void DefaultTypeArgChecker::visit(BaseTypeSpec& bts)
 	RETURN(nullptr);
 }
 
+void DefaultTypeArgChecker::visit(FuncDefStmt& def)
+{
+	check(def.decl->generic_list, def.decl->name, "function"); 
+}
+
 void DefaultTypeArgChecker::visit(NamespaceStmt& ns)
 {
 	for (auto& p : ns.stmts) p->accept(*this);
 }
 
-void check_default_type_arg(NamespaceStmt& ns, Scopes& sc)
+bool check_default_type_arg(NamespaceStmt& ns, Scopes& sc)
 {
 	DefaultTypeArgChecker dtac(sc);
 	ns.accept(dtac);
+	return dtac.had_errors();
 }

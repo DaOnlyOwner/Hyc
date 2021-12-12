@@ -12,13 +12,19 @@ public:
 	DefaultTypeArgChecker(Scopes& sc)
 		:scopes(sc),ValueStorage<Token*>(this) {}
 
+	bool had_errors() { return error; }
+
 private:
 	Scopes& scopes;
-	std::string* must_not_contain=nullptr;
+	const std::string* must_not_contain=nullptr;
 
 	virtual void visit(CollectionStmt& coll_def) override;
 	virtual void visit(BaseTypeSpec& bts) override;
 	virtual void visit(NamespaceStmt& ns) override;
+	virtual void visit(FuncDefStmt& def) override;
+
+	void check(std::vector<GenericInfo>& gis, const Token& name, const std::string& t);
+	bool error=false;
 };
 
-void check_default_type_arg(NamespaceStmt& ns, Scopes& sc);
+bool check_default_type_arg(NamespaceStmt& ns, Scopes& sc);

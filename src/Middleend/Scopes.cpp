@@ -66,7 +66,6 @@ Scopes::Scopes()
 
 	top_level.add(&declTrue);
 	top_level.add(&declFalse);
-
 }
 
 DeclStmt* Scopes::get_variable(const std::string& name)

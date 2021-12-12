@@ -26,8 +26,23 @@ void MemberCollector::visit(FuncDefStmt& fdecl)
 {
 }
 
+void MemberCollector::visit(NamespaceStmt& ns)
+{
+	for (int i = entry; i < ns.stmts.size(); i++)
+	{
+		ns.stmts[i]->accept(*this);
+	}
+}
+
+
 void collect_members(NamespaceStmt& ns, Scopes& sc)
 {
 	MemberCollector mc(sc,ns);
+	ns.accept(mc);
+}
+
+void collect_members(NamespaceStmt& ns, Scopes& sc, size_t n)
+{
+	MemberCollector mc(sc, ns,n);
 	ns.accept(mc);
 }

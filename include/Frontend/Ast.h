@@ -31,15 +31,15 @@ using uptr = std::unique_ptr<T>;
 
 struct EvalIntegerResult
 {
-	Primitive::Specifier Spec;
+	int amount_bits;
 	uint64_t amount_uint;
-	int64_t amount_int;
+	bool is_signed;
 };
 
 
 struct IAstVisitor
 {
-	virtual void visit(struct FloatLiteralExpr& lit) {};
+	virtual void visit(struct DecimalLiteralExpr& lit) {};
 	virtual void visit(struct IntegerLiteralExpr& lit) {};
 	virtual void visit(struct BinOpExpr& bin_op) {};
 	virtual void visit(struct PrefixOpExpr& pre_op) {};
@@ -89,15 +89,21 @@ struct Expr : Node
 	virtual std::string as_str() const = 0;
 };
 
+enum class IntegerLiteralType
+{
+	UInt=0,UHalf,UShort,UChar,Int,Half,Short,Char,Count
+};
+
 struct IntegerLiteralExpr : Expr
 {
-	IntegerLiteralExpr(const Token& token, const EvalIntegerResult& res)
-		: integer_literal(token), eval_res(res)
+	IntegerLiteralExpr(const Token& token, const EvalIntegerResult& res, IntegerLiteralType ilt)
+		: integer_literal(token), eval_res(res),type(ilt)
 	{
 
 	}
 	Token integer_literal;
 	EvalIntegerResult eval_res;
+	IntegerLiteralType type;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new IntegerLiteralExpr(*this)); }
 	IMPL_ASSTR
@@ -289,18 +295,25 @@ struct PostfixOpExpr : Expr
 };
 
 
-struct FloatLiteralExpr : Expr
+enum class DecimalLiteralType
 {
-	FloatLiteralExpr(const Token& token)
-		: float_literal(token){}
-	Token float_literal;
+	Float=0,Double,Quad,Count
+};
+
+struct DecimalLiteralExpr : Expr
+{
+	DecimalLiteralExpr(const Token& token, DecimalLiteralType t)
+		: lit(token){}
+	Token lit;
+	DecimalLiteralType type;
 	IMPL_VISITOR;
-	IMPL_CLONE(Expr) { return uptr<Expr>(new FloatLiteralExpr(*this)); }
+	IMPL_CLONE(Expr) { return uptr<Expr>(new DecimalLiteralExpr(*this)); }
 	IMPL_ASSTR
 	{
-		return float_literal.text;
+		return lit.text;
 	}
 };
+
 
 struct TypeSpec;
 struct IdentExpr : Expr
@@ -348,6 +361,9 @@ struct FuncCallExpr : Expr
 		: from(mv(from)), arg_list(mv(arg_list)) {}
 	uptr<Expr> from;
 	std::vector<FuncCallArg> arg_list;
+
+	// Semantic annotations
+	FuncDefStmt* def;
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr)
@@ -495,7 +511,7 @@ struct DeclStmt : TypedStmt
 	Token name;
 	uptr<TypeSpec> type_spec;
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec->clone(), Token(name))); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec?type_spec->clone():nullptr, Token(name))); }
 };
 
 enum class CollectionType
@@ -605,7 +621,7 @@ struct FuncDeclStmt : Stmt
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 	std::vector<GenericInfo> generic_list_cpy;
-	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type->clone() });
+	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type?p.default_type->clone():nullptr });
 	std::vector<uptr<DeclStmt>> arg_list_cpy;
 	for (auto& p : arg_list) arg_list_cpy.push_back(uptr<DeclStmt>(new DeclStmt(p->type_spec->clone(), Token(p->name))));
 	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), Token(name), mv(generic_list_cpy), mv(arg_list_cpy)));
