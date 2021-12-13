@@ -96,22 +96,31 @@ void TypeChecker::visit(IntegerLiteralExpr& lit)
 	{
 	case IntegerLiteralType::Int:
 		t = Type(scopes.get_type("int"));
+		break;
 	case IntegerLiteralType::Half:
 		t = Type(scopes.get_type("half"));
+		break;
 	case IntegerLiteralType::Short:
 		t = Type(scopes.get_type("short"));
+		break;
 	case IntegerLiteralType::Char:
 		t = Type(scopes.get_type("char"));
+		break;
 	case IntegerLiteralType::UInt:
 		t = Type(scopes.get_type("uint"));
+		break;
 	case IntegerLiteralType::UHalf:
 		t = Type(scopes.get_type("uhalf"));
+		break;
 	case IntegerLiteralType::UShort:
 		t = Type(scopes.get_type("ushort"));
+		break;
 	case IntegerLiteralType::UChar:
 		t = Type(scopes.get_type("uchar"));
+		break;
 	default:
 		assert(false);
+		break;
 	}
 	lit.sem_type = t;
 	RETURN(t);
@@ -269,6 +278,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 		auto def = scopes.get_func(ident->name.text, [&](const FuncDeclStmt& decl) {
 			if (decl.arg_list.size() != func_call_expr.arg_list.size()) return false;
+			if (!decl.generic_list.empty()) return true;// If it's generic, return it because it is the only function with the specified name and argument amount in the list (this might be a canditate)
 			for (int i = 0; i < decl.arg_list.size(); i++)
 			{
 				auto argtype_call = func_call_expr.arg_list[i].expr->sem_type;
@@ -616,13 +626,6 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				RETURN_VAL_BIN_OP(t,true);
 			}
 
-			else if (bin_op.op.type == Token::Specifier::ThreeWay)
-			{
-				Type t(scopes.get_type("int"));
-				bin_op.sem_type = t;
-				RETURN_VAL_BIN_OP(t,true);
-			}
-
 			else if (bin_op.op.type == Token::Specifier::ShiftLeft
 				|| bin_op.op.type == Token::Specifier::ShiftRight
 				|| bin_op.op.type == Token::Specifier::Caret
@@ -681,7 +684,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			{
 				inner_rhs = std::make_unique<ImplicitCastExpr>(std::move(inner_rhs), tlh);
 			}
-			auto inner = std::make_unique<BinOpExpr>(op_inner, std::move(inner_lhs), std::move(bin_op.rh));
+			auto inner = std::make_unique<BinOpExpr>(op_inner, std::move(inner_lhs), std::move(inner_rhs));
 			auto outer = BinOpExpr(Token(Token::Specifier::Equal, "="), std::move(bin_op.lh), std::move(inner));
 			bin_op = std::move(outer);
 			RETURN_VAL_BIN_OP(trh, true);
@@ -704,6 +707,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 		case Token::Specifier::KwAs:
 			// TODO: KwAs
 			assert(false);
+			break;
 		default:
 		{
 			// Error: unsupported operation type for type and type. 

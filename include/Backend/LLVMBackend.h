@@ -28,6 +28,7 @@ public:
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
+	bool handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op);
 
 	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;

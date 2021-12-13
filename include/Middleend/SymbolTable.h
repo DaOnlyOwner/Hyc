@@ -11,54 +11,6 @@
 #include "Ast.h"
 #include <unordered_map>
 
-// TODO: Performance: Use move constructor for strings too.
-/*struct Function
-{
-	Function(const std::string& name, std::vector<Type>&& arguments, const Type& return_type)
-		: name(name), arguments(std::move(arguments)), return_type{ return_type }{}
-	Function() = default;
-		//:name(""),arguments(),return_type(nullptr){}
-	std::string name = "";
-	std::vector<Type> arguments{};
-	Type return_type = error_type;
-	bool operator==(const Function& other) { return name == other.name && arguments == other.arguments; }
-};
-
-extern Function error_function;
-
-struct Variable
-{
-	Variable(const std::string& name, const Type& type)
-		:name(name), type(type){}
-	Variable() = default;
-		//:name(""),type(nullptr){}
-	std::string name ="";
-	Type type = error_type;
-	bool operator==(const Variable& other) { return name == other.name && type == other.type; }
-	bool operator!=(const Variable& other) { return !(*this == other); }
-};
-
-struct AttributeCollection // Structs, unions
-{
-	AttributeCollection(const std::string& name)
-		:name(name) {}
-	std::string name;
-	Stmt* def_stmt = nullptr;
-};
-
-struct Namespace
-{
-	Namespace(const std::string& name)
-		:name(name) {}
-	std::string name;
-	Namespace* inner = nullptr;
-	Stmt* def_stmt = nullptr;
-	void set_inner_ns(Namespace* inner) { this->inner = inner; }
-};
-
-
-extern Variable error_variable;*/
-
 class SymbolTable
 {
 public:
@@ -89,7 +41,7 @@ public:
 	bool add(FuncDefStmt* fn);
 	bool add(CollectionStmt* for_coll, DeclStmt* decl);
 	bool add(DeclStmt* decl);
-
+	//bool add_to_existing(const std::string&, class AllocaInst*);
 
 	CollectionStmt* get_type(const std::string& name) const;
 
@@ -103,19 +55,14 @@ public:
 		auto it = functions.find(name);
 		if (it == functions.end()) return nullptr;
 		auto& vars = it->second;
-		if (vars.size() == 1 && !vars[0]->decl->generic_list.empty()) return vars[0];// If it's the only generic function in the list, return it.
 		auto it2 = std::find_if(vars.begin(), vars.end(), [&](FuncDefStmt* func) {return pred(*func->decl); });
 		if (it2 != vars.end()) return *it2;
 		return nullptr;
 	}
-	/*Type* get_type(const std::string& name)
-	{
-		auto it = types.find(name);
-		if (it == types.end()) return nullptr;
-		return it->second.get();
-	}
 
+	//class AllocaInst* get_alloca_inst(const std::string& name);
 
+	/*
 	std::vector<Function> get_funcs(const std::string& name)
 	{
 		auto it = functions.find(name);
@@ -126,11 +73,17 @@ public:
 	}*/
 
 private:
-	//std::unordered_map<std::string, std::unique_ptr<Variable>> variables;
-	//std::unordered_map<std::string, std::unique_ptr<Type>> types;
+
 	std::unordered_map<std::string, CollectionStmt*> collections;
 	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, DeclStmt*>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
+
+	struct named_values
+	{
+		DeclStmt* decl;
+		class AllocaInst* inst;
+	};
+
 	std::unordered_map<std::string, DeclStmt*> variables;
 };

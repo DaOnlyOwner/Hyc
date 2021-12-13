@@ -68,6 +68,21 @@ Scopes::Scopes()
 	top_level.add(&declFalse);
 }
 
+//bool Scopes::add_to_existing(const std::string& name, AllocaInst* inst) { get_current_entry().table.add_to_existing(name, inst); }
+
+// No shadowing allowed.
+bool Scopes::add(DeclStmt* decl)
+{
+	if (!get_current_entry().table.add(decl)) return false;
+	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	{
+		t_entry& e = get_entry(i);
+		auto* elem = e.table.get_variable(decl->name.text);
+		if (elem != nullptr) return false;
+	}
+	return true;
+}
+
 DeclStmt* Scopes::get_variable(const std::string& name)
 {
 	auto tl = top_level.get_variable(name);
@@ -80,6 +95,11 @@ DeclStmt* Scopes::get_variable(const std::string& name)
 	}
 	return nullptr;
 }
+
+//AllocaInst* Scopes::get_alloca_inst(const std::string& name)
+//{
+//	return get_current_entry().table.get_alloca_inst(name);
+//}
 
 void Scopes::ascend()
 {

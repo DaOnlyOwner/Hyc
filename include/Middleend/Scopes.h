@@ -30,7 +30,8 @@ public:
 	bool add(FuncDefStmt* fn) { return top_level.add(fn); }
 	bool add(CollectionStmt* cs) {	return top_level.add(cs); }
 	bool add(CollectionStmt* cs, DeclStmt* decl) { return top_level.add(cs, decl); }
-	bool add(DeclStmt* decl) { return get_current_entry().table.add(decl); }
+	bool add(DeclStmt* decl);
+	//bool add_to_existing(const std::string& name, class AllocaInst* inst);
 
 	//Variable* get_var(const std::string& name);
 	//Type* get_type(const std::string& name);
@@ -42,6 +43,7 @@ public:
 	CollectionStmt* get_type(const std::string& name) { return top_level.get_type(name); }
 	DeclStmt* get_decl_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_for(cs, name); }
 	DeclStmt* get_variable(const std::string& name);
+	//class AllocaInst* get_alloca_inst(const std::string& name);
 	
 	template<typename Pred>
 	FuncDefStmt* get_func(const std::string& name, Pred pred)

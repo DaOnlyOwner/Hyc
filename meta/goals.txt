@@ -40,62 +40,44 @@ TODO:
   overloaded:
   foo* operator#(foo* a, foo* b){}
   
-- global type inference inside functions;
-- unions: 
-  a := (int?uint)::new(-1);
-  switch_type a
-  {
-    case int: break;
-    case uint: break;
-  }
 - default value init in structs. MAYBE
 - unions:
 union A
 {
-   int a;
-   float b;
+   int a:3; // declare a field 'a' with type 'int' and tagged value 3
+   float b:2;
+   c:1; // untyped 
+   d:0;
 }
 typesafe:
 A foo;
-foo.a = 4; 
-foo.type == 0 // type is readonly and is of type int
-foo.b = 4.0;
-foo.type == 1
+foo.a = 4; // makes a active
+foo.b = 4.0; // makes b active
+foo!!c // makes c active, but doesn't initialize memory 
+foo??c // checks if c is active, returns true if that is the case, else false.
+if(foo as int == 3) {foo??a==true;} <-- Can cast union to int type which returns the tagged value.
 match(foo)
 {
-case int as i // i has the same address as foo.a.
+case a 
 {} // Note the braces, they are needed here, no break
-case float as f // f has the same address as foo.f
+case b
+{}
+case c
 {}
 }
-void a(int* i);
-void a(float* f);
-foo..a(); 
-Desugared (but don't actually desugare it in code):
-match(foo)
-{
-case int as i // i has the same address as foo.a.
-{
-  i.a();
-} // Note the braces, they are needed here, no break
-case float as f // f has the same address as foo.f
-{
-  f.a();
-}
-}
-foo->>a(); for pointer
-However foo.a() calls a(foo*); 
+
+match() is an expression!
+
+^--- TODO: Rewrite the parser so that it accepts an identifier not a type in "case [...]"
 
 - function pointers: fptr(args type;return_type)
 - array decl: int[5] a;
 - desugar typedefs before typechecking!
-- enums
 - initialization list:
 int[3] a {0,1,2}; 
 f(int[3]{0,1,2});
 A a {.first{"" },.second{""}};
-void a(int a{0},int b)
-- Implementation note: Save a unique pointer to BaseType in Scopes and let Type struct have a pointer to BaseType, so we don't need to compare strings.
+- Implementation note: Save a unique pointer to BaseType in Scopes and let Type struct have a pointer to BaseType, so we don't need to compare strings. DONE
 - Add foreach loop later
 - infer generic type parameters at function call.
 - default is moving when calling a function e.g. a(b); b is moved into the argument
