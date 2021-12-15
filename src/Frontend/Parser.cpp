@@ -5,7 +5,8 @@
 #include <cstdlib>
 #include "Ast.h"
 #include <memory>
-
+#include "Messages.h"
+#include <map>
 
 // Expressions
 
@@ -68,18 +69,29 @@ namespace
 		return { true,{amount_bits,val,is_signed} };
 	}
 
-	PrefixOperation<Expr> int_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+	std::pair<bool, std::variant<float, double>> eval_decimal_val(const Token& tk, DecimalLiteralType dlt)
 	{
-			auto [succ,eval_res] = eval_integer_val(token,IntegerLiteralType::Int);
-			if (!succ)
-			{
-				auto descr = Error::FromToken(token);
-				descr.Message = fmt::format("{} doesn't fit into an 64 bit integer", token.text);
-				descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
-				Error::SyntacticalError(descr);
-			}
-		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res));
-	} };
+		std::string dec_text = tk.text;
+		if (dec_text.back() == 'f'
+			|| dec_text.back() == 'd'
+			|| dec_text.back() == 'q')
+			dec_text.pop_back();
+		errno = 0;
+		std::variant<float, double> holder;
+		if (dlt == DecimalLiteralType::Float)
+		{
+			holder = strtof(dec_text.c_str(), nullptr);
+		}
+		else if (dlt == DecimalLiteralType::Double)
+		{
+			holder = strtod(dec_text.c_str(), nullptr);
+		}
+		if (errno != 0)
+		{
+			return { false,{} };
+		}
+		return { true,holder };
+	}
 
 	DEF_INTEGER_LIT(uint_lit, UInt);
 	DEF_INTEGER_LIT(uhalf_lit, UHalf);
@@ -104,6 +116,7 @@ namespace
 
 	PrefixOperation<Expr> quad_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
 		{
+			NOT_IMPLEMENTED;
 			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Quad));
 		}
 	};
@@ -336,22 +349,32 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 	else if (tkns.lookahead(1).type == Token::Specifier::BracketL)
 	{
 		tkns.eat(); // [
-		Token integer = tkns.match_token(Token::Specifier::Integer); // integer
+		static std::map<Token::Specifier, IntegerLiteralType> specToIT = {
+			{Token::Specifier::UInt,IntegerLiteralType::UInt},
+			{Token::Specifier::Int,IntegerLiteralType::Int},
+			{Token::Specifier::Half,IntegerLiteralType::Half},
+			{Token::Specifier::UHalf,IntegerLiteralType::UHalf},
+			{Token::Specifier::Short,IntegerLiteralType::UShort},
+			{Token::Specifier::Char, IntegerLiteralType::UChar}
+		};
+		Token integer = tkns.match_one_of<
+			Token::Specifier::UInt,
+			Token::Specifier::Int,
+			Token::Specifier::Half, 
+			Token::Specifier::UHalf,
+			Token::Specifier::Char,
+			Token::Specifier::UChar,
+			Token::Specifier::Short,
+			Token::Specifier::UShort>(); // integer
 		tkns.match_token(Token::Specifier::BracketR); // ]
-		auto [succ, res] = eval_integer_val(integer);
+		auto [succ, res] = eval_integer_val(integer,specToIT[integer.type]);
 		if (!succ)
 		{
 			auto descr = Error::FromToken(integer);
-			descr.Message = fmt::format("{} doesn't fit into an i64 or u64", integer.text);
-			descr.Hint = "You need to reduce the size of the literal, so that it fits into either an i64 or an u64";
+			descr.Message = fmt::format("{} doesn't fit into an 64 bit integer", integer.text);
 			Error::SyntacticalError(descr);
 		}
-		if (res.Spec != Primitive::Specifier::uint)
-		{
-			auto descr = Error::FromToken(integer);
-			descr.Message = fmt::format("Array size specificators must be of type uint, but {} has type int", integer.text);
-			Error::SyntacticalError(descr);
-		}
+
 		auto integerLiteral = std::make_unique<IntegerLiteralExpr>(integer, res);
 		return std::make_unique<ArrayTypeSpec>(mv(integerLiteral), parse_type_spec_part());
 	}

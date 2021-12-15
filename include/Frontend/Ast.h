@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include "AtomicType.h"
 #include <cassert>
+#include <variant>
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 #define IMPL_CLONE(u) uptr<u> clone() const override 
@@ -29,12 +30,6 @@ using uptr = std::unique_ptr<T>;
 // Couldn't get std::move alias to work, so now here is a macro
 #define mv(arg) std::move(arg)
 
-struct EvalIntegerResult
-{
-	int amount_bits;
-	uint64_t amount_uint;
-	bool is_signed;
-};
 
 
 struct IAstVisitor
@@ -80,6 +75,13 @@ struct Node
 };
 
 // Expressions
+
+struct EvalIntegerResult
+{
+	int amount_bits;
+	uint64_t val;
+	bool is_signed;
+};
 
 struct Expr : Node
 {
@@ -302,10 +304,11 @@ enum class DecimalLiteralType
 
 struct DecimalLiteralExpr : Expr
 {
-	DecimalLiteralExpr(const Token& token, DecimalLiteralType t)
-		: lit(token){}
+	DecimalLiteralExpr(const Token& token, DecimalLiteralType t, const std::variant<float,double>& decimal_holder)
+		: lit(token),type(t),decimal_holder(decimal_holder) {}
 	Token lit;
 	DecimalLiteralType type;
+	std::variant<float, double> decimal_holder;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new DecimalLiteralExpr(*this)); }
 	IMPL_ASSTR
@@ -352,7 +355,6 @@ struct IdentExpr : Expr
 struct FuncCallArg
 {
 	uptr<Expr> expr;
-	bool moved;
 };
 
 struct FuncCallExpr : Expr
@@ -437,8 +439,6 @@ struct ImplicitCastExpr : Expr
 		return expr->as_str();
 	}
 };
-
-
 
 // Statements
 
@@ -634,9 +634,6 @@ struct FuncDefStmt : Stmt
 		: decl(mv(func_decl)), body(mv(body)) {}
 	uptr<FuncDeclStmt> decl;
 	std::vector<uptr<Stmt>> body;
-
-	// Semantic annotations:
-	struct Function* sem_function = nullptr;
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {

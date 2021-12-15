@@ -85,14 +85,10 @@ A a {.first{"" },.second{""}};
 - disallow parameters like int[4] in parser
 - operator as -> need special parsing and handling in the semantic checking.
 - disallow overloading of operators with atomic types.
-
-Avoided, but want to implement:
-- Structs, union def inside structs, unions, namespaces
-
+- const only in the beginning of a type declaration
 Implementation order:
-- implement parsing of structs,functions,generics,expressions,statements(also switch, match),namespaces,operators,unions,type deduction for function generics
+- implement parsing of structs,functions,generics,expressions,statements(also match),namespaces,operators,unions,type deduction for function generics
 - quality of life updates: incremental
-  -> enums
   -> initialization lists
   -> try catch
 - import statements

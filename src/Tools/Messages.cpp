@@ -209,6 +209,11 @@ void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));
 }
 
+void Messages::trigger_8_e1(const Token& from, const std::string& expr)
+{
+	semantic_error(from, fmt::format("Cannot assign to a non lvalue expression: '{}'", expr));
+}
+
 
 void Messages::semantic_error(const Token& tk, const std::string& msg, const std::string& hint)
 {

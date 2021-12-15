@@ -5,6 +5,9 @@
 #include <string>
 #include <set>
 #include <tuple>
+#include <stdexcept>
+
+#define NOT_IMPLEMENTED throw std::runtime_error("feature currently not implemented");
 
 class Messages
 {
@@ -74,6 +77,7 @@ public:
 
 
 	void trigger_7_e1(const Token& from, const std::string& coll_name);
+	void trigger_8_e1(const Token& from, const std::string& expr);
 
 private:
 	Messages() = default;
