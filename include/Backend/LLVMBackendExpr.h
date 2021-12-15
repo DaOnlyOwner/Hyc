@@ -7,6 +7,7 @@
 #include "llvm/IR/Function.h"
 #include "ValueStorage.h"
 #include <unordered_map>
+#include "Mangling.h"
 
 struct LLVMBackendInfo
 {
@@ -17,25 +18,29 @@ struct LLVMBackendInfo
 
 typedef std::unordered_map<std::string, std::unordered_map<std::string, llvm::Value*>> stack_allocated_mem;
 
-std::string mangle(const FuncDeclStmt& decl);
-
 class LLVMBackendExpr : public IAstVisitor, public ValueStorage<llvm::Value*> 
 {
 public:
-	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc,stack_allocated_mem& mem, const std::string& current_func_name)
-		:scopes(sc),be(be), ValueStorage<llvm::Value*>(this),mem(mem),current_func_name(current_func_name) {}
+	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc,stack_allocated_mem& mem)
+		:scopes(sc),be(be), ValueStorage<llvm::Value*>(this),mem(mem) {}
 
-	llvm::Value* gen(NamespaceStmt& ns)
+	llvm::Value* gen(Expr& expr)
 	{
-		ns.accept(*this);
+		expr.accept(*this);
 		return retrieve();
 	}
+
+	void set_curr_func_name(std::string& name)
+	{
+		current_func_name = &name;
+	}
+
 
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
 	stack_allocated_mem& mem;
-	const std::string& current_func_name;
+	std::string* current_func_name=nullptr;
 	bool handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op);
 
 	virtual void visit(DecimalLiteralExpr& lit) override;

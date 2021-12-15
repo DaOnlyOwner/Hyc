@@ -39,6 +39,7 @@ TODO:
   a :# b; foo a :# b; is default defined
   overloaded:
   foo* operator#(foo* a, foo* b){}
+- const can only be defined in front of a type, no const ptrs etc!
   
 - default value init in structs. MAYBE
 - unions:

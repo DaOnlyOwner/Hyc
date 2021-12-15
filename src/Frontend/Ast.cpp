@@ -39,5 +39,6 @@ void IAstVisitor::visit(struct ExprStmt& expr_stmt)
 
 void IAstVisitor::visit(struct FuncDefStmt& func_def_stmt)
 {
+	func_def_stmt.decl->accept(*this);
 	for (auto& p : func_def_stmt.body) p->accept(*this);
 }

@@ -328,6 +328,8 @@ struct IdentExpr : Expr
 	Token name;
 	std::vector<uptr<TypeSpec>> generic_params;
 
+	// Annotation
+	DeclStmt* decl=nullptr;
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) {
@@ -373,7 +375,7 @@ struct FuncCallExpr : Expr
 	std::vector<FuncCallArg> arg_list_cpy;
 	for (int i = 0; i < arg_list.size(); i++)
 	{
-		arg_list_cpy.push_back({ arg_list[i].expr->clone(),arg_list[i].moved });
+		arg_list_cpy.push_back({ arg_list[i].expr->clone() });
 	}
 
 	return uptr<Expr>(new FuncCallExpr(from->clone(), mv(arg_list_cpy)));
@@ -389,7 +391,7 @@ struct FuncCallExpr : Expr
 		for (int i = 1; i < arg_list.size(); i++)
 		{
 			auto& arg = arg_list[i];
-			args += fmt::format(", {}", arg.moved?"#"+arg.expr->as_str():arg.expr->as_str());
+			args += fmt::format(", {}", arg.expr->as_str());
 		}
 
 		return fmt::format("{}({})", from->as_str(), args);

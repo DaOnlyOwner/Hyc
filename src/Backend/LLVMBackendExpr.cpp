@@ -1,4 +1,4 @@
-#include "LLVMBackend.h"
+#include "LLVMBackendExpr.h"
 #include <unordered_map>
 #include "llvm/IR/Constant.h"
 #include "Messages.h"
@@ -249,7 +249,7 @@ void LLVMBackendExpr::visit(PostfixOpExpr& post_op)
 void LLVMBackendExpr::visit(IdentExpr& ident)
 {
 	// Look into allocated function variables:
-	auto& func_vars = mem[current_func_name];
+	auto& func_vars = mem[*current_func_name];
 	auto it = func_vars.find(ident.name.text);
 	if (it == func_vars.end())
 	{

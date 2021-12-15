@@ -108,7 +108,7 @@ ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
 udec		0|([1-9]\d*)
-ident		[a-zA-Z_][a-zA-Z_0-9]* 
+ident		[a-zA-Z][a-zA-Z_0-9]* 
 int_	 	({uhex}|{uoct}|{ubin}|{udec})i?
 uint		{int_}ui
 half		{int_}h

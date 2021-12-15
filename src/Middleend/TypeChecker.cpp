@@ -252,6 +252,7 @@ void TypeChecker::visit(IdentExpr& ident)
 		RETURN(Type());
 	}
 	ident.sem_type = decl->type;
+	ident.decl = decl;
 	RETURN(decl->type);
 }
 
