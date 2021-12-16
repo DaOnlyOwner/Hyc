@@ -40,6 +40,7 @@ add_subdirectory(lib/fmt)
 
 
 
+
 add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 separate_arguments(LLVM_DEF_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEF_LIST})
@@ -63,5 +64,6 @@ source_group("Embedded" FILES ${REFLEX_SRC})
 
 target_include_directories(Hyc PRIVATE ${TARGET_INC_DIRS})
 target_include_directories(Hyc PRIVATE ${LLVM_INCLUDE_DIRS})
+target_include_directories(Hyc PRIVATE "lib/cxxopts/include")
 target_link_libraries(Hyc fmt)
 target_link_libraries(Hyc ${LLVM_LIBS})

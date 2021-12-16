@@ -14,3 +14,9 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 	auto ft = llvm::FunctionType::get(res_t, args, false);
 	llvm::Function::Create(ft,llvm::Function::InternalLinkage, mangle(*func_def_stmt.decl),mod);
 }
+
+void llvm_collect_funcs(NamespaceStmt& ns,llvm::Module& mod, llvm::LLVMContext& ctxt)
+{
+	LLVMBackendFuncDeclCollector fdc(mod, ctxt);
+	ns.accept(fdc);
+}

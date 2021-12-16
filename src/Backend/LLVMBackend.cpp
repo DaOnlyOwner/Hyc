@@ -1,4 +1,5 @@
 #include "LLVMBackend.h"
+#include "LLVMBackendFuncDeclCollector.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -53,9 +54,11 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	auto target = llvm::TargetRegistry::lookupTarget(target_triple, error);
 	if (!target)
 	{
-		fmt::print(fmt::fg(fmt::color::red),"Error when selecting target: {}\n", error.c_str());
+		fmt::print(fmt::fg(fmt::color::orange_red),"Error when selecting target: {}\n", error.c_str());
 		return 1;
 	}
+
+	llvm_collect_funcs(ns, be.mod, be.context);
 
 	llvm::LoopAnalysisManager lam;
 	llvm::FunctionAnalysisManager fam;
@@ -77,13 +80,16 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	be.mod.setTargetTriple(target_triple);
 
 	llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(to_llvm[ci.opt_lvl]);
-	//mpm.addPass()
+	
+
+
 	ns.accept(stmt_gen);
 #ifndef NDEBUG
 	bool b = llvm::verifyModule(be.mod);
 	if (!b)
 	{
 		fmt::print(fmt::fg(fmt::color::dark_red), "Compilerbug, aborting\n");
+		return 2;
 	}
 #endif
 	mpm.run(be.mod, mam);
@@ -91,7 +97,7 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	std::error_code ec;
 	if (ec)
 	{
-		fmt::print(fmt::fg(fmt::color::red), "Couldn't open file '{}' with write access\n", filename);
+		fmt::print(fmt::fg(fmt::color::orange_red), "Couldn't open file '{}' with write access\n", filename);
 	}
 	if (ci.emit_info == CompilerInfo::EmitInfo::EmitIRCode)
 	{

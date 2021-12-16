@@ -12,6 +12,7 @@
 #include "TypeChecker.h"
 #include "LValueChecker.h"
 #include "LLVMBackend.h"
+#include "LLVMBackendFuncDeclCollector.h"
 #include "fmt/color.h"
 
 namespace
@@ -61,6 +62,10 @@ int Pipeline::build(std::ifstream& input, const std::string& filename, const LLV
 	int n = parsed->stmts.size();
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
+	if (Error::Error)
+	{
+		return 1;
+	}
 	LLVMBackend backend(*parsed, sc);
 	return backend.emit(ci,filename);
 }

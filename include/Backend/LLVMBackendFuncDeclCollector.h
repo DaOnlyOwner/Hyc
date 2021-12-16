@@ -12,3 +12,5 @@ public:
 	llvm::LLVMContext& context;
 	virtual void visit(FuncDefStmt& func_def_stmt) override;
 };
+
+void llvm_collect_funcs(NamespaceStmt& ns, llvm::Module& mod, llvm::LLVMContext& ctxt);
