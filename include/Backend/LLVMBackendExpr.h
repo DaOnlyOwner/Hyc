@@ -11,6 +11,7 @@
 
 struct LLVMBackendInfo
 {
+	LLVMBackendInfo(llvm::LLVMContext&& ctxt)
 	llvm::LLVMContext context;
 	llvm::Module mod;
 	llvm::IRBuilder<> builder;
@@ -30,18 +31,17 @@ public:
 		return retrieve();
 	}
 
-	void set_curr_func_name(std::string& name)
-	{
-		current_func_name = &name;
-	}
-
-
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
 	stack_allocated_mem& mem;
-	std::string* current_func_name=nullptr;
+	
 	bool handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op);
+	llvm::Function* get_curr_fn()
+	{
+		return be.builder.GetInsertBlock()->getParent();
+	}
+
 
 	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;

@@ -12,5 +12,5 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 		});
 	auto res_t = map_type(func_def_stmt.decl->ret_type->semantic_type);
 	auto ft = llvm::FunctionType::get(res_t, args, false);
-	mod.getOrInsertFunction(mangle(*func_def_stmt.decl),ft);
+	llvm::Function::Create(ft,llvm::Function::InternalLinkage, mangle(*func_def_stmt.decl),mod);
 }

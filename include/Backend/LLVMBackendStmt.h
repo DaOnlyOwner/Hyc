@@ -13,11 +13,25 @@ public:
 	LLVMBackendStmt(LLVMBackendInfo& be,Scopes& sc)
 		:be(be),scopes(sc),expr_getter(be,sc,mem) {}
 private:
-	virtual void visit(FuncDefStmt& func_decl) override;
+
+	void insert_bb(llvm::BasicBlock* bb)
+	{
+		auto current_function = be.builder.GetInsertBlock()->getParent();
+		current_function->getBasicBlockList().push_back(bb);
+		be.builder.SetInsertPoint(bb);
+	}
+
+	llvm::Function* get_curr_fn()
+	{
+		return be.builder.GetInsertBlock()->getParent();
+	}
+
+	// This is from the kaleidoskop tutorial
+	llvm::AllocaInst* create_alloca(const Type& t, const std::string& name);
+
 	virtual void visit(IfStmt& if_stmt) override;
 	virtual void visit(WhileStmt& while_stmt) override;
-	llvm::Function* current_function = nullptr;
-	FuncDefStmt* current_func_def = nullptr;
+	virtual void visit(DeclStmt& decl_stmt) override;
 	stack_allocated_mem mem;
 	LLVMBackendInfo& be;
 	Scopes& scopes;

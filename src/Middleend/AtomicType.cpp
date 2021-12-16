@@ -6,6 +6,7 @@
 #include <cassert>
 #include "Ast.h"
 #include "Scopes.h"
+#include "Messages.h"
 
 CollectionStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
@@ -199,6 +200,42 @@ std::string Type::as_str() const
 				}
 			}
 			out += fmt::format("fptr({};{})", args, fp.return_type->as_str());
+			break;
+		}
+	}
+	return out;
+}
+
+std::string Type::as_str_for_mangling() const
+{
+	std::string out = "";
+	for (auto& [kind, var] : stored_types)
+	{
+		switch (kind)
+		{
+		case TypeKind::Array:
+			assert(false); // No array in function
+			break;
+		case TypeKind::Base:
+			out += std::get<CollectionStmt*>(var)->name.text;
+			break;
+		case TypeKind::Pointer:
+			out += "_p_";
+			break;
+		case TypeKind::FunctionPointer:
+			const FunctionPointerType& fp = std::get<FunctionPointerType>(var);
+			std::string args = "";
+			if (fp.args.size() > 0)
+			{
+				auto& arg_first = fp.args[0];
+				args += arg_first->as_str();
+				for (int i = 1; i < fp.args.size(); i++)
+				{
+					auto& arg = fp.args[i];
+					args += fmt::format("{}", arg->as_str());
+				}
+			}
+			out += fmt::format("_fptr{}_{}_", args, fp.return_type->as_str());
 			break;
 		}
 	}

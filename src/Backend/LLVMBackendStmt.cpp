@@ -1,21 +1,11 @@
 #include "LLVMBackendStmt.h"
 #include "Mangling.h"
 #include "fmt/core.h"
-
-void LLVMBackendStmt::visit(FuncDefStmt& func_def)
-{
-	current_function = be.mod.getFunction(mangle(*func_def.decl));
-	current_func_def = &func_def;
-	expr_getter.set_curr_func_name(current_func_def->decl->name.text);
-	for (auto& p : func_def.body) p->accept(*this);
-	current_function = nullptr;
-	current_func_def = nullptr;
-
-}
+#include "TypeToLLVMType.h"
 
 void LLVMBackendStmt::visit(IfStmt& if_stmt)
 {
-	
+	auto current_function = be.builder.GetInsertBlock()->getParent();
 	auto if_cond = expr_getter.gen(*if_stmt.if_expr);
 	llvm::BasicBlock* then_bb = llvm::BasicBlock::Create(be.context, "then", current_function);
 	std::vector<std::pair<llvm::BasicBlock*,llvm::BasicBlock*>> elifs_bb;
@@ -35,43 +25,36 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 	if (!elifs_bb.empty())
 	{
 		be.builder.CreateCondBr(if_cond, then_bb, elifs_bb[0].first);
-		current_function->getBasicBlockList().push_back(then_bb);
-		be.builder.SetInsertPoint(then_bb);
+		insert_bb(then_bb);
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
 		for (int i = 0; i < elifs_bb.size()-1; i++)
 		{
-			current_function->getBasicBlockList().push_back(elifs_bb[i].first);
-			be.builder.SetInsertPoint(elifs_bb[i].first);
+			insert_bb(elifs_bb[i].first);
 			auto elif_cond = expr_getter.gen(*if_stmt.elif_exprs[i]);
 			be.builder.CreateCondBr(elif_cond, elifs_bb[i].second, elifs_bb[i + 1].first);
-			current_function->getBasicBlockList().push_back(elifs_bb[i].second);
-			be.builder.SetInsertPoint(elifs_bb[i].second);
+			insert_bb(elifs_bb[i].second);
 			for (auto& p : if_stmt.all_elif_stmts[i]) p->accept(*this);
 		}
 
 		auto& last = elifs_bb.back();
 		auto& last_expr = if_stmt.elif_exprs.back();
 		auto& last_stmts = if_stmt.all_elif_stmts.back();
-		current_function->getBasicBlockList().push_back(last.first);
-		be.builder.SetInsertPoint(last.first);
+		insert_bb(last.first);
 		auto elif_cond = expr_getter.gen(*last_expr);
 		be.builder.CreateCondBr(elif_cond, last.second, else_bb ? else_bb : cont_bb);
-		current_function->getBasicBlockList().push_back(last.second);
-		be.builder.SetInsertPoint(last.second);
+		insert_bb(last.second);
 		for (auto& p : last_stmts) p->accept(*this);
 	}
 	else
 	{
 		be.builder.CreateCondBr(if_cond, then_bb, else_bb ? else_bb : cont_bb);
-		current_function->getBasicBlockList().push_back(then_bb);
-		be.builder.SetInsertPoint(then_bb);
+		insert_bb(then_bb);
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
 	}
 
 	if (else_bb)
 	{
-		current_function->getBasicBlockList().push_back(else_bb);
-		be.builder.SetInsertPoint(else_bb);
+		insert_bb(else_bb);
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
 		be.builder.CreateBr(cont_bb);
 	}
@@ -79,5 +62,40 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 
 void LLVMBackendStmt::visit(WhileStmt& while_stmt)
 {
-	
+	auto current_function = be.builder.GetInsertBlock()->getParent();
+	auto while_start_bb = llvm::BasicBlock::Create(be.context, "while_start", current_function);
+	auto body_bb = llvm::BasicBlock::Create(be.context, "body", current_function);
+	auto while_end_bb = llvm::BasicBlock::Create(be.context, "while_end", current_function);
+	insert_bb(while_start_bb);
+	auto cond = expr_getter.gen(*while_stmt.expr);
+	be.builder.CreateCondBr(cond, body_bb, while_end_bb);
+	insert_bb(body_bb);
+	for (auto& p : while_stmt.stmts) p->accept(*this);
+	be.builder.CreateBr(while_start_bb);
+	insert_bb(while_end_bb);
 }
+
+void LLVMBackendStmt::visit(DeclStmt& decl_stmt)
+{
+	auto& fname = get_curr_fn()->getName().str();
+	auto alloc = create_alloca(decl_stmt.type, decl_stmt.name.text);
+	auto it = mem.find(fname);
+	if (it == mem.end())
+	{
+		mem[fname] = { { decl_stmt.name.text,alloc } };
+	}
+	else
+	{
+		it->second[decl_stmt.name.text] = alloc;
+	}
+}
+
+
+llvm::AllocaInst* LLVMBackendStmt::create_alloca(const Type& t, const std::string& name)
+{
+	auto mapped = map_type(t);
+	auto f = be.builder.GetInsertBlock()->getParent();
+	llvm::IRBuilder<> tmp(&f->getEntryBlock(), f->getEntryBlock().begin());
+	tmp.CreateAlloca(mapped,0,name);
+}
+

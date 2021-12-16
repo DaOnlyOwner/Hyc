@@ -6,6 +6,7 @@
 #include <variant>
 #include "ValuePtr.h"
 #include <optional>
+#include "TypeToLLVMType.h"
 
 enum class TypeKind
 {
@@ -69,15 +70,17 @@ struct Type
 	bool is_fptr_type() const;
 	bool must_be_inferred() const;
 	bool is_predefined(const class Scopes& sc) const;
-	std::optional<PredefinedType> to_pred(const Scopes& sc) const;
+	std::optional<PredefinedType> to_pred(const class Scopes& sc) const;
 	std::unique_ptr<TypeSpec> to_ast() const;
+
 
 	CollectionStmt* get_base_type() const;
 	//PredefinedType pred_type;
 
 	// Also account for cast operators later
 	//ConversionType get_conversion_into(const Type& other, const class Scopes& scopes);
-	std::string as_str() const ;
+	std::string as_str() const;
+	std::string as_str_for_mangling() const;
 
 	static std::pair<ConversionType, ConversionType> type_cast_to_more_general(PredefinedType t1, PredefinedType t2);
 	static bool is_integer(PredefinedType pt);

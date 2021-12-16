@@ -41,6 +41,7 @@ private:
 	bool handle_bin_op_member_acc(BinOpExpr& bin_op);
 	bool handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_op);
 
+	void check_type_is_bool(uptr<Expr>& expr);
 
 	Scopes& scopes;
 	NamespaceStmt& ns;

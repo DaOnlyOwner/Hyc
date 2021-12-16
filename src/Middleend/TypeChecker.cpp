@@ -470,11 +470,17 @@ void TypeChecker::visit(ImplicitCastExpr& ice)
 
 void TypeChecker::visit(IfStmt& if_stmt)
 {
+	// TODO: nullptr needs to be a special type 
+	// E.g. t.is_nullptr() -> returns true if type t is nullptr.
 	scopes.descend();
+	check_type_is_bool(if_stmt.if_expr);
 	for (auto& p : if_stmt.if_stmts) p->accept(*this);
-	for (auto& elif : if_stmt.all_elif_stmts)
+	for (int i = 0; i<if_stmt.all_elif_stmts.size(); i++)
 	{
+		auto& elif = if_stmt.all_elif_stmts[i];
+		auto& elif_expr = if_stmt.elif_exprs[i];
 		scopes.descend();
+		check_type_is_bool(elif_expr);
 		for (auto& p : elif) p->accept(*this);
 	}
 	scopes.descend();
@@ -484,19 +490,23 @@ void TypeChecker::visit(IfStmt& if_stmt)
 void TypeChecker::visit(WhileStmt& while_stmt)
 {
 	scopes.descend();
+	check_type_is_bool(while_stmt.expr);
 	for (auto& p : while_stmt.stmts) p->accept(*this);
 }
 
 void TypeChecker::visit(ContinueStmt& cont_stmt)
 {
+	NOT_IMPLEMENTED;
 }
 
 void TypeChecker::visit(ArraySubscriptExpr& subs)
 {
+	NOT_IMPLEMENTED;
 }
 
 void TypeChecker::visit(TernaryExpr& tern)
 {
+	NOT_IMPLEMENTED;
 }
 
 void TypeChecker::visit(MatchStmt& match)
@@ -789,6 +799,26 @@ bool TypeChecker::handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_o
 		RETURN_VAL_BIN_OP(trh, true);
 	}
 	return is_copy_move;
+}
+
+void TypeChecker::check_type_is_bool(uptr<Expr>& expr)
+{
+	auto if_t = get(expr);
+	auto maybe_pred = if_t.to_pred(scopes);
+	if (maybe_pred.has_value())
+	{
+		auto pred = maybe_pred.value();
+		if (pred != PredefinedType::Bool)
+		{
+			auto ile = std::make_unique<IntegerLiteralExpr>();
+			auto cmp = std::make_unique<BinOpExpr>(Token(Token::Specifier::NotEqual, "!="), mv(expr), mv(ile));
+			expr = mv(cmp);
+		}
+	}
+	else
+	{
+		Messages::inst().trigger_6_e22(expr->first_token(), expr->as_str(), if_t.as_str());
+	}
 }
 
 bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op)

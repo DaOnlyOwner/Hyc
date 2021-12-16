@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "llvm/IR/Constant.h"
 #include "Messages.h"
+#include "TypeToLLVMType.h"
 
 bool LLVMBackendExpr::handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op)
 {
@@ -249,7 +250,8 @@ void LLVMBackendExpr::visit(PostfixOpExpr& post_op)
 void LLVMBackendExpr::visit(IdentExpr& ident)
 {
 	// Look into allocated function variables:
-	auto& func_vars = mem[*current_func_name];
+	auto current_func_name = get_curr_fn()->getName().str();
+	auto& func_vars = mem[current_func_name];
 	auto it = func_vars.find(ident.name.text);
 	if (it == func_vars.end())
 	{
@@ -276,12 +278,12 @@ void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
 	auto from = get(ice.expr);
 	auto from_pd_maybe = ice.expr->sem_type.to_pred(scopes);
 	auto to_pd_maybe = ice.sem_type.to_pred(scopes);
+	llvm::Type* to_t = map_type(ice.expr->sem_type);
 	if (from_pd_maybe.has_value() && to_pd_maybe.has_value())
 	{
 		llvm::Instruction::CastOps co;
 		auto from_pd = from_pd_maybe.value();
 		auto to_pd = to_pd_maybe.value();
-		llvm::Type* t;
 		if (Type::is_unsigned_integer(from_pd) && Type::is_decimal(to_pd))
 			co = llvm::Instruction::CastOps::UIToFP;
 		else if (Type::is_signed_integer(from_pd) && Type::is_decimal(to_pd))
@@ -290,23 +292,16 @@ void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
 			co = llvm::Instruction::CastOps::FPToUI;
 		else if (Type::is_decimal(from_pd) && Type::is_signed_integer(to_pd))
 			co = llvm::Instruction::CastOps::FPToSI;
-		if (to_pd == PredefinedType::Float)
-			t = llvm::Type::getFloatTy(be.context);
-		else if (to_pd == PredefinedType::Double)
-			t = llvm::Type::getDoubleTy(be.context);
-		else if (to_pd == PredefinedType::Quad)
-			t = llvm::Type::getFP128Ty(be.context);
-		else if (to_pd == PredefinedType::UInt || to_pd == PredefinedType::Int)
-			t = llvm::Type::getInt64Ty(be.context);
-		else if (to_pd == PredefinedType::UHalf || to_pd == PredefinedType::Half)
-			t = llvm::Type::getInt32Ty(be.context);
-		else if (to_pd == PredefinedType::UShort || to_pd == PredefinedType::Short)
-			t = llvm::Type::getInt16Ty(be.context);
-		else if (to_pd == PredefinedType::UChar || to_pd == PredefinedType::Char)
-			t = llvm::Type::getInt8Ty(be.context);
-		else if (to_pd == PredefinedType::Bool)
-			t = llvm::Type::getInt1Ty(be.context);
-		RETURN(be.builder.CreateCast(co,from,t));
+		// floating point cast
+		else if (Type::is_decimal(from_pd) && Type::is_decimal(to_pd))
+			co = llvm::Instruction::CastOps::FPExt;
+		// Integer cast, ignore signed to unsigned and unsigned to signed (they don't exist in llvm)
+		else if (Type::is_unsigned_integer(from_pd) && Type::is_unsigned_integer(to_pd))
+			co = llvm::Instruction::CastOps::ZExt;
+
+		else if(Type::is_signed_integer(from_pd) && Type::is_signed_integer(to_pd))
+			co = llvm::Instruction::CastOps::SExt;
+		RETURN(be.builder.CreateCast(co,from,to_t));
 	}
 	assert(false); // Only basic types need to be implicitly casted.
 }

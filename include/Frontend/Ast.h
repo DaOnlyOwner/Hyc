@@ -89,7 +89,10 @@ struct Expr : Node
 	Type sem_type;
 	virtual	uptr<Expr> clone() const = 0;
 	virtual std::string as_str() const = 0;
+	virtual const Token& first_token() const = 0;
 };
+
+#define IMPL_FT virtual const Token& first_token() const override
 
 enum class IntegerLiteralType
 {
@@ -103,6 +106,10 @@ struct IntegerLiteralExpr : Expr
 	{
 
 	}
+
+	IntegerLiteralExpr()
+		:integer_literal(Token::Specifier::Int,"0"), eval_res{64,0,true}, type(IntegerLiteralType::Int){}
+
 	Token integer_literal;
 	EvalIntegerResult eval_res;
 	IntegerLiteralType type;
@@ -111,6 +118,10 @@ struct IntegerLiteralExpr : Expr
 	IMPL_ASSTR
 	{
 		return integer_literal.text;
+	}
+		IMPL_FT
+	{
+		return integer_literal;
 	}
 };
 
@@ -260,6 +271,10 @@ struct BinOpExpr : Expr
 	{
 		return fmt::format("{}{}{}",lh->as_str(),op.text,rh->as_str());
 	}
+		IMPL_FT
+	{
+		return op;
+	}
 
 };
 
@@ -280,6 +295,10 @@ struct PrefixOpExpr : Expr
 	{
 		return fmt::format("{}{}",op.text,lh->as_str());
 	}
+		IMPL_FT
+	{
+		return op;
+	}
 };
 
 struct PostfixOpExpr : Expr
@@ -293,6 +312,10 @@ struct PostfixOpExpr : Expr
 	IMPL_ASSTR
 	{
 		return fmt::format("{}{}",rh->as_str(),op.text);
+	}
+		IMPL_FT
+	{
+		return op;
 	}
 };
 
@@ -315,6 +338,10 @@ struct DecimalLiteralExpr : Expr
 	{
 		return lit.text;
 	}
+		IMPL_FT
+	{
+		return lit;
+	}
 };
 
 
@@ -330,7 +357,10 @@ struct IdentExpr : Expr
 
 	// Annotation
 	DeclStmt* decl=nullptr;
-
+	IMPL_FT
+	{
+		return name;
+	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) {
 		CPY_VEC(generic_params, gp_copy, uptr<TypeSpec>);
@@ -367,8 +397,11 @@ struct FuncCallExpr : Expr
 	std::vector<FuncCallArg> arg_list;
 
 	// Semantic annotations
-	FuncDefStmt* def;
-
+	FuncDefStmt* def=nullptr;
+	IMPL_FT
+	{
+		return from->first_token();
+	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr)
 	{
@@ -403,6 +436,10 @@ struct ArraySubscriptExpr : Expr
 	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)
 		:from(mv(from)), inner(mv(inner)){}
 	uptr<Expr> from, inner;
+	IMPL_FT
+	{
+		from->first_token();
+	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new ArraySubscriptExpr(from->clone(), inner->clone())); }
 	IMPL_ASSTR
@@ -416,6 +453,10 @@ struct TernaryExpr : Expr
 	TernaryExpr(uptr<Expr>&& fst, uptr<Expr>&& snd, uptr<Expr>&& trd)
 		:fst(mv(fst)), snd(mv(snd)), trd(mv(trd)) {}
 	uptr<Expr> fst, snd, trd;
+	IMPL_FT
+	{
+		return fst->first_token();
+	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new TernaryExpr(fst->clone(), snd->clone(), trd->clone())); }
 	IMPL_ASSTR
@@ -434,6 +475,10 @@ struct ImplicitCastExpr : Expr
 	}
 	uptr<Expr> expr;
 
+	IMPL_FT
+	{
+		return expr->first_token();
+	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new ImplicitCastExpr(expr->clone(), Type(sem_type))); }
 	IMPL_ASSTR

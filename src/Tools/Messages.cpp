@@ -204,6 +204,11 @@ void Messages::trigger_6_e21(const Token& from, const std::string& args)
 	semantic_error(from, fmt::format("No function defined for name '{}' with argument types {}", from.text, args));
 }
 
+void Messages::trigger_6_e22(const Token& from, const std::string& expr, const std::string& t)
+{
+	semantic_error(from, fmt::format("The expression '{}' needs to be of bool, but has type '{}'", expr, t));
+}
+
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));
