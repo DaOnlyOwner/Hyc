@@ -31,7 +31,8 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		{
 			insert_bb(elifs_bb[i].first);
 			auto elif_cond = expr_getter.gen(*if_stmt.elif_exprs[i]);
-			be.builder.CreateCondBr(elif_cond, elifs_bb[i].second, elifs_bb[i + 1].first);
+			if(!elifs_bb[i].first->back().isTerminator())
+				be.builder.CreateCondBr(elif_cond, elifs_bb[i].second, elifs_bb[i + 1].first);
 			insert_bb(elifs_bb[i].second);
 			for (auto& p : if_stmt.all_elif_stmts[i]) p->accept(*this);
 		}
@@ -41,7 +42,8 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		auto& last_stmts = if_stmt.all_elif_stmts.back();
 		insert_bb(last.first);
 		auto elif_cond = expr_getter.gen(*last_expr);
-		be.builder.CreateCondBr(elif_cond, last.second, else_bb ? else_bb : cont_bb);
+		if (!last.first->back().isTerminator())
+			be.builder.CreateCondBr(elif_cond, last.second, else_bb ? else_bb : cont_bb);
 		insert_bb(last.second);
 		for (auto& p : last_stmts) p->accept(*this);
 	}
@@ -56,7 +58,8 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 	{
 		insert_bb(else_bb);
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
-		be.builder.CreateBr(cont_bb);
+		if(else_bb->back().isTerminator())
+			be.builder.CreateBr(cont_bb);
 	}
 }
 

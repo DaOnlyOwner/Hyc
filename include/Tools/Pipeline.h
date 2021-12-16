@@ -2,12 +2,13 @@
 
 #include "Lexer.h"
 #include <fstream>
+#include "LLVMBackend.h"
 
 class Pipeline
 {
 public:
 	Pipeline() = default;
-	void build(std::ifstream& input, const std::string& filename);
+	int build(std::ifstream& input, const std::string& filename,const LLVMBackend::CompilerInfo& ci);
 };
 
 

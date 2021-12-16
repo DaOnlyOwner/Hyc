@@ -3,6 +3,7 @@
 #include "Ast.h"
 #include "Scopes.h"
 #include "LLVMBackendStmt.h"
+#include <optional>
 
 class LLVMBackend
 {
@@ -11,7 +12,7 @@ public:
 	{
 		enum class OptLevel
 		{
-			O1,O2,O3
+			O0,O1,O2,O3
 		};
 
 		enum class EmitInfo
@@ -20,18 +21,21 @@ public:
 			EmitIRCode
 		};
 
-		std::string filename;
 		EmitInfo emit_info;
 		OptLevel opt_lvl;
+		std::optional<std::string> target;
 	};
 
 	LLVMBackend(NamespaceStmt& ns, Scopes& scopes)
-		:ns(ns), scopes(scopes), be{llvm::LLVMContext()}{}
+		:ns(ns), scopes(scopes),be(),stmt_gen(be,scopes){}
+
+	int emit(const CompilerInfo& ci, const std::string& filename);
 
 private:
 	CompilerInfo ci;
 	NamespaceStmt& ns;
 	Scopes& scopes;
 	LLVMBackendInfo be;
+	LLVMBackendStmt stmt_gen;
 
 };

@@ -11,7 +11,8 @@
 
 struct LLVMBackendInfo
 {
-	LLVMBackendInfo(llvm::LLVMContext&& ctxt)
+	LLVMBackendInfo()
+		:context(),mod("global",context),builder(context){}
 	llvm::LLVMContext context;
 	llvm::Module mod;
 	llvm::IRBuilder<> builder;

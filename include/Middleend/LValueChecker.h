@@ -6,6 +6,7 @@
 // Returns if the expression is an lvalue and returns the name of the underlying identifier
 class LValueChecker : public IAstVisitor, public ValueStorage<bool>
 {
+public:
 	LValueChecker(Scopes& sc)
 		:scopes(sc),ValueStorage(this) {}
 
@@ -23,3 +24,9 @@ private:
 
 	Scopes& scopes;
 };
+
+void check_lvalues(Scopes& sc, NamespaceStmt& ns)
+{
+	LValueChecker lvc(sc);
+	ns.accept(lvc);
+}
