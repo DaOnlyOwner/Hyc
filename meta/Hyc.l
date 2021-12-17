@@ -229,11 +229,18 @@ or_eql		"|="
 {comma}		{ push(Token::Specifier::Comma);}
 {rparen_l}	{ push(Token::Specifier::RParenL);}
 {rparen_r}	{ push(Token::Specifier::RParenR);}
-{integer}	{ push(Token::Specifier::Integer); }
 {float}   	{ push(Token::Specifier::Float); }
 {double}	{ push(Token::Specifier::Double); }
 {quad}		{ push(Token::Specifier::Quad); }
 {plus} 	  	{ push(Token::Specifier::Plus); }
+{int_}		{ push(Token::Specifier::Int);}
+{uint}		{ push(Token::Specifier::UInt);}
+{half}		{ push(Token::Specifier::Half);}
+{uhalf}		{ push(Token::Specifier::UHalf);}
+{char}		{ push(Token::Specifier::Char);}
+{uchar}		{ push(Token::Specifier::UChar);}
+{short}		{ push(Token::Specifier::Short);}
+{ushort}	{ push(Token::Specifier::UShort);}
 {minus}   	{ push(Token::Specifier::Minus); }
 {asterix} 	{ push(Token::Specifier::Asterix); }
 {slash}   	{ push(Token::Specifier::Slash); }

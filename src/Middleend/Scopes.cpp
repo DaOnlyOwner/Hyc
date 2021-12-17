@@ -74,7 +74,7 @@ Scopes::Scopes()
 bool Scopes::add(DeclStmt* decl)
 {
 	if (!get_current_entry().table.add(decl)) return false;
-	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	for (int64_t i = get_current_entry().father; i >= 0; i = get_entry(i).father)
 	{
 		t_entry& e = get_entry(i);
 		auto* elem = e.table.get_variable(decl->name.text);
@@ -113,6 +113,7 @@ int64_t Scopes::expand()
 {
 	auto indexTablePair = t_entry(m_current_index, SymbolTable());
 	m_collection.push_back(std::move(indexTablePair));
+	if(m_current_index > 0) get_current_entry().children.push_back(m_collection.size()-1);
 	m_current_index = m_collection.size() - 1;
 	return m_current_index;
 }
@@ -123,33 +124,36 @@ int64_t Scopes::expand()
 	return get_type(base) != nullptr;
 }*/
 
-// Descends one child after the other and - completely iterated -, wraps around and starts at the root again.
-// This is really fast - just an increment operation because of the way the entries are located in the vector.
-
 void Scopes::descend()
 {
-	if (m_current_index == m_collection.size() - 1)
+	if (m_current_index < 0)
 	{
-		go_to_root();
+		m_current_index = 0;
 		return;
 	}
-	else ++m_current_index;
+	auto& e = get_current_entry();
+	if (e.children.empty())
+	{
+		m_current_index++;
+		return;
+	}
+	m_current_index = e.children[e.current_child];
+	e.current_child += 1;
+	if (e.current_child >= e.children.size())
+	{
+		e.current_child = 0;
+		return;
+	}
 }
 
 void Scopes::descend(int64_t nthChild)
 {
 	// Iterate until we find the nth node that points to the current index
-	int count = 0;
-	for (int64_t i = m_current_index; i < m_collection.size(); i++)
-	{
-		auto& e = get_entry(i);
-		count += e.father == m_current_index;
-		if (count == nthChild)
-		{
-			m_current_index = i;
-			return;
-		}
-	}
+	auto& e = get_current_entry();
+	m_current_index = e.children[nthChild];
+	e.current_child += 1;
+	if (e.current_child >= e.children.size())
+		e.current_child = 0;
 }
 
 bool Scopes::go_to_father(int amount)

@@ -26,9 +26,9 @@ enum class ConversionType
 enum class PredefinedType
 {
 	Bool=0,
-	UShort=1,
-	UHalf=2,
-	UChar=3,
+	UChar=1,
+	UShort=2,
+	UHalf=3,
 	UInt=4,
 	Char=5,
 	Short=6,

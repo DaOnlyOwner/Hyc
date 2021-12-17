@@ -438,7 +438,7 @@ struct ArraySubscriptExpr : Expr
 	uptr<Expr> from, inner;
 	IMPL_FT
 	{
-		from->first_token();
+		return from->first_token();
 	}
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new ArraySubscriptExpr(from->clone(), inner->clone())); }

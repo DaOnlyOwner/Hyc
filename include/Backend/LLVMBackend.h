@@ -12,7 +12,7 @@ public:
 	{
 		enum class OptLevel
 		{
-			O0,O1,O2,O3
+			O0,O1,O2,O3,Oz
 		};
 
 		enum class EmitInfo

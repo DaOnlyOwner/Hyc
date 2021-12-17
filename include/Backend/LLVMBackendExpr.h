@@ -18,12 +18,25 @@ struct LLVMBackendInfo
 	llvm::IRBuilder<> builder;
 };
 
-typedef std::unordered_map<std::string, std::unordered_map<std::string, llvm::Value*>> stack_allocated_mem;
+struct StackAllocatedMem
+{
+	std::unordered_map<std::string, llvm::Value*> global_mem;
+	std::unordered_map<std::string, llvm::Value*> function_stack;
+
+	void enter_function(llvm::Function* func)
+	{
+		function_stack.clear();
+		for (auto& arg : func->args())
+		{
+			function_stack[arg.getName().str()] = &arg;
+		}
+	}
+};
 
 class LLVMBackendExpr : public IAstVisitor, public ValueStorage<llvm::Value*> 
 {
 public:
-	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc,stack_allocated_mem& mem)
+	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc,StackAllocatedMem& mem)
 		:scopes(sc),be(be), ValueStorage<llvm::Value*>(this),mem(mem) {}
 
 	llvm::Value* gen(Expr& expr)
@@ -35,14 +48,13 @@ public:
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
-	stack_allocated_mem& mem;
+	StackAllocatedMem& mem;
 	
 	bool handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op);
 	llvm::Function* get_curr_fn()
 	{
 		return be.builder.GetInsertBlock()->getParent();
 	}
-
 
 	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;

@@ -471,26 +471,30 @@ void TypeChecker::visit(ImplicitCastExpr& ice)
 void TypeChecker::visit(IfStmt& if_stmt)
 {
 	// TODO: nullptr needs to be a special type 
+	// TODO: Check in a separate file that all code paths return a value.
 	// E.g. t.is_nullptr() -> returns true if type t is nullptr.
-	scopes.descend();
 	check_type_is_bool(if_stmt.if_expr);
+	scopes.descend();
 	for (auto& p : if_stmt.if_stmts) p->accept(*this);
 	for (int i = 0; i<if_stmt.all_elif_stmts.size(); i++)
 	{
 		auto& elif = if_stmt.all_elif_stmts[i];
 		auto& elif_expr = if_stmt.elif_exprs[i];
-		scopes.descend();
 		check_type_is_bool(elif_expr);
+		scopes.descend();
 		for (auto& p : elif) p->accept(*this);
 	}
-	scopes.descend();
-	for (auto& p : if_stmt.else_stmts) p->accept(*this);
+	if (!if_stmt.else_stmts.empty())
+	{
+		scopes.descend();
+		for (auto& p : if_stmt.else_stmts) p->accept(*this);
+	}
 }
 
 void TypeChecker::visit(WhileStmt& while_stmt)
 {
-	scopes.descend();
 	check_type_is_bool(while_stmt.expr);
+	scopes.descend();
 	for (auto& p : while_stmt.stmts) p->accept(*this);
 }
 
@@ -511,6 +515,7 @@ void TypeChecker::visit(TernaryExpr& tern)
 
 void TypeChecker::visit(MatchStmt& match)
 {
+	NOT_IMPLEMENTED;
 	for (auto& case_ : match.match_cases)
 	{
 		scopes.descend();
@@ -526,6 +531,7 @@ void TypeChecker::visit(ScopeStmt& sc)
 {
 	scopes.descend();
 	for (auto& p : sc.stmts) p->accept(*this);
+	scopes.ascend();
 }
 
 bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op)
@@ -927,6 +933,8 @@ void check_type_repeat(NamespaceStmt& ns, Scopes& sc)
 		expand_scopes(ns, sc, n);
 		n = ns.stmts.size();
 		ns.accept(tc);
-		collect_members(ns, sc, n);
+		// Collect the members of the new structs (generic instantiation is done when pasting the new function)
+		instantiate_generic_repeat(ns, sc, n);
+		collect_members(ns, sc, n); 
 	}
 }

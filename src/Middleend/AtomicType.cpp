@@ -63,8 +63,8 @@ bool Type::is_predefined(const Scopes& sc) const
 
 std::optional<PredefinedType> Type::to_pred(const Scopes& sc) const
 {
-	if (!is_predefined) return {};
-	return sc.get_predefined_type(get_base_type());
+	if (!is_predefined(sc)) return {};
+	return std::make_optional(sc.get_predefined_type(get_base_type()));
 }
 
 
@@ -281,13 +281,14 @@ std::unique_ptr<TypeSpec> Type::to_ast() const
 
 		else if (st.first == TypeKind::Array)
 		{
-			uint64_t amount = std::get<ArrayType>(st.second).amount;
-			Token tk(Token::Specifier::Integer, std::to_string(amount));
+			/*uint64_t amount = std::get<ArrayType>(st.second).amount;
+			Token tk(Token::Specifier::, std::to_string(amount));
 			EvalIntegerResult eir;
 			eir.Spec = Primitive::Specifier::uint;
 			eir.amount_uint = amount;
 			auto ile = std::make_unique<IntegerLiteralExpr>(tk, eir);
-			to_build->push_inner(std::make_unique<ArrayTypeSpec>(std::move(ile), nullptr));
+			to_build->push_inner(std::make_unique<ArrayTypeSpec>(std::move(ile), nullptr));*/
+			NOT_IMPLEMENTED;
 		}
 
 	}

@@ -41,12 +41,11 @@ namespace
 		{
 			return nullptr;
 		}
-
-
+		return parsed;
 	}
 }
 
-int Pipeline::build(std::ifstream& input, const std::string& filename, const LLVMBackend::CompilerInfo& ci)
+int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo& ci)
 {
 	Scopes sc;
 	auto parsed = parse(filename);

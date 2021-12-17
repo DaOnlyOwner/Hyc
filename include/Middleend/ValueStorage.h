@@ -4,6 +4,7 @@
 
 #define RETURN(r) ret(r);return;
 #define RETURN_VAL(r,val) ret(r); return val;
+#define RETURN_WITH_TRUE(r) ret(r); return true;
 
 // TODO: pointer to derived, should be saved
 template<typename T>

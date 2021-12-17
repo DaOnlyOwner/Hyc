@@ -1,6 +1,5 @@
 #include "SymbolTable.h"
 #include "TypeCreator.h"
-#include "llvm/IR/Instructions.h"
 
 bool SymbolTable::add(CollectionStmt* cs)
 {
@@ -67,20 +66,6 @@ bool SymbolTable::add(DeclStmt* decl)
 {
 	return variables.insert({ decl->name.text,decl}).second;
 }
-
-//bool SymbolTable::add_to_existing(const std::string& name, AllocaInst* inst)
-//{
-//	auto it = variables.find(name);
-//	if (it == variables.end()) return false;
-//	it->second.inst = inst;
-//	return true;
-//}
-
-//AllocaInst* SymbolTable::get_alloca_inst(const std::string& name)
-//{
-//	auto it = variables.find(name);
-//
-//}
 
 CollectionStmt* SymbolTable::get_type(const std::string& name) const
 {

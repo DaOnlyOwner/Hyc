@@ -8,7 +8,7 @@ public:
 	std::string& get_format_str() { return out; }
 private:
 	// Geerbt über IAstVisitor
-	virtual void visit(FloatLiteralExpr& lit) override;
+	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;

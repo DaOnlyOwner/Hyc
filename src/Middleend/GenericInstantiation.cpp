@@ -199,10 +199,10 @@ void instantiate_generic(BaseTypeSpec& bt, Scopes& scopes, NamespaceStmt& ns)
 	gi.instantiate(bt);
 }
 
-void instantiate_generic_repeat(NamespaceStmt& ns, Scopes& sc)
+void instantiate_generic_repeat(NamespaceStmt& ns, Scopes& sc, size_t entry)
 {
 	GenericInst gi(sc, ns);
-	size_t n = 0;
+	size_t n = entry;
 	while (ns.stmts.size() > n)
 	{
 		n = ns.stmts.size();

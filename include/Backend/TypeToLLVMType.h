@@ -1,6 +1,5 @@
 #pragma once
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
-#include "AtomicType.h"
 
-llvm::Type* map_type(const Type& from);
+llvm::Type* map_type(const struct Type& from, const class Scopes& scopes, llvm::LLVMContext& ctxt);

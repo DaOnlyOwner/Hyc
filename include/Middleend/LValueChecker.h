@@ -25,8 +25,4 @@ private:
 	Scopes& scopes;
 };
 
-void check_lvalues(Scopes& sc, NamespaceStmt& ns)
-{
-	LValueChecker lvc(sc);
-	ns.accept(lvc);
-}
+void check_lvalues(Scopes& sc, NamespaceStmt& ns);

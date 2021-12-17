@@ -8,7 +8,7 @@ class Pipeline
 {
 public:
 	Pipeline() = default;
-	int build(std::ifstream& input, const std::string& filename,const LLVMBackend::CompilerInfo& ci);
+	int build(const std::string& filename,const LLVMBackend::CompilerInfo& ci);
 };
 
 

@@ -41,12 +41,15 @@ void ExpandScopes::visit(IfStmt& if_stmt)
 		scopes.ascend();
 	}
 
-	scopes.expand();
-	for (auto& else_stmt : if_stmt.elif_exprs)
+	if (!if_stmt.else_stmts.empty())
 	{
-		else_stmt->accept(*this);
+		scopes.expand();
+		for (auto& else_stmt : if_stmt.else_stmts)
+		{
+			else_stmt->accept(*this);
+		}
+		scopes.ascend();
 	}
-	scopes.ascend();
 }
 
 void ExpandScopes::visit(WhileStmt& while_stmt)

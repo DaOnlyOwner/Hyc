@@ -3,6 +3,7 @@
 #include "GenericInstantiation.h"
 #include <cassert>
 #include "ValuePtr.h"
+#include "Messages.h"
 
 std::pair<Type, bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns, bool instantiate_generic)
 {
@@ -49,14 +50,15 @@ void TypeCreator::visit(BaseTypeSpec& bt_spec)
 
 void TypeCreator::visit(ArrayTypeSpec& at_spec)
 {
-	uint64_t amount = at_spec.amount->eval_res.amount_uint;
-	if(at_spec.inner)
-	{
-		auto& type = get(at_spec.inner);
-		type.promote_array(amount);
-		RETURN(type);
-	}
-	RETURN(Type(amount));
+	NOT_IMPLEMENTED;
+	//uint64_t amount = at_spec.amount->eval_res.amount_uint;
+	//if(at_spec.inner)
+	//{
+	//	auto& type = get(at_spec.inner);
+	//	type.promote_array(amount);
+	//	RETURN(type);
+	//}
+	//RETURN(Type(amount));
 }
 
 void TypeCreator::visit(FptrTypeSpec& fptr)

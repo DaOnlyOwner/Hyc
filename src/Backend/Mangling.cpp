@@ -5,6 +5,7 @@
 
 std::string mangle(const FuncDeclStmt& decl)
 {
+	if (decl.name.text == "main") return "main";
 	std::string out = "";
 	if (std::find(decl.name.text.begin(), decl.name.text.end(), '<') != decl.name.text.end())
 	{

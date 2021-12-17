@@ -114,9 +114,10 @@ void TerminalOutput::visit(TernaryExpr& tern)
 	indent--;
 }
 
-void TerminalOutput::visit(FloatLiteralExpr& lit)
+void TerminalOutput::visit(DecimalLiteralExpr& lit)
 {
-	assert(false);
+	make_indent();
+	out += fmt::format("DecimalLiteralExpr: '{}', semantic_type='{}'", lit.lit.text, lit.sem_type.as_str());
 }
 
 void TerminalOutput::visit(IntegerLiteralExpr& lit)
@@ -215,11 +216,6 @@ void TerminalOutput::visit(FuncCallExpr& func_op)
 	indent++;
 	for (int i = 0; i < func_op.arg_list.size(); i++)
 	{
-		if (func_op.arg_list[i].moved)
-		{
-			make_indent();
-			out += "#\n";
-		}
 		func_op.arg_list[i].expr->accept(*this);
 	}
 	indent--;

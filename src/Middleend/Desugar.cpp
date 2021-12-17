@@ -42,7 +42,6 @@ void DesugarAccess::visit(FuncCallExpr& expr)
 		expr.from = std::move(bin_op->rh);
 		FuncCallArg fca;
 		fca.expr = std::move(transformed);
-		fca.moved = false;
 		expr.arg_list.insert(expr.arg_list.begin(), std::move(fca));
 	}
 

@@ -1,6 +1,6 @@
 #include "LLVMBackendStmt.h"
 #include "Mangling.h"
-#include "fmt/core.h"
+#include "fmt/color.h"
 #include "TypeToLLVMType.h"
 
 void LLVMBackendStmt::visit(IfStmt& if_stmt)
@@ -61,6 +61,7 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		if(else_bb->back().isTerminator())
 			be.builder.CreateBr(cont_bb);
 	}
+	insert_bb(cont_bb);
 }
 
 void LLVMBackendStmt::visit(WhileStmt& while_stmt)
@@ -80,25 +81,46 @@ void LLVMBackendStmt::visit(WhileStmt& while_stmt)
 
 void LLVMBackendStmt::visit(DeclStmt& decl_stmt)
 {
-	auto& fname = get_curr_fn()->getName().str();
 	auto alloc = create_alloca(decl_stmt.type, decl_stmt.name.text);
-	auto it = mem.find(fname);
-	if (it == mem.end())
+	mem.function_stack[decl_stmt.name.text] = alloc;
+	RETURN(alloc);
+}
+
+void LLVMBackendStmt::visit(FuncDeclStmt& func_decl)
+{
+	auto currfn = get_curr_fn();
+	int idx = 0;
+	for (auto& arg : currfn->args())
 	{
-		mem[fname] = { { decl_stmt.name.text,alloc } };
+		auto& p = func_decl.arg_list[idx];
+		auto alloc = get(p);
+		be.builder.CreateStore(&arg, alloc);
+		idx++;
 	}
-	else
-	{
-		it->second[decl_stmt.name.text] = alloc;
-	}
+}
+
+void LLVMBackendStmt::visit(FuncDefStmt& func_def)
+{
+	auto func = be.mod.getFunction(mangle(*func_def.decl));
+	auto entry_bb = llvm::BasicBlock::Create(be.context, "entry", func);
+	be.builder.SetInsertPoint(entry_bb);
+	mem.enter_function(func);
+	func_def.decl->accept(*this);
+	for (auto& p : func_def.body) p->accept(*this);
+}
+
+void LLVMBackendStmt::visit(ReturnStmt& return_stmt)
+{
+	// TODO: Support return of void
+	be.builder.CreateRet(expr_getter.gen(*return_stmt.returned_expr));
 }
 
 
 llvm::AllocaInst* LLVMBackendStmt::create_alloca(const Type& t, const std::string& name)
 {
-	auto mapped = map_type(t);
+	auto mapped = map_type(t,scopes,be.context);
 	auto f = be.builder.GetInsertBlock()->getParent();
 	llvm::IRBuilder<> tmp(&f->getEntryBlock(), f->getEntryBlock().begin());
-	tmp.CreateAlloca(mapped,0,name);
+	return tmp.CreateAlloca(mapped,0,name);
 }
 

@@ -38,6 +38,18 @@ PrefixOperation<Expr> name{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)\
 		return ast_as<Expr>(std::make_unique<IntegerLiteralExpr>(token,eval_res,IntegerLiteralType::type));\
 	} };
 
+#define DEF_DECIMAL_LIT(name,type,text_)\
+PrefixOperation<Expr> name{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)\
+		{\
+			auto [succ,decimalVal] = eval_decimal_val(token,DecimalLiteralType::type);\
+			if (!succ)\
+			{\
+				auto descr = Error::FromToken(token);\
+				descr.Message = fmt::format(("{} doesn't fit into a" text_), token.text);\
+				Error::SyntacticalError(descr);\
+			}\
+			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::type,decimalVal));\
+		}}
 
 #define ADD_OP(op,name) expr_parser.add_operation(op,name)
 
@@ -50,14 +62,17 @@ namespace
 		static bool map_to_signed[(int)IntegerLiteralType::Count] = { false,false,false,false,true,true,true,true };
 		std::string integer_text = token.text;
 		if (integer_text.back() == 'i'
-			|| integer_text.back() == 'ui'
 			|| integer_text.back() == 'h'
-			|| integer_text.back() == 'uh'
 			|| integer_text.back() == 's'
-			|| integer_text.back() == 'us'
-			|| integer_text.back() == 'c'
-			|| integer_text.back() == 'uc')
+			|| integer_text.back() == 'c')
 			integer_text.pop_back();
+
+		else if (ilt == IntegerLiteralType::UInt || ilt == IntegerLiteralType::UChar || ilt==IntegerLiteralType::UHalf)
+		{
+			integer_text.pop_back();
+			integer_text.pop_back();
+		}
+
 		errno = 0;
 		auto val = strtoull(integer_text.c_str(), nullptr, 0);
 		int amount_bits = map_to_bitwidth[(int)ilt];
@@ -102,22 +117,13 @@ namespace
 	DEF_INTEGER_LIT(short_lit, Short);
 	DEF_INTEGER_LIT(char_lit, Char);
 
-	PrefixOperation<Expr> float_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
-		{
-			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Float));
-		}
-	};
+	DEF_DECIMAL_LIT(float_lit, Float, "float");
+	DEF_DECIMAL_LIT(double_lit, Double, "double");
 
-	PrefixOperation<Expr> double_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
-		{
-			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Double));
-		}
-	};
 
-	PrefixOperation<Expr> quad_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)
+	PrefixOperation<Expr> quad_lit{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs) -> uptr<Expr>
 		{
 			NOT_IMPLEMENTED;
-			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::Quad));
 		}
 	};
 
@@ -153,12 +159,6 @@ namespace
 			while (l.lookahead(1).type != Token::Specifier::RParenR && l.lookahead(1).type != Token::Specifier::Eof)
 			{
 				FuncCallArg arg;
-				if (l.lookahead(1).type == Token::Specifier::Hashtag)
-				{
-					l.eat();
-					arg.moved = true;
-				}
-				else arg.moved = false;
 				arg.expr = parser.parse();
 				arg_list.push_back(mv(arg));
 				if (l.lookahead(1).type == Token::Specifier::Comma)
@@ -175,6 +175,11 @@ namespace
 			auto expr = parser.parse();
 			l.match_token(Token::Specifier::BracketR);
 			return static_cast<uptr<Expr>>(std::make_unique<ArraySubscriptExpr>(mv(lh), mv(expr)));
+		}
+		else
+		{
+			assert(false);
+			return uptr<Expr>(nullptr);
 		}
 	} };
 	DEF_BIN_OP(member, Group2, false);
@@ -367,7 +372,8 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 			Token::Specifier::Short,
 			Token::Specifier::UShort>(); // integer
 		tkns.match_token(Token::Specifier::BracketR); // ]
-		auto [succ, res] = eval_integer_val(integer,specToIT[integer.type]);
+		auto it = specToIT[integer.type];
+		auto [succ, res] = eval_integer_val(integer,it);
 		if (!succ)
 		{
 			auto descr = Error::FromToken(integer);
@@ -375,7 +381,7 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 			Error::SyntacticalError(descr);
 		}
 
-		auto integerLiteral = std::make_unique<IntegerLiteralExpr>(integer, res);
+		auto integerLiteral = std::make_unique<IntegerLiteralExpr>(integer, res,it);
 		return std::make_unique<ArrayTypeSpec>(mv(integerLiteral), parse_type_spec_part());
 	}
 	else return nullptr;
@@ -520,6 +526,7 @@ std::unique_ptr<Stmt> Parser::parse_allowed_namespace_stmt()
 		return parse_namespace_stmt();
 	else if (tkns.lookahead(1).type == Token::Specifier::KwUnion)
 		return parse_union_def();
+	else return parse_decl_stmt();
 	auto descr = Error::FromToken(tkns.lookahead(1));
 	descr.Message = "Expected a declaration statement, a struct or union definition statement or a namespace definition statement";
 	descr.Hint = "Function definitions are not allowed inside those statements, they need to be top level definitions";

@@ -22,26 +22,11 @@ public:
 	SymbolTable(SymbolTable&& other) noexcept= default;
 	SymbolTable& operator=(SymbolTable&& other) = default;
 
-	/*Variable* add(Variable* var) {
-		return insert_into(variables, var, var->name);
-	}
-	Function* add(Function* fn);
-	Type* add(Type* mt) { 
-		return insert_into(types, mt, mt->as_str()); // This is just the base case e.g. struct A -> "A" gets inserted, never a pointer type etc.
-	}
-	Variable* get_var(const std::string& name)
-	{
-		auto it = variables.find(name);
-		if (it == variables.end()) return nullptr;
-		return it->second.get();
-	}*/
-
 	bool add(CollectionStmt* cs);
 
 	bool add(FuncDefStmt* fn);
 	bool add(CollectionStmt* for_coll, DeclStmt* decl);
 	bool add(DeclStmt* decl);
-	//bool add_to_existing(const std::string&, class AllocaInst*);
 
 	CollectionStmt* get_type(const std::string& name) const;
 

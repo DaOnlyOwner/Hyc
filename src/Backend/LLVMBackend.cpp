@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include "fmt/color.h"
 #include <system_error>
+#include "llvm/Support/raw_ostream.h"
 
 namespace
 {
@@ -22,6 +23,27 @@ namespace
 	{
 		return str.substr(0, str.find(delim));
 	}
+
+	int emit_ir(const std::string& filename, const llvm::Module& mod)
+	{
+		std::error_code ec;
+		auto llfilename = fmt::format("{}.ll", get_before_delim(filename, '.'));
+		llvm::raw_fd_ostream dest(llfilename, ec, llvm::sys::fs::OF_None);
+		mod.print(dest, nullptr);
+		return 0;
+	}
+
+	int emit_obj(const std::string& filename,llvm::TargetMachine* target_machine,llvm::Module& mod)
+	{
+		std::error_code ec;
+		auto ofilename = fmt::format("{}.o", get_before_delim(filename, '.'));
+		llvm::raw_fd_ostream dest(ofilename, ec, llvm::sys::fs::OF_None);
+		llvm::legacy::PassManager leg_pm;
+		target_machine->addPassesToEmitFile(leg_pm, dest, nullptr, llvm::CGFT_ObjectFile);
+		leg_pm.run(mod);
+		return 0;
+	}
+
 }
 
 
@@ -32,13 +54,12 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 		{CompilerInfo::OptLevel::O0,llvm::PassBuilder::OptimizationLevel::O0},
 		{CompilerInfo::OptLevel::O1,llvm::PassBuilder::OptimizationLevel::O1},
 		{CompilerInfo::OptLevel::O2,llvm::PassBuilder::OptimizationLevel::O2},
-		{CompilerInfo::OptLevel::O3,llvm::PassBuilder::OptimizationLevel::O3}
+		{CompilerInfo::OptLevel::O3,llvm::PassBuilder::OptimizationLevel::O3},
+		{CompilerInfo::OptLevel::Oz,llvm::PassBuilder::OptimizationLevel::Oz}
 	};
-	llvm::InitializeAllTargetInfos();
-	llvm::InitializeAllTargets();
-	llvm::InitializeAllTargetMCs();
-	llvm::InitializeAllAsmParsers();
-	llvm::InitializeAllAsmPrinters();
+
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmPrinter();
 
 	std::string target_triple;
 	if (ci.target.has_value())
@@ -58,7 +79,7 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 		return 1;
 	}
 
-	llvm_collect_funcs(ns, be.mod, be.context);
+	llvm_collect_funcs(ns, be.mod, be.context,scopes);
 
 	llvm::LoopAnalysisManager lam;
 	llvm::FunctionAnalysisManager fam;
@@ -79,41 +100,36 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	be.mod.setDataLayout(target_machine->createDataLayout());
 	be.mod.setTargetTriple(target_triple);
 
-	llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(to_llvm[ci.opt_lvl]);
-	
-
-
 	ns.accept(stmt_gen);
 #ifndef NDEBUG
-	bool b = llvm::verifyModule(be.mod);
-	if (!b)
+	auto& outstream = llvm::outs();
+	bool b = llvm::verifyModule(be.mod,&outstream);
+	if (b)
 	{
 		fmt::print(fmt::fg(fmt::color::dark_red), "Compilerbug, aborting\n");
+		emit_ir("faulty.ll",be.mod);
 		return 2;
 	}
 #endif
-	mpm.run(be.mod, mam);
+	if (ci.opt_lvl != CompilerInfo::OptLevel::O0)
+	{
+		llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(to_llvm[ci.opt_lvl]);
+		mpm.run(be.mod, mam);
+	}
 
 	std::error_code ec;
 	if (ec)
 	{
 		fmt::print(fmt::fg(fmt::color::orange_red), "Couldn't open file '{}' with write access\n", filename);
+		return 1;
 	}
 	if (ci.emit_info == CompilerInfo::EmitInfo::EmitIRCode)
 	{
-		auto llfilename = fmt::format("{}.ll", get_before_delim(filename, '.'));
-		llvm::raw_fd_ostream dest(llfilename, ec, llvm::sys::fs::OF_None);
-		be.mod.print(dest, nullptr);
-		return 0;
+		return emit_ir(filename, be.mod);
 	}
 
 	else if (ci.emit_info == CompilerInfo::EmitInfo::EmitObjCode)
 	{
-		auto ofilename = fmt::format("{}.o", get_before_delim(filename, '.'));
-		llvm::raw_fd_ostream dest(ofilename, ec, llvm::sys::fs::OF_None);
-		llvm::legacy::PassManager leg_pm;
-		target_machine->addPassesToEmitFile(leg_pm, dest, nullptr, llvm::CGFT_ObjectFile);
-		leg_pm.run(be.mod);
-		return 0;
+		return emit_obj(filename, target_machine, be.mod);
 	}
 }

@@ -74,6 +74,8 @@ private:
 			table(std::move(table)) {}
 		int64_t father;
 		SymbolTable table;
+		std::vector<int64_t> children{};
+		int current_child = 0;
 	};
 
 	SymbolTable top_level;

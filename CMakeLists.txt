@@ -29,17 +29,20 @@ set(TARGET_INC_DIRS ${CMAKE_SOURCE_DIR}/include/Frontend ${CMAKE_SOURCE_DIR}/inc
 ${CMAKE_SOURCE_DIR}/include/Backend ${CMAKE_SOURCE_DIR}/include/Tools ${CMAKE_SOURCE_DIR}/lib/Re-flex/include)
 
 find_package(LLVM REQUIRED CONFIG)
-llvm_map_components_to_libnames(LLVM_LIBS core support target)
-
+llvm_map_components_to_libnames(LLVM_LIBS 
+support
+analysis
+passes
+core
+X86Info
+X86Desc
+X86CodeGen)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Here: ${LLVM_DIR}")
 message(STATUS "Linking to LLVM libs: ${LLVM_LIBS}")
 
-add_subdirectory(tests)
+#add_subdirectory(tests)
 add_subdirectory(lib/fmt)
-
-
-
 
 add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 separate_arguments(LLVM_DEF_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
@@ -47,8 +50,7 @@ add_definitions(${LLVM_DEF_LIST})
 add_executable(Hyc ${FRONTEND_SRC} ${MIDDLEEND_SRC} ${BACKEND_SRC}
 ${TOOLS_SRC} ${REFLEX_SRC} ${FRONTEND_HEADERS} ${MIDDLEEND_HEADERS} ${BACKEND_HEADERS} ${TOOLS_HEADERS}  src/main.cpp)
 
-set_property(TARGET Hyc PROPERTY CXX_STANDARD 17)
-set_property(TARGET Hyc PROPERTY CXX_STANDARD_REQUIRED ON)
+target_compile_features(Hyc PRIVATE cxx_std_17)
 
 
 source_group("Frontend\\Source Files" FILES ${FRONTEND_SRC})

@@ -40,8 +40,51 @@ TODO:
   overloaded:
   foo* operator#(foo* a, foo* b){}
 - const can only be defined in front of a type, no const ptrs etc!
+- no array type -> int[3] has type int*!
+- special function syntax:
+I want to to something like this:
+gen_vec().map().reduce();
+desugared:
+reduce(map(gen_vec()))
+
+
+
+- lambda expressions:
+type declaration: [a,b](int,int)->void 
+e.g. 
+lambda0 := [a,b](int arg0,int arg2)->int(return type optional){if (a == 0) return b;}
+lambda0..fn(3,4);
+when seen desugars into:
+struct "_int,int"
+{
+   int c0;
+   int c1;
+   fptr(int,int;int) fn;
+}
+
+int "_int,intf0"("_int,int"* in, int arg0, int arg1) <- if "_int,intf0" with the respective arguments already exists, bump to "_int,intf1"
+{
+   if(in->c0 == 0) return in->c1;
+} 
+and at the calling site:
+"_int,int" lambda0;
+lambda0.a = a;
+lambda0.b = b;
+lambda0.fn = "_int,intf0"
+lambda0.fn(3,4);
+one can save lambdas:
+struct A
+{
+	[int,int](int,int)->int l;
+}
+A a;
+a.l = [a,b](int,int){return 0;}
+a.l.c0 <-- has value of a
+a.l.c1 <-- has value of b
+calling it:
+a.l..fn(3,4); <-- the .. avoids the desugaring into fn(&a.l,3,4);
+similarly if l would be a pointer: a.l->>f(3,4) avoids the above mentioned desugaring. 
   
-- default value init in structs. MAYBE
 - unions:
 union A
 {

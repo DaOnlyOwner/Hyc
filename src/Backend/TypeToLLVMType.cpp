@@ -1,10 +1,14 @@
 #include "TypeToLLVMType.h"
 #include "Scopes.h"
 #include "Messages.h"
+#include "AtomicType.h"
+#include "Scopes.h"
+#include "llvm/IR/DerivedTypes.h"
 
 llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& ctxt)
 {
-	llvm::Type* out;
+	llvm::Type* out = nullptr;
+	//static_assert(std::is_base_of_v<llvm::Type, llvm::IntegerType>, "LOLWTF");
 	for (auto& [kind, var] : from.stored_types)
 	{
 		switch (kind)
@@ -18,7 +22,7 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 				switch (pd)
 				{
 				case PredefinedType::Bool:
-					out = llvm::Type::getInt1Ty(ctxt);
+					out = static_cast<llvm::Type*>(llvm::Type::getInt1Ty(ctxt));
 					break;
 				case PredefinedType::UChar:
 				case PredefinedType::Char:
@@ -55,10 +59,11 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 			{
 				NOT_IMPLEMENTED;
 			}
-
 		}
+		break;
 		case TypeKind::Pointer:
 			out = out->getPointerTo();
+			break;
 		case TypeKind::Array:
 			NOT_IMPLEMENTED;
 		case TypeKind::FunctionPointer:

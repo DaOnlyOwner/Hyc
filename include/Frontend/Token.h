@@ -143,6 +143,7 @@ struct Token
 			return Specifier::Slash;
 		default:
 			assert(false);
+			return (Specifier)0;
 		}
 	}
 

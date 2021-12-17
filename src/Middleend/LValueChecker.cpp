@@ -73,3 +73,9 @@ void LValueChecker::visit(TernaryExpr& tern)
 	bool trd = get(tern.trd);
 	RETURN(snd && trd);
 }
+
+void check_lvalues(Scopes& sc, NamespaceStmt& ns)
+{
+	LValueChecker lvc(sc);
+	ns.accept(lvc);
+}
