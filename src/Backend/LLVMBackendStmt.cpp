@@ -99,6 +99,11 @@ void LLVMBackendStmt::visit(FuncDeclStmt& func_decl)
 	}
 }
 
+void LLVMBackendStmt::visit(ExprStmt& expr_stmt)
+{
+	expr_getter.gen(*expr_stmt.expr);
+}
+
 void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 {
 	auto func = be.mod.getFunction(mangle(*func_def.decl));

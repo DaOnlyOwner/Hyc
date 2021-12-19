@@ -23,7 +23,7 @@ namespace
 
 void Error::SemanticError(const ErrorDescription& descr)
 {
-	print(descr, fmt::color::red, "Semantic Error");
+	print(descr, fmt::color::orange_red, "Semantic Error");
 	Error = true;
 }
 
@@ -39,7 +39,7 @@ void Error::Warning(const ErrorDescription& descr)
 
 void Error::SyntacticalError(const ErrorDescription& descr)
 {
-	print(descr, fmt::color::red, "Syntax Error");
+	print(descr, fmt::color::orange_red, "Syntax Error");
 	Error = true;
 	throw SyntaxErrorException();
 }

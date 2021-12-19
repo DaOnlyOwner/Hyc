@@ -202,7 +202,6 @@ bool LLVMBackendExpr::handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinO
 			assert(plh == PredefinedType::Bool);
 			RETURN_WITH_TRUE(be.builder.CreateLogicalAnd(lhs, rhs));
 
-		case Token::Specifier::Hashtag:
 		case Token::Specifier::Equal:
 			RETURN_WITH_TRUE(be.builder.CreateStore(rhs, lhs));
 
@@ -211,6 +210,40 @@ bool LLVMBackendExpr::handle_pred(llvm::Value* lhs, llvm::Value* rhs, const BinO
 			break;
 		}
 		return true;
+	}
+	return false;
+}
+
+bool LLVMBackendExpr::handle_member_acc(const BinOpExpr& bin_op)
+{
+	if (bin_op.op.type == Token::Specifier::MemAccess || bin_op.op.type == Token::Specifier::Dot)
+	{
+		bool tmp = should_load;
+		bool ims_tmp = is_member_start;
+		is_member_start = false;
+		// Don't load ident even if we are on the rhs, we need the pointer to it.
+		should_load = false;
+		auto lhs = get(*bin_op.lh);
+		should_load = tmp;
+		auto rh_expr = dynamic_cast<IdentExpr*>(bin_op.rh.get());
+		size_t idx = scopes.get_decl_idx_for(bin_op.lh->sem_type.get_base_type(), rh_expr->name.text);
+		assert(idx != std::numeric_limits<size_t>::max());
+		auto addr = be.builder.CreateStructGEP(lhs, idx);
+		if (should_load && ims_tmp)
+		{
+			RETURN_WITH_TRUE(be.builder.CreateLoad(addr));
+		}
+		RETURN_WITH_TRUE(addr)
+	}
+
+	return false;
+}
+
+bool LLVMBackendExpr::handle_assign(llvm::Value* lhs, llvm::Value* rhs, const BinOpExpr& bin_op)
+{
+	if (bin_op.op.type == Token::Specifier::Equal)
+	{
+		RETURN_WITH_TRUE(be.builder.CreateStore(rhs, lhs));
 	}
 	return false;
 }
@@ -236,9 +269,18 @@ void LLVMBackendExpr::visit(IntegerLiteralExpr& lit)
 
 void LLVMBackendExpr::visit(BinOpExpr& bin_op)
 {
-	auto lhs = get(bin_op.lh);
-	auto rhs = get(bin_op.rh);
-	handle_pred(lhs, rhs, bin_op);
+	bool handled = handle_member_acc(bin_op);
+	if (!handled)
+	{
+		is_member_start = true;
+		should_load = false;
+		auto lhs = get(bin_op.lh);
+		should_load = true;
+		is_member_start = true;
+		auto rhs = get(bin_op.rh);
+		handled = handled || handle_pred(lhs, rhs, bin_op);
+		handled = handled || handle_assign(lhs, rhs, bin_op);
+	}
 }
 
 void LLVMBackendExpr::visit(PrefixOpExpr& pre_op)
@@ -262,7 +304,14 @@ void LLVMBackendExpr::visit(IdentExpr& ident)
 		it = mem.global_mem.find(ident.name.text);
 		assert(it != mem.global_mem.end());
 	}
-	RETURN(be.builder.CreateLoad(it->second, ident.name.text));
+	if (!should_load)
+	{
+		RETURN(it->second);
+	}
+	else
+	{
+		RETURN(be.builder.CreateLoad(it->second, ident.name.text));
+	}
 }
 
 void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
@@ -281,7 +330,7 @@ void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
 	auto from = get(ice.expr);
 	auto from_pd_maybe = ice.expr->sem_type.to_pred(scopes);
 	auto to_pd_maybe = ice.sem_type.to_pred(scopes);
-	llvm::Type* to_t = map_type(ice.expr->sem_type,scopes, be.context);
+	llvm::Type* to_t = map_type(ice.sem_type,scopes, be.context);
 	if (from_pd_maybe.has_value() && to_pd_maybe.has_value())
 	{
 		llvm::Instruction::CastOps co;
@@ -291,6 +340,8 @@ void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
 		int to_w = (int)to_pd;
 		if (from_w + 4 == to_w) // Cast from e.g. uint to int -> not possible in llvm
 			return;
+
+		// TODO: Casts: See here: https://llvm.org/doxygen/classllvm_1_1CastInst.html
 		if (Type::is_unsigned_integer(from_pd) && Type::is_decimal(to_pd))
 			co = llvm::Instruction::CastOps::UIToFP;
 		else if (Type::is_signed_integer(from_pd) && Type::is_decimal(to_pd))
@@ -315,7 +366,8 @@ void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
 			assert(false);
 			return;
 		}
-		RETURN(be.builder.CreateCast(co,from,to_t));
+		RETURN(be.builder.CreateCast(co, from, to_t));
+	}
 	}
 	assert(false); // Only basic types need to be implicitly casted.
 }

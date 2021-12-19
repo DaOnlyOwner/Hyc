@@ -4,14 +4,21 @@
 #include <unordered_map>
 #include <string>
 
+std::string get_before_delim(const std::string& str, char delim)
+{
+	return str.substr(0, str.find(delim));
+}
+
 int execute(int argc, char** argv)
 {
 	cxxopts::Options options("Hyc", "The compiler for Hyc");
 	options.add_options()
 		("O,opt", "Optimization level (0-3 or z)", cxxopts::value<std::string>()->default_value("1"))
-		("e,emit", "Emit (specify 'ir' for IR output or 'obj' for object file output)", cxxopts::value<std::string>()->default_value("obj"))
+		("e,emit", "Emit (specify 'ir' for IR output, 'obj' for object file output or 'ast' for AST output)", cxxopts::value<std::string>()->default_value("obj"))
 		("t,target_triple", "The target triple that should be targeted", cxxopts::value<std::string>())
 		("f,file", "The input file", cxxopts::value<std::string>())
+		("o,output", "The output file", cxxopts::value<std::string>())
+		("stdout", "Write everything to stdout, takes precedence to the -o option")
 		("h,help", "Print the help text");
 	
 	options.parse_positional({ "f" });
@@ -76,6 +83,7 @@ int execute(int argc, char** argv)
 		ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitIRCode;
 	}
 	else if (ei == "obj") ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitObjCode;
+	else if (ei == "ast") ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitAST;
 	else
 	{
 		fmt::print(fmt::fg(fmt::color::orange_red), "Value '{}' for option -e not recognized",ei);
@@ -88,22 +96,30 @@ int execute(int argc, char** argv)
 		return 1;
 	}
 
+	auto filename = result["f"].as<std::string>();
+
+	if (result.count("o") == 0)
+	{
+		std::string out = "";
+		if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitIRCode)
+		{
+			out = fmt::format("{}.ll", get_before_delim(filename, '.'));
+		}
+		else if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitObjCode)
+		{
+			out = fmt::format("{}.o", get_before_delim(filename, '.'));
+		}
+		ci.filename_output = out;
+	}
+
+	ci.emit_to_stdout = result.count("stdout") > 0;
+
 	Pipeline pl;
-	return pl.build(result["f"].as<std::string>(), ci);
+	return pl.build(filename, ci);
 }
-// TODO: Correctness: Handle user errors
 
 int main(int argc, char** argv)
 {
-#ifndef NDEBUG
-	auto fn = "C:/Users/jan/Desktop/Projects/Hyc/tests/test.txt";
-	Pipeline pl;
-	LLVMBackend::CompilerInfo ci;
-	ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitObjCode;
-	ci.opt_lvl = LLVMBackend::CompilerInfo::OptLevel::O0;
-	return pl.build(fn, ci);
-#else 
 	return execute(argc, argv);
-#endif
 }
 

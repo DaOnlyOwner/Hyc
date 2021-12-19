@@ -206,7 +206,7 @@ namespace
 		return std::make_unique<TernaryExpr>(mv(lh), mv(snd), mv(trd));
 	} };
 
-	DEF_BIN_OP(assignment_move_etc, Group16, true);
+	DEF_BIN_OP(assignment_etc, Group16, true);
 	DEF_PREFIX_OP(throw_, Group16);	
 }
 
@@ -249,19 +249,18 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::DoubleAmpersand, land);
 	ADD_OP(Token::Specifier::DoubleOr, lor);
 	ADD_OP(Token::Specifier::QuestionMark, if_expr);
-	ADD_OP(Token::Specifier::Equal, assignment_move_etc);
-	ADD_OP(Token::Specifier::Hashtag, assignment_move_etc);
-	ADD_OP(Token::Specifier::PlusEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::MinusEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::AsterixEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::SlashEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::SlEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::SrEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::PercentEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::AmpersandEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::CaretEqual, assignment_move_etc);
-	ADD_OP(Token::Specifier::OrEqual, assignment_move_etc);
-	// TODO: Add #*, #/, #+ etc.
+	ADD_OP(Token::Specifier::Equal, assignment_etc);
+	ADD_OP(Token::Specifier::Hashtag, assignment_etc);
+	ADD_OP(Token::Specifier::PlusEqual, assignment_etc);
+	ADD_OP(Token::Specifier::MinusEqual, assignment_etc);
+	ADD_OP(Token::Specifier::AsterixEqual, assignment_etc);
+	ADD_OP(Token::Specifier::SlashEqual, assignment_etc);
+	ADD_OP(Token::Specifier::SlEqual, assignment_etc);
+	ADD_OP(Token::Specifier::SrEqual, assignment_etc);
+	ADD_OP(Token::Specifier::PercentEqual, assignment_etc);
+	ADD_OP(Token::Specifier::AmpersandEqual, assignment_etc);
+	ADD_OP(Token::Specifier::CaretEqual, assignment_etc);
+	ADD_OP(Token::Specifier::OrEqual, assignment_etc);
 	//ADD_OP(Token::Specifier::KwThrow, throw_);
 	ADD_OP(Token::Specifier::Ident, ident);
 	ADD_OP(Token::Specifier::Int, int_lit);
@@ -299,7 +298,7 @@ std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 {
 	auto la2 = tkns.lookahead(2).type;
 	std::unique_ptr<TypeSpec> type = nullptr;
-	if (la2 != Token::Specifier::DeclCpy && la2 != Token::Specifier::DeclMv && la2 != Token::Specifier::Colon)
+	if (la2 != Token::Specifier::DeclCpy && la2 != Token::Specifier::Colon)
 		type = parse_type_spec(); // type
 	auto& ident = tkns.match_token(Token::Specifier::Ident); // Ident
 	auto la1 = tkns.lookahead(1).type;
@@ -310,14 +309,6 @@ std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 		expr = expr_parser.parse();
 		tkns.match_token(Token::Specifier::Semicolon); // ;
 		return std::make_unique<DeclCpyStmt>(std::move(type), std::move(ident), std::move(expr));
-	}
-
-	else if (la1 == Token::Specifier::DeclMv)
-	{
-		tkns.eat(); // :#
-		expr = expr_parser.parse();
-		tkns.match_token(Token::Specifier::Semicolon); // ;
-		return std::make_unique<DeclMvStmt>(std::move(type), std::move(ident), std::move(expr));
 	}
 
 	else if (la1 == Token::Specifier::Colon)
@@ -849,10 +840,8 @@ std::unique_ptr<Stmt> Parser::parse_allowed_func_stmt(bool in_loop)
 			|| la2 == Token::Specifier::Less // e.g. List<
 			|| la2 == Token::Specifier::BracketL // e.g. int[
 			|| la2 == Token::Specifier::DeclCpy // e.g. a :=
-			|| la2 == Token::Specifier::DeclMv // e.g. a :#
 			|| la2 == Token::Specifier::Colon // e.g. a :
 			|| la3 == Token::Specifier::DeclCpy // int a :=
-			|| la3 == Token::Specifier::DeclMv // int b :#
 			|| la3 == Token::Specifier::Colon)  // int c : 
 			return parse_decl_operator_stmt(); // Also parses decl
 		else if (la2 == Token::Specifier::Ident) // int a;

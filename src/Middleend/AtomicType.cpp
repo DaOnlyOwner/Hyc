@@ -220,7 +220,7 @@ std::string Type::as_str_for_mangling() const
 			out += std::get<CollectionStmt*>(var)->name.text;
 			break;
 		case TypeKind::Pointer:
-			out += "_p_";
+			out += "$";
 			break;
 		case TypeKind::FunctionPointer:
 			const FunctionPointerType& fp = std::get<FunctionPointerType>(var);
@@ -228,14 +228,14 @@ std::string Type::as_str_for_mangling() const
 			if (fp.args.size() > 0)
 			{
 				auto& arg_first = fp.args[0];
-				args += arg_first->as_str();
+				args += arg_first->as_str_for_mangling();
 				for (int i = 1; i < fp.args.size(); i++)
 				{
 					auto& arg = fp.args[i];
-					args += fmt::format("{}", arg->as_str());
+					args += fmt::format("{}", arg->as_str_for_mangling());
 				}
 			}
-			out += fmt::format("_fptr{}_{}_", args, fp.return_type->as_str());
+			out += fmt::format("%fptr{}_{}%", args, fp.return_type->as_str_for_mangling());
 			break;
 		}
 	}

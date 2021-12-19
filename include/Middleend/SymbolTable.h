@@ -25,12 +25,14 @@ public:
 	bool add(CollectionStmt* cs);
 
 	bool add(FuncDefStmt* fn);
-	bool add(CollectionStmt* for_coll, DeclStmt* decl);
+	bool add(CollectionStmt* for_coll, DeclStmt* decl, size_t idx);
 	bool add(DeclStmt* decl);
 
 	CollectionStmt* get_type(const std::string& name) const;
 
 	DeclStmt* get_decl_for(CollectionStmt* bt, const std::string& name);
+
+	size_t get_decl_idx_for(CollectionStmt* cs, const std::string& name);
 
 	DeclStmt* get_variable(const std::string& name);
 
@@ -45,30 +47,17 @@ public:
 		return nullptr;
 	}
 
-	//class AllocaInst* get_alloca_inst(const std::string& name);
-
-	/*
-	std::vector<Function> get_funcs(const std::string& name)
-	{
-		auto it = functions.find(name);
-		if (it == functions.end()) return {};
-		std::vector<Function> out;
-		std::transform(it->second.begin(), it->second.end(), std::back_inserter(out), [](auto& func) {return *func; });
-		return out;
-	}*/
-
 private:
+	struct member
+	{
+		DeclStmt* stmt;
+		size_t idx;
+	};
 
 	std::unordered_map<std::string, CollectionStmt*> collections;
-	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, DeclStmt*>> decl_in_collection;
+	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, member>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
-
-	struct named_values
-	{
-		DeclStmt* decl;
-		class AllocaInst* inst;
-	};
 
 	std::unordered_map<std::string, DeclStmt*> variables;
 };

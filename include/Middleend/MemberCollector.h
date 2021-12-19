@@ -17,8 +17,9 @@ private:
 	
 	Scopes& scopes;
 	NamespaceStmt& ns;
-	CollectionStmt* current_collection;
+	CollectionStmt* current_collection = nullptr;
 	size_t entry = 0;
+	size_t idx = 0;
 };
 
 void collect_members(NamespaceStmt& ns, Scopes& sc);

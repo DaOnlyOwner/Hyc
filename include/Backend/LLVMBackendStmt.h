@@ -1,10 +1,6 @@
 #pragma once
 #include "Ast.h"
 #include "LLVMBackendExpr.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Function.h"
 #include "ValueStorage.h"
 
 class LLVMBackendStmt : public IAstVisitor, public ValueStorage<llvm::AllocaInst*>
@@ -35,6 +31,7 @@ private:
 	virtual void visit(FuncDefStmt& func_def) override;
 	virtual void visit(ReturnStmt& return_stmt) override;
 	virtual void visit(FuncDeclStmt& func_decl) override;
+	virtual void visit(ExprStmt& expr_stmt) override;
 
 	StackAllocatedMem mem;
 	LLVMBackendInfo& be;

@@ -9,8 +9,9 @@ public:
 		:scopes(sc){}
 
 private:
-	virtual void visit(struct NamespaceStmt& namespace_stmt) override;
-	virtual void visit(struct CollectionStmt& coll_def) override;
+	virtual void visit(NamespaceStmt& namespace_stmt) override;
+	virtual void visit(CollectionStmt& coll_def) override;
+	virtual void visit(FuncDefStmt& def) override;
 	Scopes& scopes;
 };
 

@@ -18,12 +18,15 @@ public:
 		enum class EmitInfo
 		{
 			EmitObjCode,
-			EmitIRCode
+			EmitIRCode,
+			EmitAST
 		};
 
 		EmitInfo emit_info;
 		OptLevel opt_lvl;
 		std::optional<std::string> target;
+		std::string filename_output;
+		bool emit_to_stdout;
 	};
 
 	LLVMBackend(NamespaceStmt& ns, Scopes& scopes)

@@ -76,9 +76,13 @@ public:
 	void trigger_6_e21(const Token& from, const std::string& args);
 	void trigger_6_e22(const Token& from, const std::string& expr, const std::string& t);
 
+	void trigger_6_e23(const Token& from, const std::string& expr, const std::string& t);
+
 
 	void trigger_7_e1(const Token& from, const std::string& coll_name);
 	void trigger_8_e1(const Token& from, const std::string& expr);
+
+	void trigger_9_e1(const Token& from, const std::string& embedded_in);
 
 private:
 	Messages() = default;

@@ -25,6 +25,10 @@ void DeclarationsCollectorTypes::visit(CollectionStmt& coll_def)
 	add(*this,scopes, coll_def, coll_def.name);
 }
 
+void DeclarationsCollectorTypes::visit(FuncDefStmt& def)
+{
+}
+
 void collect_types(NamespaceStmt& ns,Scopes& sc)
 {
 	DeclarationsCollectorTypes dc(sc);

@@ -12,6 +12,7 @@
 #include "AtomicType.h"
 #include <cassert>
 #include <variant>
+#include "llvm/IR/DerivedTypes.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 #define IMPL_CLONE(u) uptr<u> clone() const override 
@@ -579,6 +580,10 @@ struct CollectionStmt : Stmt
 	std::vector<GenericInfo> generic_params;
 	std::vector<uptr<Stmt>> stmts;
 	CollectionType ct;
+
+	// Hakish solution
+	llvm::StructType* llvm_struct_type = nullptr;
+
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);

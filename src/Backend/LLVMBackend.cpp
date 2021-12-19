@@ -16,34 +16,41 @@
 #include "fmt/color.h"
 #include <system_error>
 #include "llvm/Support/raw_ostream.h"
+#include "LLVMBackendMemberCollector.h"
+#include "LLVMBackendTypeCollector.h"
+#include "Tree.h"
 
 namespace
 {
-	std::string get_before_delim(const std::string& str, char delim)
-	{
-		return str.substr(0, str.find(delim));
-	}
-
-	int emit_ir(const std::string& filename, const llvm::Module& mod)
+	int emit_ir(const LLVMBackend::CompilerInfo& ci, const llvm::Module& mod)
 	{
 		std::error_code ec;
-		auto llfilename = fmt::format("{}.ll", get_before_delim(filename, '.'));
-		llvm::raw_fd_ostream dest(llfilename, ec, llvm::sys::fs::OF_None);
-		mod.print(dest, nullptr);
+		std::unique_ptr<llvm::raw_fd_ostream> dest = nullptr;
+		if (!ci.emit_to_stdout)
+		{
+			dest = std::make_unique<llvm::raw_fd_ostream>(ci.filename_output, ec, llvm::sys::fs::OF_None);
+			if (ec.value() != 0)
+				return 1;
+		}
+		mod.print(ci.emit_to_stdout ? llvm::outs() : *dest, nullptr);
 		return 0;
 	}
 
-	int emit_obj(const std::string& filename,llvm::TargetMachine* target_machine,llvm::Module& mod)
+	int emit_obj(const LLVMBackend::CompilerInfo& ci,llvm::TargetMachine* target_machine,llvm::Module& mod)
 	{
 		std::error_code ec;
-		auto ofilename = fmt::format("{}.o", get_before_delim(filename, '.'));
-		llvm::raw_fd_ostream dest(ofilename, ec, llvm::sys::fs::OF_None);
+		std::unique_ptr<llvm::raw_fd_ostream> dest = nullptr; 
+		if (!ci.emit_to_stdout)
+		{
+			dest = std::make_unique<llvm::raw_fd_ostream>(ci.filename_output, ec, llvm::sys::fs::OF_None);
+			if (ec.value() != 0)
+				return 1;
+		}
 		llvm::legacy::PassManager leg_pm;
-		target_machine->addPassesToEmitFile(leg_pm, dest, nullptr, llvm::CGFT_ObjectFile);
+		target_machine->addPassesToEmitFile(leg_pm, ci.emit_to_stdout ? llvm::outs() : *dest, nullptr, llvm::CGFT_ObjectFile);
 		leg_pm.run(mod);
 		return 0;
 	}
-
 }
 
 
@@ -79,7 +86,14 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 		return 1;
 	}
 
+	// Preparation passes
+	Tree<CollectionStmt*> type_hierachy;
+	llvm_collect_types(be, type_hierachy, ns);
+	llvm_collect_member(be, type_hierachy, scopes, ns);
 	llvm_collect_funcs(ns, be.mod, be.context,scopes);
+	if (Error::Error) return 1;
+	// End prep passes
+
 
 	llvm::LoopAnalysisManager lam;
 	llvm::FunctionAnalysisManager fam;
@@ -106,8 +120,8 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	bool b = llvm::verifyModule(be.mod,&outstream);
 	if (b)
 	{
-		fmt::print(fmt::fg(fmt::color::dark_red), "Compilerbug, aborting\n");
-		emit_ir("faulty.ll",be.mod);
+		fmt::print(fmt::fg(fmt::color::dark_red), "\nCompilerbug: Faulty IR output:\n");
+		be.mod.dump();
 		return 2;
 	}
 #endif
@@ -125,11 +139,11 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	}
 	if (ci.emit_info == CompilerInfo::EmitInfo::EmitIRCode)
 	{
-		return emit_ir(filename, be.mod);
+		return emit_ir(ci, be.mod);
 	}
 
 	else if (ci.emit_info == CompilerInfo::EmitInfo::EmitObjCode)
 	{
-		return emit_obj(filename, target_machine, be.mod);
+		return emit_obj(ci, target_machine, be.mod);
 	}
 }

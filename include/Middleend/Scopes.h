@@ -29,7 +29,7 @@ public:
 	//Type* add(Type* mt) { return get_current_entry().table.add(mt); }
 	bool add(FuncDefStmt* fn) { return top_level.add(fn); }
 	bool add(CollectionStmt* cs) {	return top_level.add(cs); }
-	bool add(CollectionStmt* cs, DeclStmt* decl) { return top_level.add(cs, decl); }
+	bool add(CollectionStmt* cs, DeclStmt* decl, int idx) { return top_level.add(cs, decl,idx); }
 	bool add(DeclStmt* decl);
 	//bool add_to_existing(const std::string& name, class AllocaInst* inst);
 
@@ -42,6 +42,7 @@ public:
 
 	CollectionStmt* get_type(const std::string& name) { return top_level.get_type(name); }
 	DeclStmt* get_decl_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_for(cs, name); }
+	size_t get_decl_idx_for(CollectionStmt* cs, const std::string& name) { return top_level.get_decl_idx_for(cs, name); }
 	DeclStmt* get_variable(const std::string& name);
 	//class AllocaInst* get_alloca_inst(const std::string& name);
 	

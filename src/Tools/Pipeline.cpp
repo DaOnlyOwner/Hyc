@@ -14,6 +14,8 @@
 #include "LLVMBackend.h"
 #include "LLVMBackendFuncDeclCollector.h"
 #include "fmt/color.h"
+#include "TerminalOutput.h"
+#include <fstream>
 
 namespace
 {
@@ -49,6 +51,7 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 {
 	Scopes sc;
 	auto parsed = parse(filename);
+	// Just used for debug
 	if (!parsed) return 1;
 	desugar(*parsed);
 	collect_types(*parsed, sc);
@@ -61,6 +64,24 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	int n = parsed->stmts.size();
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
+	if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitAST)
+	{
+		TerminalOutput to;
+		parsed->accept(to);
+		if(ci.emit_to_stdout)
+			fmt::print("{}", to.get_format_str());
+		else
+		{
+			std::ofstream f;
+			f.open(ci.filename_output);
+			if (!f)
+			{
+				fmt::print(fmt::fg(fmt::color::orange_red), "Cannot open file '{}' for writing", ci.filename_output);
+			}
+			f << to.get_format_str();
+		}
+		return 0;
+	}
 	if (Error::Error)
 	{
 		return 1;

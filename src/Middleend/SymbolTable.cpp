@@ -1,5 +1,6 @@
 #include "SymbolTable.h"
 #include "TypeCreator.h"
+#include <limits>
 
 bool SymbolTable::add(CollectionStmt* cs)
 {
@@ -45,18 +46,18 @@ bool SymbolTable::add(FuncDefStmt* fn)
 	return false;
 }
 
-bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl)
+bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl, size_t idx)
 {
 	auto it = decl_in_collection.find(for_coll);
 	if (it == decl_in_collection.end())
 	{
-		decl_in_collection[for_coll] = { {decl->name.text,decl} };
+		decl_in_collection[for_coll] = { {decl->name.text,{decl,idx}} };
 		return true;
 	}
 	else
 	{
 		auto& coll_decls = it->second;
-		auto succ = coll_decls.insert({ decl->name.text,decl });
+		auto succ = coll_decls.insert({ decl->name.text,{decl,idx} });
 		return succ.second;
 	}
 
@@ -80,7 +81,16 @@ DeclStmt* SymbolTable::get_decl_for(CollectionStmt* bt, const std::string& name)
 	if(it == decl_in_collection.end()) return nullptr; 
 	auto decl_it = it->second.find(name);
 	if (decl_it == it->second.end()) return nullptr;
-	else return decl_it->second;
+	else return decl_it->second.stmt;
+}
+
+size_t SymbolTable::get_decl_idx_for(CollectionStmt* cs, const std::string& name)
+{
+	auto it = decl_in_collection.find(cs);
+	if (it == decl_in_collection.end()) return std::numeric_limits<size_t>::max();
+	auto decl_it = it->second.find(name);
+	if (decl_it == it->second.end()) return std::numeric_limits<size_t>::max();
+	else return decl_it->second.idx;
 }
 
 DeclStmt* SymbolTable::get_variable(const std::string& name)

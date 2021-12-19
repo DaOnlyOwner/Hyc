@@ -1,13 +1,17 @@
-int main()
+struct C
 {
-    return fac(5);
+   int val;
 }
 
-int fac(int n)
+int main()
 {
-    if(n == 0)
-    {
-        return 1;
-    }
-    return n*fac(n-1); 
+   C c;
+   return test(c);
+}
+
+int test(C c)
+{
+   short val := 2;
+   c.val = val;
+   return c.val;
 }

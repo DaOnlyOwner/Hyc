@@ -57,7 +57,7 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 
 			else
 			{
-				NOT_IMPLEMENTED;
+				out = base->llvm_struct_type;
 			}
 		}
 		break;

@@ -1,5 +1,4 @@
 TODO:
-- pointer types: a# -> pointer symbol = # (no ugly lexer hack: https://en.wikipedia.org/wiki/Lexer_hack) -> Better idea: keep a*, but cast with e.g. (1 as float), keyword "as"
 - Generics like List<List<int>>
   -> functions: u64 fn<T>();
 - No definition of member functions. 
@@ -16,38 +15,48 @@ TODO:
   -> 5.to_str() ---> calls to_str(5);
 - constructors,destructors.
   there are no constructors, but something that looks like this:
-  int a : init() -> desugared: int a; a.init();
+  int a : a.init() -> desugared: int a; a.init();
   int a := b; OR a:=b (possible to leave out type)-> desugared: int a; a=b;
-  int a :# b; OR a:#b -> int a; a#b; <- move operator
   idiomatic heap allocation: int* a : new()->init();
-  operators can be deleted etc.
   special operator % <-- cannot be generic, can be overloaded.
   called when object leaves the scope
   overloading: void operator%(foo* a)
 - operators:
-  int operator+(foo* f, bar* b){}
-  -> int a = f + b;	
+  cannot overload operators.
 - casts
   3 as int;
 - const 
 - moving and copying:
-  copying looks like this
-  a := b; <- uses the default copy operator
-  copy operator can be overloaded 
-  foo* operator=(foo* a, foo* b){}
-  moving looks like this:
-  a :# b; foo a :# b; is default defined
-  overloaded:
-  foo* operator#(foo* a, foo* b){}
+  moving and copying are done explicitly!
 - const can only be defined in front of a type, no const ptrs etc!
 - no array type -> int[3] has type int*!
 - special function syntax:
 I want to to something like this:
-gen_vec().map().reduce();
+gen_vec().map().sum(); OR
+gen_vec()->map()->sum();
 desugared:
 reduce(map(gen_vec()))
-
-
+Thus: 
+function decl:
+vec<int>* gen_vec(vec<int>* v = auto) 
+ 				^-- auto signals that the variable should be allocated automatically in the caller stack frame
+				    It is only allowed at the end of a function arg list.
+				    Needs to be a pointer!
+{
+	v->add(1);  
+	return v;
+}
+Use it like this
+gen_vec()->sum()
+becomes this:
+vec<int> _a0;
+gen_vec(&_a0)->sum();
+not allowed is when you pass in a value to the automatic variable.
+Also not allowed is something like this:
+vec<int>* gen_vec()
+vec<int>* gen_vec(vec<int> v = automatic)
+counts as a duplicate function definition, the automatic variables don't count!.
+automatic variables may not depend on generic type parameters. 
 
 - lambda expressions:
 type declaration: [a,b](int,int)->void 
@@ -124,17 +133,9 @@ A a {.first{"" },.second{""}};
 - Implementation note: Save a unique pointer to BaseType in Scopes and let Type struct have a pointer to BaseType, so we don't need to compare strings. DONE
 - Add foreach loop later
 - infer generic type parameters at function call.
-- default is moving when calling a function e.g. a(b); b is moved into the argument
-  -> copying: a(=b);
-- disallow parameters like int[4] in parser
+- disallow parameters like int[4] in function arg.
 - operator as -> need special parsing and handling in the semantic checking.
 - disallow overloading of operators with atomic types.
 - const only in the beginning of a type declaration
-Implementation order:
-- implement parsing of structs,functions,generics,expressions,statements(also match),namespaces,operators,unions,type deduction for function generics
-- quality of life updates: incremental
-  -> initialization lists
-  -> try catch
-- import statements
-- Implement meta programming
-- Implement a standard library
+- metaprogramming by completely compile time code execution.
+- maybe simd vecs as they are already in llvm.

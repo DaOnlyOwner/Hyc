@@ -209,6 +209,11 @@ void Messages::trigger_6_e22(const Token& from, const std::string& expr, const s
 	semantic_error(from, fmt::format("The expression '{}' needs to be of bool, but has type '{}'", expr, t));
 }
 
+void Messages::trigger_6_e23(const Token& from, const std::string& expr, const std::string& t)
+{
+	semantic_error(from, fmt::format("Cannot dereference a non pointer (expression '{}' has type '{}')", expr,t));
+}
+
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));
@@ -217,6 +222,11 @@ void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 void Messages::trigger_8_e1(const Token& from, const std::string& expr)
 {
 	semantic_error(from, fmt::format("Cannot assign to a non lvalue expression: '{}'", expr));
+}
+
+void Messages::trigger_9_e1(const Token& from, const std::string& embedded_in)
+{
+	semantic_error(from, fmt::format("Embedding '{}' in '{}' creates a cyclic dependency", from.text, embedded_in));
 }
 
 

@@ -41,7 +41,6 @@ struct Token
 		DoubleColon,
 		Less,
 		Greater,
-		DeclMv,
 		Dot,
 		Ampersand,
 		DoubleAmpersand,
@@ -223,8 +222,6 @@ struct Token
 			return "<";
 		case Specifier::Greater:
 			return ">";
-		case Specifier::DeclMv:
-			return ":#";
 		case Specifier::Colon:
 			return ":";
 		case Specifier::KwContinue:

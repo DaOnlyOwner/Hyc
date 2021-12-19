@@ -891,7 +891,14 @@ bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 		auto tlh = get(bin_op.lh);
 		auto cpy_tlh = tlh;
 		if (bin_op.op.type == Token::Specifier::MemAccess)
+		{
+			if (!cpy_tlh.is_pointer_type())
+			{
+				Messages::inst().trigger_6_e23(bin_op.op, bin_op.lh->as_str(), cpy_tlh.as_str());
+				RETURN_VAL_BIN_OP(error_type, true);
+			}
 			cpy_tlh.pop();
+		}
 		if (!cpy_tlh.is_base_type())
 		{
 			Messages::inst().trigger_6_e13(bin_op.op,cpy_tlh.as_str()); // Pointer and other types do not have members

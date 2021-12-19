@@ -6,6 +6,7 @@
 
 void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 {
+	if (!func_def_stmt.decl->generic_list.empty()) return;
 	std::vector<llvm::Type*> args;
 	std::transform(func_def_stmt.decl->arg_list.begin(), func_def_stmt.decl->arg_list.end(), std::back_inserter(args), [&](const uptr<DeclStmt>& ds) {
 		return map_type(ds->type,scopes,context);
