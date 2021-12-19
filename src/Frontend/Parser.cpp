@@ -293,17 +293,20 @@ std::unique_ptr<NamespaceStmt> Parser::parse_compilation_unit()
 	return mv(nms);
 }
 
-// (type ident ((:= | :# | :) expr)?) | (type? ident (:= | :# | :) expr)  ; 
+// (type ident ((:= | :) expr)?) | (type? ident (:= | :) expr)  ; 
 std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 {
 	auto la2 = tkns.lookahead(2).type;
 	std::unique_ptr<TypeSpec> type = nullptr;
-	if (la2 != Token::Specifier::DeclCpy && la2 != Token::Specifier::Colon)
+	if (la2 != Token::Specifier::DeclCpy && la2 != Token::Specifier::Colon && la2 != Token::Specifier::Equal)
 		type = parse_type_spec(); // type
 	auto& ident = tkns.match_token(Token::Specifier::Ident); // Ident
 	auto la1 = tkns.lookahead(1).type;
 	std::unique_ptr<Expr> expr;
-	if (la1 == Token::Specifier::DeclCpy)
+
+	assert(!(type == nullptr && la1 == Token::Specifier::Equal));
+
+	if (la1 == Token::Specifier::DeclCpy || la1 == Token::Specifier::Equal)
 	{
 		tkns.eat(); // :=
 		expr = expr_parser.parse();
@@ -842,6 +845,7 @@ std::unique_ptr<Stmt> Parser::parse_allowed_func_stmt(bool in_loop)
 			|| la2 == Token::Specifier::DeclCpy // e.g. a :=
 			|| la2 == Token::Specifier::Colon // e.g. a :
 			|| la3 == Token::Specifier::DeclCpy // int a :=
+			|| la3 == Token::Specifier::Equal
 			|| la3 == Token::Specifier::Colon)  // int c : 
 			return parse_decl_operator_stmt(); // Also parses decl
 		else if (la2 == Token::Specifier::Ident) // int a;
@@ -852,7 +856,7 @@ std::unique_ptr<Stmt> Parser::parse_allowed_func_stmt(bool in_loop)
 	case Token::Specifier::KwFptr:
 		return parse_decl_stmt();
 	default:
-		assert(false);
+		break;
 	}
 	return parse_expr_stmt();
 }

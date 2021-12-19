@@ -143,7 +143,11 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 		handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
 		//handled = handled || handle_bin_op_copy_move(tlh, trh, bin_op);
 		if (!handled)
-			handle_bin_op_overloads(tlh, trh, bin_op);
+		{
+			// Error: Operator not defined for types. 
+			Messages::inst().trigger_6_e4(bin_op.op, tlh.as_str(), trh.as_str());
+			RETURN(error_type);
+		}
 	}
 }
 
@@ -205,18 +209,9 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 		RETURN(t);
 	}
 
-	// Overloaded
-	std::string operator_name = fmt::format("${}", pre_op.op.text);
-	FuncDefStmt* fds = scopes.get_func(operator_name, [&](const FuncDeclStmt& decl) {return decl.arg_list.size() == 1 && decl.arg_list[0]->type == t; });
-	if (fds == nullptr)
-	{
-		// Error: Operator not defined for types. 
-		Messages::inst().trigger_6_e3(pre_op.op,t.as_str());
-		RETURN(error_type);
-	}
-	pre_op.sem_unary_op = fds->decl.get();
-	pre_op.sem_type = fds->decl->ret_type->semantic_type;
-	RETURN(fds->decl->ret_type->semantic_type);
+	// Error: Operator not defined for types. 
+	Messages::inst().trigger_6_e3(pre_op.op,t.as_str());
+	RETURN(error_type);
 }
 
 void TypeChecker::visit(PostfixOpExpr& post_op)
@@ -401,7 +396,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 
 			func_call_expr.sem_type = t;
-			func_call_expr.def = def;
+			func_call_expr.def = non_generic_def;
 			RETURN(t);
 		}
 
@@ -416,8 +411,8 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 	// It's a func ptr call (or a lambda call)
 	else
 	{
-		// TODO Func Ptr call
-		assert(false);
+		// TODO: Func Ptr call
+		NOT_IMPLEMENTED;
 	}
 }
 
@@ -428,10 +423,21 @@ void TypeChecker::visit(FuncDeclStmt& func_decl)
 
 void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 {
-	scopes.descend();
 	if (!func_def_stmt.decl->generic_list.empty()) return; // Don't try to typecheck generic functions
+	scopes.descend();
+	current_function = &func_def_stmt;
 	func_def_stmt.decl->accept(*this);
-	for(auto& p : func_def_stmt.body) p->accept(*this);
+	bool ret_was_there = false;
+	for (auto& p : func_def_stmt.body)
+	{
+		p->accept(*this);
+		if (ret_was_there = p->is_return_stmt()) break;
+	}
+	auto pred = func_def_stmt.decl->ret_type->semantic_type.to_pred(scopes);
+	if (pred.has_value() && (pred.value() != PredefinedType::Void) && !ret_was_there)
+	{
+		Messages::inst().trigger_6_e24(func_def_stmt.decl->name);
+	}
 }
 
 void TypeChecker::visit(CollectionStmt& coll_def)
@@ -440,7 +446,34 @@ void TypeChecker::visit(CollectionStmt& coll_def)
 
 void TypeChecker::visit(ReturnStmt& ret_stmt)
 {
-	ret_stmt.returned_expr->accept(*this);
+	auto type = get(ret_stmt.returned_expr);
+	auto pred_expr_ = type.to_pred(scopes);
+	auto pred_func_ = current_function->decl->ret_type->semantic_type.to_pred(scopes);
+	if (pred_expr_.has_value() && pred_func_.has_value())
+	{
+		auto pred_expr = pred_expr_.value();
+		auto pred_func = pred_func_.value();
+		if (Type::is_signed_integer(pred_expr) && Type::is_unsigned_integer(pred_func))
+		{
+			// Signed op unsigned warning: cast to signed
+			Messages::inst().trigger_6_w1(ret_stmt.return_kw, ret_stmt.returned_expr->as_str());
+		}
+		else if (Type::is_unsigned_integer(pred_expr) && Type::is_signed_integer(pred_func))
+		{
+			Messages::inst().trigger_6_w2(ret_stmt.return_kw, ret_stmt.returned_expr->as_str());
+		}
+
+		uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(ret_stmt.returned_expr), current_function->decl->ret_type->semantic_type);
+		ret_stmt.returned_expr = std::move(ice);
+		return;
+	}
+
+	auto& t_func = current_function->decl->ret_type->semantic_type;
+	if (type != t_func)
+	{
+		Messages::inst().trigger_6_e25(ret_stmt.return_kw, type.as_str(),t_func.as_str());
+	}
+
 }
 
 void TypeChecker::visit(ExprStmt& expr_stmt)
@@ -482,12 +515,20 @@ void TypeChecker::visit(IfStmt& if_stmt)
 		auto& elif_expr = if_stmt.elif_exprs[i];
 		check_type_is_bool(elif_expr);
 		scopes.descend();
-		for (auto& p : elif) p->accept(*this);
+		for (auto& p : elif)
+		{
+			p->accept(*this);
+			if (p->is_return_stmt()) break;
+		}
 	}
 	if (!if_stmt.else_stmts.empty())
 	{
 		scopes.descend();
-		for (auto& p : if_stmt.else_stmts) p->accept(*this);
+		for (auto& p : if_stmt.else_stmts)
+		{
+			p->accept(*this);
+			if (p->is_return_stmt()) break;
+		}
 	}
 }
 
@@ -495,7 +536,11 @@ void TypeChecker::visit(WhileStmt& while_stmt)
 {
 	check_type_is_bool(while_stmt.expr);
 	scopes.descend();
-	for (auto& p : while_stmt.stmts) p->accept(*this);
+	for (auto& p : while_stmt.stmts)
+	{
+		p->accept(*this);
+		if (p->is_return_stmt()) break;
+	}
 }
 
 void TypeChecker::visit(ContinueStmt& cont_stmt)
@@ -530,34 +575,42 @@ void TypeChecker::visit(MatchStmt& match)
 void TypeChecker::visit(ScopeStmt& sc)
 {
 	scopes.descend();
-	for (auto& p : sc.stmts) p->accept(*this);
+	for (auto& p : sc.stmts)
+	{
+		p->accept(*this);
+		if (p->is_return_stmt()) break;
+	}
 	scopes.ascend();
 }
 
 bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op)
 {
 	// Pointer arithmetic
-	bool is_pointer_arith = (tlh.is_pointer_type() && is_pred(scopes, trh))
-		|| (trh.is_pointer_type() && is_pred(scopes, tlh));
+	bool is_pointer_arith = (tlh.is_pointer_type() && trh.is_predefined(scopes));
 
 	if (is_pointer_arith)
 	{
 		auto& ptrtype = tlh.is_pointer_type() ? tlh : trh;
 		auto& base_expr = tlh.is_base_type() ? bin_op.lh : bin_op.rh;
 		auto& basetype = tlh.is_pointer_type() ? trh : tlh;
+		auto pred = basetype.to_pred(scopes).value();
+
+		if (Type::is_decimal(pred))
+		{
+			Messages::inst().trigger_6_e4(bin_op.op, tlh.as_str(), trh.as_str());
+			RETURN_VAL_BIN_OP(error_type,true);
+		}
 
 		if (bin_op.op.type != Token::Specifier::Plus
 			&& bin_op.op.type != Token::Specifier::Minus
-			&& bin_op.op.type != Token::Specifier::Equal
-			&& bin_op.op.type != Token::Specifier::PlusEqual
-			&& bin_op.op.type != Token::Specifier::MinusEqual)
+			&& bin_op.op.type != Token::Specifier::Equal)
 		{
 			// Only plus, minus and = += -= ops are specified for pointer arithmetic
 			Messages::inst().trigger_6_e4(bin_op.op,tlh.as_str(),trh.as_str());
 			RETURN_VAL_BIN_OP(error_type, true);
 		}
 
-		if (bin_op.op.type == Token::Specifier::Equal || bin_op.op.type == Token::Specifier::Hashtag)
+		if (bin_op.op.type == Token::Specifier::Equal)
 		{
 			auto* ptr = dynamic_cast<IntegerLiteralExpr*>(base_expr.get());
 			if (!ptr)
@@ -677,37 +730,7 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 			RETURN_VAL_BIN_OP(error_type,true);
 		}
 		break;
-		case Token::Specifier::PercentEqual:
-		case Token::Specifier::CaretEqual:
-		case Token::Specifier::SlEqual:
-		case Token::Specifier::SrEqual:
-		case Token::Specifier::OrEqual:
-		case Token::Specifier::AmpersandEqual:
-		case Token::Specifier::PlusEqual:
-		case Token::Specifier::MinusEqual:
-		case Token::Specifier::AsterixEqual:
-		case Token::Specifier::SlashEqual:
-		{
-			// Explicitly write the expression:
-			Token::Specifier split = Token::SplitCompound(bin_op.op.type);
-			Token op_inner(split, std::to_string(bin_op.op.text[0]));
-			auto inner_lhs = bin_op.lh->clone();
-			auto inner_rhs = std::move(bin_op.rh);
-			if (clh == ConversionType::ImplicitCasting)
-			{
-				inner_lhs = std::make_unique<ImplicitCastExpr>(std::move(inner_lhs), trh);
-			}
-			else if (crh == ConversionType::ImplicitCasting)
-			{
-				inner_rhs = std::make_unique<ImplicitCastExpr>(std::move(inner_rhs), tlh);
-			}
-			auto inner = std::make_unique<BinOpExpr>(op_inner, std::move(inner_lhs), std::move(inner_rhs));
-			auto outer = BinOpExpr(Token(Token::Specifier::Equal, "="), std::move(bin_op.lh), std::move(inner));
-			bin_op = std::move(outer);
-			RETURN_VAL_BIN_OP(trh, true);
-		}
 		// For this case always take the lhs
-		case Token::Specifier::Hashtag:
 		case Token::Specifier::Equal:
 		{
 			// For e.g. a = 4 -> always take the type of the lhs and cast the rhs to the lhs.
@@ -773,13 +796,17 @@ bool TypeChecker::handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& b
 	{
 
 		if (bin_op.op.type == Token::Specifier::NotEqual
-			|| bin_op.op.type == Token::Specifier::DoubleEqual)
+			|| bin_op.op.type == Token::Specifier::DoubleEqual
+			|| bin_op.op.type == Token::Specifier::Less
+			|| bin_op.op.type == Token::Specifier::Greater
+			|| bin_op.op.type == Token::Specifier::LessEql
+			|| bin_op.op.type == Token::Specifier::GreaterEql)
 		{
 			auto bool_type = Type(scopes.get_type("bool"));
 			RETURN_VAL_BIN_OP(bool_type,true);
 		}
 
-		bool succ = handle_bin_op_copy_move(tlh, trh,bin_op);
+		bool succ = handle_bin_op_copy(tlh, trh,bin_op);
 		if (!succ)
 		{
 			// Every operation except =,#, == and != are not allowed on pointers
@@ -791,10 +818,9 @@ bool TypeChecker::handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& b
 	return false;
 }
 
-bool TypeChecker::handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_op)
+bool TypeChecker::handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op)
 {
-	bool is_copy_move = (bin_op.op.type == Token::Specifier::Equal
-		|| bin_op.op.type == Token::Specifier::Hashtag);
+	bool is_copy_move = (bin_op.op.type == Token::Specifier::Equal);
 	if (is_copy_move)
 	{
 		if (tlh != trh)
@@ -862,24 +888,6 @@ bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op
 		RETURN_VAL_BIN_OP(error_type,true);
 	}
 	return false;
-}
-
-bool TypeChecker::handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_op)
-{
-	// Overloaded operators
-	std::string operator_name = fmt::format("${}", bin_op.op.text);
-	FuncDefStmt* fds = scopes.get_func(operator_name, [&](const FuncDeclStmt& decl) {return decl.arg_list.size() == 2 && decl.arg_list[0]->type == tlh && decl.arg_list[1]->type == trh; });
-	if (fds == nullptr)
-	{
-		// Error: Operator not defined for types. 
-		Messages::inst().trigger_6_e4(bin_op.op,tlh.as_str(),trh.as_str());
-		ret(error_type);
-		return true;
-	}
-	bin_op.sem_bin_op = fds->decl.get();
-	bin_op.sem_type = fds->decl->ret_type->semantic_type;
-	ret(fds->decl->ret_type->semantic_type);
-	return true;
 }
 
 bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)

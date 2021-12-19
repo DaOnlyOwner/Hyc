@@ -13,6 +13,7 @@ void ExpandScopes::visit(NamespaceStmt& namespace_stmt)
 
 void ExpandScopes::visit(FuncDefStmt& func_call_stmt)
 {
+	if (!func_call_stmt.decl->generic_list.empty()) return;
 	scopes.expand();
 	for (auto& stmt : func_call_stmt.body)
 	{

@@ -3,6 +3,8 @@
 #include "ValueStorage.h"
 #include "Scopes.h"
 
+// TODO: Check that one doesn't do that: int* a = &1; <-- wrong.
+// TODO: Also check that this: & &a; <-- cannot take the address of an address!
 class TypeChecker : public IAstVisitor, public ValueStorage<Type>
 {
 public:
@@ -37,48 +39,17 @@ private:
 	bool handle_bin_op_void(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op);
-	bool handle_bin_op_overloads(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_member_acc(BinOpExpr& bin_op);
-	bool handle_bin_op_copy_move(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op);
 
 	void check_type_is_bool(uptr<Expr>& expr);
 
 	Scopes& scopes;
 	NamespaceStmt& ns;
+	FuncDefStmt* current_function = nullptr;
 
 	size_t new_elem_idx = 0;
 };
 
 void check_type(NamespaceStmt& ns, Scopes& sc);
 void check_type_repeat(NamespaceStmt& ns, Scopes& sc);
-
-//
-//	std::unique_ptr<Scopes> get_scopes()
-//	{
-//		return std::move(m_scopes);
-//	}
-//
-//private:
-//	std::unique_ptr<Scopes> m_scopes;
-//	FuncDefStmt* m_current_func = nullptr;
-//	bool return_stmt_in_func = false;
-//	// Geerbt über IAstVisitor
-//	virtual void visit(FloatLiteralExpr& lit) override;
-//	virtual void visit(IntegerLiteralExpr& lit) override;
-//	virtual void visit(BinOpExpr& bin_op) override;
-//	virtual void visit(PrefixOpExpr& pre_op) override;
-//	virtual void visit(PostfixOpExpr& post_op) override;
-//	virtual void visit(InferredDefStmt& decl_inferred) override;
-//	virtual void visit(IdentExpr& ident) override;
-//	virtual void visit(NamespaceStmt& namespace_stmt) override;
-//	virtual void visit(FuncCallExpr& func_call_expr) override;
-//	virtual void visit(FuncDefStmt& func_call_def_stmt) override;
-//	virtual void visit(ReturnStmt& ret_stmt) override;
-//	virtual void visit(ExprStmt& expr_stmt) override;
-//	virtual void visit(DefStmt& def_stmt) override;
-//	virtual void visit(PointerTypeSpec& pt_spec) override;
-//	virtual void visit(BaseTypeSpec& bt_spec) override;
-//	virtual void visit(ArrayTypeSpec& at_spec) override;
-//	virtual void visit(ImplicitCastExpr& ice) override;
-//
-//};

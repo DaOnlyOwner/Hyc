@@ -492,6 +492,7 @@ struct ImplicitCastExpr : Expr
 
 struct Stmt : Node {
 	virtual uptr<Stmt> clone() const = 0;
+	virtual bool is_return_stmt() const { return false; }
 };
 
 struct TypedStmt : Stmt
@@ -744,6 +745,7 @@ struct ReturnStmt : Stmt
 	IMPL_CLONE(Stmt) {
 		return uptr<Stmt>(new ReturnStmt(returned_expr->clone(),Token(return_kw)));
 	}
+	virtual bool is_return_stmt() const override { return true; }
 };
 
 

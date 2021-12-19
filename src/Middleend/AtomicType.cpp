@@ -90,6 +90,14 @@ bool Type::is_base_type() const
 
 bool Type::must_be_inferred() const { return not_specified; }
 
+std::pair<bool, Type> Type::get_pointed_at() const
+{
+	if (!is_pointer_type()) return { false,Type() };
+	auto cpy = *this;
+	cpy.pop();
+	return { true,cpy };
+}
+
 void Type::promote_pointer()
 {
 	not_specified = false;

@@ -109,6 +109,11 @@ void Messages::trigger_6_w1(const Token& from, const std::string& expr)
 	warning(from, fmt::format("Casting type of expression '{}' to signed integer", expr));
 }
 
+void Messages::trigger_6_w2(const Token& from, const std::string& expr)
+{
+	warning(from, fmt::format("Casting type of expression '{}' to unsigned integer", expr));
+}
+
 void Messages::trigger_6_e6(const Token& from, const std::string& t1, const std::string& t2)
 {
 	semantic_error(from, fmt::format("For atomic types: The types of operator '{}' must be integer, not '{}' and '{}'", 
@@ -212,6 +217,16 @@ void Messages::trigger_6_e22(const Token& from, const std::string& expr, const s
 void Messages::trigger_6_e23(const Token& from, const std::string& expr, const std::string& t)
 {
 	semantic_error(from, fmt::format("Cannot dereference a non pointer (expression '{}' has type '{}')", expr,t));
+}
+
+void Messages::trigger_6_e24(const Token& from)
+{
+	semantic_error(from, "Non void function '{}' has no return stmt", from.text);
+}
+
+void Messages::trigger_6_e25(const Token& from, const std::string& t1, const std::string& t2)
+{
+	semantic_error(from, fmt::format("Returned type '{}' does not match the function return type '{}'", t1, t2));
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)

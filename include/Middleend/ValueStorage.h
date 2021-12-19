@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Ast.h"
+#include <tuple>
+#include <vector>
 
 #define RETURN(r) ret(r);return;
 #define RETURN_VAL(r,val) ret(r); return val;
@@ -24,4 +26,31 @@ public:
 private:
 	T m_elem = { };
 	IAstVisitor* m_visitor;
+};
+
+template<typename T, typename... TStackData>
+class ValueStorageStack : public ValueStorage<T>
+{
+public:
+	ValueStorageStack(IAstVisitor* visitor)
+		:ValueStorage(visitor) {}
+	void pass_params(const TStackData&... d)
+	{
+		stack_data = std::make_tuple(d...);
+	}
+
+	template<typename TNode>
+	T& get_with_params(TNode& node, const TStackData&... d)
+	{
+		pass_params(d...);
+		return get(node);
+	}
+
+	std::tuple<TStackData...> get_params()
+	{
+		return stack_data;
+	}
+
+private:
+	std::tuple<TStackData...> stack_data;
 };

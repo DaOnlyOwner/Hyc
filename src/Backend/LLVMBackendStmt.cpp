@@ -106,6 +106,7 @@ void LLVMBackendStmt::visit(ExprStmt& expr_stmt)
 
 void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 {
+	if (!func_def.decl->generic_list.empty()) return;
 	auto func = be.mod.getFunction(mangle(*func_def.decl));
 	auto entry_bb = llvm::BasicBlock::Create(be.context, "entry", func);
 	be.builder.SetInsertPoint(entry_bb);
@@ -117,7 +118,7 @@ void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 void LLVMBackendStmt::visit(ReturnStmt& return_stmt)
 {
 	// TODO: Support return of void
-	be.builder.CreateRet(expr_getter.gen(*return_stmt.returned_expr));
+	be.builder.CreateRet(expr_getter.gen(*return_stmt.returned_expr,true));
 }
 
 

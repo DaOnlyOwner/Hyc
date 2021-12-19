@@ -1,17 +1,16 @@
 struct C
 {
-   int val;
+   int* val;
+}
+
+
+T test<T>(T a)
+{
+   return a;
 }
 
 int main()
 {
-   C c;
-   return test(c);
+    return test(1) + test(3.5);
 }
 
-int test(C c)
-{
-   short val := 2;
-   c.val = val;
-   return c.val;
-}

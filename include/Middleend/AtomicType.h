@@ -69,6 +69,7 @@ struct Type
 	bool is_base_type() const;
 	bool is_fptr_type() const;
 	bool must_be_inferred() const;
+	std::pair<bool, Type> get_pointed_at() const;
 	bool is_predefined(const class Scopes& sc) const;
 	std::optional<PredefinedType> to_pred(const class Scopes& sc) const;
 	std::unique_ptr<TypeSpec> to_ast() const;

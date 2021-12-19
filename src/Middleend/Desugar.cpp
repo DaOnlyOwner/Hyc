@@ -173,4 +173,57 @@ void desugar(NamespaceStmt& ns)
 
 	DesugarDecl dd;
 	ns.accept(dd);
+
+	DesugarCompound dc;
+	ns.accept(dc);
+}
+
+// We don't need to go through the stmts of a struct def
+void DesugarCompound::visit(CollectionStmt& coll_stmt)
+{}
+
+void DesugarCompound::visit(BinOpExpr& expr)
+{
+	switch (expr.op.type)
+	{
+	case Token::Specifier::PercentEqual:
+	case Token::Specifier::CaretEqual:
+	case Token::Specifier::SlEqual:
+	case Token::Specifier::SrEqual:
+	case Token::Specifier::OrEqual:
+	case Token::Specifier::AmpersandEqual:
+	case Token::Specifier::PlusEqual:
+	case Token::Specifier::MinusEqual:
+	case Token::Specifier::AsterixEqual:
+	case Token::Specifier::SlashEqual:
+	{
+		Token::Specifier split = Token::SplitCompound(expr.op.type);
+		Token op_inner(split, expr.op.text.substr(0, expr.op.text.find('=')));
+		auto inner_lhs = expr.lh->clone();
+		auto inner_rhs = std::move(expr.rh);
+		auto inner = std::make_unique<BinOpExpr>(op_inner, std::move(inner_lhs), std::move(inner_rhs)); // e.g. Previous: c += 1, now splitted: c + 1
+		auto outer = BinOpExpr(Token(Token::Specifier::Equal, "="), std::move(expr.lh), std::move(inner)); // c = c + 1;
+		expr = std::move(outer);
+	}
+	}
+}
+
+void DesugarCompound::visit(PrefixOpExpr& expr)
+{
+	expr.lh->accept(*this);
+}
+
+void DesugarCompound::visit(PostfixOpExpr& expr)
+{
+	expr.rh->accept(*this);
+}
+
+void DesugarCompound::visit(FuncCallExpr& expr)
+{
+	for (auto& p : expr.arg_list) p.expr->accept(*this);
+}
+
+void DesugarCompound::visit(ArraySubscriptExpr& expr)
+{
+	expr.from->accept(*this);
 }
