@@ -183,6 +183,8 @@ namespace
 		}
 	} };
 	DEF_BIN_OP(member, Group2, false);
+	DEF_BIN_OP(make_active, Group2, false);
+	DEF_BIN_OP(test_if_active, Group2, false);
 	DEF_PREFIX_OP(unary, Group3);
 	// TODO: Cast
 	DEF_BIN_OP(cast, Group3, false);
@@ -273,6 +275,8 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::UChar, uchar_lit);
 	ADD_OP(Token::Specifier::Double, double_lit);
 	ADD_OP(Token::Specifier::Quad, quad_lit);
+	ADD_OP(Token::Specifier::DoubleQM, test_if_active);
+	ADD_OP(Token::Specifier::DoubleEM, make_active);
 
 	file = filename;
 }
@@ -461,6 +465,42 @@ std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 	return std::make_unique<DeclStmt>(mv(type), name);
 }
 
+std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()
+{
+	uptr<DeclStmt> decl_stmt;
+	if (tkns.lookahead(2).type == Token::Specifier::Semicolon)
+	{
+		// Untyped:
+		auto name = tkns.match_token(Token::Specifier::Ident);
+		decl_stmt = std::make_unique<DeclStmt>(nullptr, name);
+	}
+
+	else
+	{
+		auto type_spec = parse_type_spec();
+		auto name = tkns.match_token(Token::Specifier::Ident);
+		decl_stmt = std::make_unique<DeclStmt>(std::move(type_spec), name);
+	}
+
+	std::optional<EvalIntegerResult> tagged_value{};
+
+	if (tkns.lookahead(1).type == Token::Specifier::Colon)
+	{
+		tkns.eat(); // :
+		auto val = tkns.match_token(Token::Specifier::UInt);
+		auto [succ,res] = eval_integer_val(val, IntegerLiteralType::UInt);
+		if (!succ)
+		{
+			auto descr = Error::FromToken(val);
+			descr.Message = fmt::format("{} doesn't fit into an 64 bit integer", val.text);
+			Error::SyntacticalError(descr);
+		}
+		tagged_value = res;
+	}
+
+	return std::make_unique<UnionDeclStmt>(mv(decl_stmt), tagged_value);
+}
+
 
 // ident ("=" type)? (","(ident ("=" type)? ",")*)?
 std::vector<GenericInfo> Parser::parse_comma_separated_ident_list()
@@ -514,7 +554,7 @@ std::unique_ptr<Stmt> Parser::parse_struct_def()
 
 std::unique_ptr<Stmt> Parser::parse_union_def()
 {
-	return parse_attr_collection(Token::Specifier::KwUnion, [&]() {return parse_decl_stmt(); });
+	return parse_attr_collection(Token::Specifier::KwUnion, [&]() {return parse_union_decl_stmt(); });
 }
 
 // namespace ident { allowed_namespace_stmts }

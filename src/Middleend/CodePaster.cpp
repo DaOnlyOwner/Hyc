@@ -70,9 +70,9 @@ void CodePaster::visit(BaseTypeSpec& bt)
 	}
 }
 
-void CodePaster::visit(CollectionStmt& stmt)
+void CodePaster::visit(TypeDefStmt& stmt)
 {
-	auto pasted = uptr<CollectionStmt>(dynamic_cast<CollectionStmt*>(stmt.clone().release()));
+	auto pasted = uptr<TypeDefStmt>(dynamic_cast<TypeDefStmt*>(stmt.clone().release()));
 	pasted->name.text = get_str(stmt.name.text, to_paste);
 	pasted->generic_params.clear();
 	must_replace = &stmt.generic_params;

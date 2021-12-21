@@ -73,7 +73,7 @@ void ExpandScopes::visit(ForStmt& for_stmt)
 	scopes.ascend();
 }
 
-void ExpandScopes::visit(CollectionStmt& coll_def)
+void ExpandScopes::visit(TypeDefStmt& coll_def)
 {
 	scopes.expand();
 	for (auto& stmt : coll_def.stmts)

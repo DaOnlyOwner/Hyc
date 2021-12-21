@@ -66,7 +66,7 @@ private:
 class DesugarCompound : public IAstVisitor
 {
 private:
-	virtual void visit(CollectionStmt& coll_stmt) override;
+	virtual void visit(TypeDefStmt& coll_stmt) override;
 	virtual void visit(BinOpExpr& expr) override;
 	virtual void visit(PrefixOpExpr& expr) override;
 	virtual void visit(PostfixOpExpr& expr) override;

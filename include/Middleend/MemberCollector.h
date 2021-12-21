@@ -10,14 +10,14 @@ public:
 	MemberCollector(Scopes& sc, NamespaceStmt& ns, size_t entry)
 		:scopes(sc),ns(ns),entry(entry) {}
 private:
-	virtual void visit(CollectionStmt& coll_def) override;
+	virtual void visit(TypeDefStmt& coll_def) override;
 	virtual void visit(DeclStmt& decl) override;
 	virtual void visit(FuncDefStmt& fdecl) override;
 	virtual void visit(NamespaceStmt& ns) override;
 	
 	Scopes& scopes;
 	NamespaceStmt& ns;
-	CollectionStmt* current_collection = nullptr;
+	TypeDefStmt* current_collection = nullptr;
 	size_t entry = 0;
 	size_t idx = 0;
 };

@@ -10,7 +10,7 @@ public:
 
 private:
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
-	virtual void visit(CollectionStmt& coll_def) override;
+	virtual void visit(TypeDefStmt& coll_def) override;
 	virtual void visit(FuncDefStmt& def) override;
 	Scopes& scopes;
 };

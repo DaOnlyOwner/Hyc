@@ -179,7 +179,7 @@ void desugar(NamespaceStmt& ns)
 }
 
 // We don't need to go through the stmts of a struct def
-void DesugarCompound::visit(CollectionStmt& coll_stmt)
+void DesugarCompound::visit(TypeDefStmt& coll_stmt)
 {}
 
 void DesugarCompound::visit(BinOpExpr& expr)

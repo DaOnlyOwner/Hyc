@@ -20,7 +20,7 @@ void DeclarationsCollectorTypes::visit(NamespaceStmt& namespace_stmt)
 	for (auto& stmt : namespace_stmt.stmts) { stmt->accept(*this); }
 }
 
-void DeclarationsCollectorTypes::visit(CollectionStmt& coll_def)
+void DeclarationsCollectorTypes::visit(TypeDefStmt& coll_def)
 {
 	add(*this,scopes, coll_def, coll_def.name);
 }

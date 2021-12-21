@@ -1,7 +1,7 @@
 #include "LLVMBackendTypeCollector.h"
 #include "llvm/IR/Type.h"
 
-void LLVMBackendTypeCollector::visit(CollectionStmt& stmt)
+void LLVMBackendTypeCollector::visit(TypeDefStmt& stmt)
 {
 	if (!stmt.generic_params.empty()) return;
 	type_hier.add(&stmt);
@@ -13,7 +13,7 @@ void LLVMBackendTypeCollector::visit(FuncDefStmt& def)
 {
 }
 
-void llvm_collect_types(LLVMBackendInfo& be, Tree<CollectionStmt*>& type_hier, NamespaceStmt& ns)
+void llvm_collect_types(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, NamespaceStmt& ns)
 {
 	LLVMBackendTypeCollector tc(be, type_hier);
 	ns.accept(tc);

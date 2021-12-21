@@ -43,9 +43,9 @@ enum class PredefinedType
 struct TypeSpec;
 struct Type
 {
-	typedef std::variant<struct CollectionStmt*, struct PointerType, struct ArrayType, struct FunctionPointerType> TypeVariant;
+	typedef std::variant<struct TypeDefStmt*, struct PointerType, struct ArrayType, struct FunctionPointerType> TypeVariant;
 
-	Type(CollectionStmt* bt);
+	Type(TypeDefStmt* bt);
 	Type(uint64_t amount);
 	Type(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
 	Type() { not_specified = true; }
@@ -60,7 +60,7 @@ struct Type
 	bool operator!=(const Type& other) const { return !(*this == other); };
 
 	void promote_pointer();
-	void promote_base(CollectionStmt* bt);
+	void promote_base(TypeDefStmt* bt);
 	void promote_array(uint64_t amount);
 	void promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
 	void reverse();
@@ -76,7 +76,7 @@ struct Type
 	std::unique_ptr<TypeSpec> to_ast() const;
 
 
-	CollectionStmt* get_base_type() const;
+	TypeDefStmt* get_base_type() const;
 	//PredefinedType pred_type;
 
 	// Also account for cast operators later
@@ -106,5 +106,5 @@ struct PointerType
 {
 
 };
-extern CollectionStmt error_base_type;
+extern TypeDefStmt error_base_type;
 extern Type error_type;

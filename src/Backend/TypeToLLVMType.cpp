@@ -15,7 +15,7 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 		{
 		case TypeKind::Base:
 		{
-			auto base = std::get<CollectionStmt*>(var);
+			auto base = std::get<TypeDefStmt*>(var);
 			if (scopes.is_type_predefined(base))
 			{
 				auto pd = scopes.get_predefined_type(base);

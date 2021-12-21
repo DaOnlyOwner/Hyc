@@ -22,17 +22,18 @@ public:
 	SymbolTable(SymbolTable&& other) noexcept= default;
 	SymbolTable& operator=(SymbolTable&& other) = default;
 
-	bool add(CollectionStmt* cs);
+	bool add(TypeDefStmt* cs);
 
 	bool add(FuncDefStmt* fn);
-	bool add(CollectionStmt* for_coll, DeclStmt* decl, size_t idx);
+	bool add(TypeDefStmt* td, DeclStmt* decl, size_t idx);
+	bool add(TypeDefStmt* td, UnionDeclStmt* udecl);
 	bool add(DeclStmt* decl);
 
-	CollectionStmt* get_type(const std::string& name) const;
+	TypeDefStmt* get_type(const std::string& name) const;
 
-	DeclStmt* get_decl_for(CollectionStmt* bt, const std::string& name);
+	DeclStmt* get_decl_for(TypeDefStmt* bt, const std::string& name);
 
-	size_t get_decl_idx_for(CollectionStmt* cs, const std::string& name);
+	size_t get_decl_idx_for(TypeDefStmt* cs, const std::string& name);
 
 	DeclStmt* get_variable(const std::string& name);
 
@@ -54,10 +55,11 @@ private:
 		size_t idx;
 	};
 
-	std::unordered_map<std::string, CollectionStmt*> collections;
-	std::unordered_map<CollectionStmt*, std::unordered_map<std::string, member>> decl_in_collection;
+	std::unordered_map<std::string, TypeDefStmt*> collections;
+	std::unordered_map<TypeDefStmt*, std::unordered_map<std::string, member>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
 
 	std::unordered_map<std::string, DeclStmt*> variables;
+	std::unordered_map<TypeDefStmt*, std::unordered_map<std::string, UnionDeclStmt*>> union_decl_in_collection;
 };

@@ -2,7 +2,7 @@
 #include "TypeCreator.h"
 #include <limits>
 
-bool SymbolTable::add(CollectionStmt* cs)
+bool SymbolTable::add(TypeDefStmt* cs)
 {
 	return collections.insert({ cs->name.text,cs }).second;
 }
@@ -46,7 +46,7 @@ bool SymbolTable::add(FuncDefStmt* fn)
 	return false;
 }
 
-bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl, size_t idx)
+bool SymbolTable::add(TypeDefStmt* for_coll, DeclStmt* decl, size_t idx)
 {
 	auto it = decl_in_collection.find(for_coll);
 	if (it == decl_in_collection.end())
@@ -63,19 +63,36 @@ bool SymbolTable::add(CollectionStmt* for_coll, DeclStmt* decl, size_t idx)
 
 }
 
+bool SymbolTable::add(TypeDefStmt* td, UnionDeclStmt* udecl)
+{
+	auto it = union_decl_in_collection.find(td);
+	if (it == union_decl_in_collection.end())
+	{
+		union_decl_in_collection[td] = { {udecl->decl_stmt->name.text,udecl} };
+		return true;
+	}
+	else
+	{
+		auto& coll_decls = it->second;
+		auto succ = coll_decls.insert({ udecl->decl_stmt->name.text,udecl });
+		return succ.second;
+	}
+
+}
+
 bool SymbolTable::add(DeclStmt* decl)
 {
 	return variables.insert({ decl->name.text,decl}).second;
 }
 
-CollectionStmt* SymbolTable::get_type(const std::string& name) const
+TypeDefStmt* SymbolTable::get_type(const std::string& name) const
 {
 	auto it = collections.find(name);
 	if (it != collections.end()) return it->second;
 	return nullptr;
 }
 
-DeclStmt* SymbolTable::get_decl_for(CollectionStmt* bt, const std::string& name)
+DeclStmt* SymbolTable::get_decl_for(TypeDefStmt* bt, const std::string& name)
 {
 	auto it = decl_in_collection.find(bt);
 	if(it == decl_in_collection.end()) return nullptr; 
@@ -84,7 +101,7 @@ DeclStmt* SymbolTable::get_decl_for(CollectionStmt* bt, const std::string& name)
 	else return decl_it->second.stmt;
 }
 
-size_t SymbolTable::get_decl_idx_for(CollectionStmt* cs, const std::string& name)
+size_t SymbolTable::get_decl_idx_for(TypeDefStmt* cs, const std::string& name)
 {
 	auto it = decl_in_collection.find(cs);
 	if (it == decl_in_collection.end()) return std::numeric_limits<size_t>::max();

@@ -2,7 +2,7 @@
 #include "Messages.h"
 #include "TypeCreator.h"
 
-void MemberCollector::visit(CollectionStmt& coll_def)
+void MemberCollector::visit(TypeDefStmt& coll_def)
 {
 	if (!coll_def.generic_params.empty()) return; // Don't collect members of generic collections
 	current_collection = &coll_def;

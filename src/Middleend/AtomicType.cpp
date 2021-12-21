@@ -8,7 +8,7 @@
 #include "Scopes.h"
 #include "Messages.h"
 
-CollectionStmt error_base_type{ "__error_type__" };
+TypeDefStmt error_base_type{ "__error_type__" };
 Type error_type{ &error_base_type };
 
 bool Type::operator==(const Type& other) const
@@ -24,7 +24,7 @@ bool Type::operator==(const Type& other) const
 		case TypeKind::Pointer:
 			break;
 		case TypeKind::Base:
-			if (std::get<CollectionStmt*>(acc)->name.text != std::get<CollectionStmt*>(oacc)->name.text) return false;
+			if (std::get<TypeDefStmt*>(acc)->name.text != std::get<TypeDefStmt*>(oacc)->name.text) return false;
 			break;
 		case TypeKind::Array:
 			if (std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return false;
@@ -46,7 +46,7 @@ bool Type::operator==(const Type& other) const
 	return true;
 }
 
-Type::Type(CollectionStmt* base)
+Type::Type(TypeDefStmt* base)
 {
 	promote_base(base);
 }
@@ -104,7 +104,7 @@ void Type::promote_pointer()
 	stored_types.push_back(std::make_pair(TypeKind::Pointer, TypeVariant{ PointerType{} }));
 }
 
-void Type::promote_base(CollectionStmt* base)
+void Type::promote_base(TypeDefStmt* base)
 {
 	not_specified = false;
 	stored_types.push_back(std::make_pair(TypeKind::Base, TypeVariant{ base }));
@@ -133,7 +133,7 @@ std::string Type::as_str() const
 			out += fmt::format("[{}]", std::get<ArrayType>(var).amount);
 			break;
 		case TypeKind::Base:
-			out += std::get<CollectionStmt*>(var)->name.text;
+			out += std::get<TypeDefStmt*>(var)->name.text;
 			break;
 		case TypeKind::Pointer:
 			out += "*";
@@ -169,7 +169,7 @@ std::string Type::as_str_for_mangling() const
 			out += fmt::format("[{}]", std::get<ArrayType>(var).amount); // No array in function
 			break;
 		case TypeKind::Base:
-			out += std::get<CollectionStmt*>(var)->name.text;
+			out += std::get<TypeDefStmt*>(var)->name.text;
 			break;
 		case TypeKind::Pointer:
 			out += "$";
@@ -200,7 +200,7 @@ std::unique_ptr<TypeSpec> Type::to_ast() const
 
 	if (is_base_type())
 	{
-		auto coll = std::get<CollectionStmt*>(stored_types[0].second);
+		auto coll = std::get<TypeDefStmt*>(stored_types[0].second);
 		to_build = std::make_unique<BaseTypeSpec>(Token(coll->name));
 	}
 
@@ -387,12 +387,12 @@ bool Type::is_decimal(PredefinedType pt)
 }
 
 
-CollectionStmt* Type::get_base_type() const
+TypeDefStmt* Type::get_base_type() const
 {
 	if (not_specified) return nullptr;
 	for (auto& ti : stored_types)
 	{
-		if (ti.first == TypeKind::Base) return std::get<CollectionStmt*>(ti.second);
+		if (ti.first == TypeKind::Base) return std::get<TypeDefStmt*>(ti.second);
 	}
 
 	assert(false);

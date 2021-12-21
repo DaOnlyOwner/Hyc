@@ -69,7 +69,7 @@ void GenericInst::visit(DeclStmt& stmt)
 	}
 }
 
-void GenericInst::visit(CollectionStmt& stmt)
+void GenericInst::visit(TypeDefStmt& stmt)
 {
 	generic_params = &stmt.generic_params;
 	for (auto& s : stmt.stmts) s->accept(*this);

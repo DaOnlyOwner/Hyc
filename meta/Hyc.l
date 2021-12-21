@@ -163,6 +163,8 @@ caret		"^"
 or		"|"
 dot   "."
 mem_acc "->"
+double_qm	"??"
+double_em	"!!"
 double_amp	"&&"
 double_or	"||"
 questionmark	"?"
@@ -200,6 +202,8 @@ or_eql		"|="
 {double_plus}	{ PUSH(DoublePlus);}
 {double_minus}	{ PUSH(DoubleMinus);}
 {ex_mark}	{ PUSH(ExclMark);}
+{double_qm}	{ PUSH(DoubleQM);}
+{double_em}	{ PUSH(DoubleEM);}
 {tilde}		{ PUSH(Tilde);}
 {gen_fcall_open} { PUSH(GenFCallOpen);}
 {gen_fcall_close} {PUSH(GenFCallClose);}

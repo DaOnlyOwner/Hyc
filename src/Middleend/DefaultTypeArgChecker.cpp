@@ -47,7 +47,7 @@ void DefaultTypeArgChecker::check(std::vector<GenericInfo>& gis, const Token& na
 	}
 }
 
-void DefaultTypeArgChecker::visit(CollectionStmt& ud)
+void DefaultTypeArgChecker::visit(TypeDefStmt& ud)
 {
 	check(ud.generic_params, ud.name, ud.get_collection_type());
 }

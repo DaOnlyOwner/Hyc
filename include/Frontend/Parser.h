@@ -23,6 +23,7 @@ public:
 	std::unique_ptr<Stmt> parse_return_stmt();
 	std::unique_ptr<Stmt> parse_decl_operator_stmt(); 
 	std::unique_ptr<Stmt> parse_decl_stmt();
+	std::unique_ptr<Stmt> parse_union_decl_stmt();
 	std::unique_ptr<Stmt> parse_struct_def();
 	std::unique_ptr<Stmt> parse_union_def();
 	
@@ -46,7 +47,7 @@ public:
 			decls_inside.push_back(fn());
 		}
 		tkns.match_token(Token::Specifier::BraceR);
-		return std::make_unique<CollectionStmt>(mv(name), mv(generic_parameters), mv(decls_inside),spec == Token::Specifier::KwStruct ? CollectionType::Struct : CollectionType::Union);
+		return std::make_unique<TypeDefStmt>(mv(name), mv(generic_parameters), mv(decls_inside),spec == Token::Specifier::KwStruct ? CollectionType::Struct : CollectionType::Union);
 	}
 
 	std::unique_ptr<Stmt> parse_match_stmt(bool in_loop);
@@ -71,7 +72,6 @@ public:
 	void save();
 
 	void backtrack();
-
 
 	template<typename TReturn, typename Fn>
 	TReturn try_parse(Fn fn)

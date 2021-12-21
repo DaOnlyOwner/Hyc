@@ -55,7 +55,7 @@ void TerminalOutput::visit(FuncDeclStmt& func_decl)
 	out += fmt::format("FuncDeclStmt: name='{}', generic_params={}, return_type='{}', arg_list='{}'\n", func_decl.name.text, generic_params, func_decl.ret_type->as_str(), args);
 }
 
-void TerminalOutput::visit(CollectionStmt& coll_def)
+void TerminalOutput::visit(TypeDefStmt& coll_def)
 {
 	make_indent();
 	std::string gp = "";
@@ -63,7 +63,7 @@ void TerminalOutput::visit(CollectionStmt& coll_def)
 	{
 		gp += fmt::format("{}{}, ", param.name.text, param.default_type != nullptr ? "=" + param.default_type->as_str() : "");
 	}
-	out += fmt::format("CollectionStmt: collection_type='{}', name='{}', generic_params='{}'\n", coll_def.get_collection_type(), coll_def.name.text, gp);
+	out += fmt::format("TypeDefStmt: collection_type='{}', name='{}', generic_params='{}'\n", coll_def.get_collection_type(), coll_def.name.text, gp);
 	indent++;
 	for (auto& stmt : coll_def.stmts)
 	{

@@ -92,7 +92,9 @@ struct Token
 		GenFCallClose,
 		ArrayStart,
 		ArrayEnd,
-		Quad
+		Quad,
+		DoubleQM,
+		DoubleEM
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -320,6 +322,10 @@ struct Token
 			return ".]";
 		case Specifier::ArrayStart:
 			return "[.";
+		case Specifier::DoubleQM:
+			return "??";
+		case Specifier::DoubleEM:
+			return "!!";
 		}
 		return "Unknown";
 

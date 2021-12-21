@@ -21,7 +21,7 @@ private:
 	virtual void visit(FuncCallExpr& func_call_expr) override;
 	virtual void visit(FuncDeclStmt& func_decl) override;
 	virtual void visit(FuncDefStmt& func_def_stmt) override;
-	virtual void visit(CollectionStmt& coll_def) override;
+	virtual void visit(TypeDefStmt& coll_def) override;
 	virtual void visit(ReturnStmt& ret_stmt) override;
 	virtual void visit(ExprStmt& expr_stmt) override;
 	virtual void visit(DeclStmt& decl_stmt) override;
@@ -42,6 +42,7 @@ private:
 	bool handle_bin_op_member_acc(BinOpExpr& bin_op);
 	bool handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_union(BinOpExpr& bin_op);
 
 	void check_type_is_bool(uptr<Expr>& expr);
 

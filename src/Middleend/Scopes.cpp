@@ -2,8 +2,8 @@
 #include <cassert>
 
 bool Scopes::predefined_types_init = false;
-std::vector<CollectionStmt> Scopes::predefined_types;
-std::unordered_map<CollectionStmt*, PredefinedType> Scopes::coll_to_predef={};
+std::vector<TypeDefStmt> Scopes::predefined_types;
+std::unordered_map<TypeDefStmt*, PredefinedType> Scopes::coll_to_predef={};
 DeclStmt Scopes::declTrue{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"true") };
 DeclStmt Scopes::declFalse{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"false") };
 

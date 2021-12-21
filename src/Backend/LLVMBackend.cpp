@@ -87,7 +87,7 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	}
 
 	// Preparation passes
-	Tree<CollectionStmt*> type_hierachy;
+	Tree<TypeDefStmt*> type_hierachy;
 	llvm_collect_types(be, type_hierachy, ns);
 	llvm_collect_member(be, type_hierachy, scopes, ns);
 	llvm_collect_funcs(ns, be.mod, be.context,scopes);

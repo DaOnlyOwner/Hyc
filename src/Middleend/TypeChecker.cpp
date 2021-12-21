@@ -132,6 +132,7 @@ void TypeChecker::visit(IntegerLiteralExpr& lit)
 void TypeChecker::visit(BinOpExpr& bin_op)
 {
 	bool handled = handle_bin_op_member_acc(bin_op);
+	handled = handled || handle_bin_op_union(bin_op);
 	if (!handled)
 	{
 		auto tlh = get(bin_op.lh);
@@ -441,7 +442,7 @@ void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 	}
 }
 
-void TypeChecker::visit(CollectionStmt& coll_def)
+void TypeChecker::visit(TypeDefStmt& coll_def)
 {
 }
 
@@ -873,6 +874,44 @@ bool TypeChecker::handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op)
 			RETURN_VAL_BIN_OP(error_type, true);
 		default:
 			break;
+		}
+	}
+	return false;
+}
+
+bool TypeChecker::handle_bin_op_union(BinOpExpr& bin_op)
+{
+	// This is almost the same code as in handle_bin_op_mem_access.
+	if (bin_op.op.type == Token::Specifier::DoubleEM
+		|| bin_op.op.type == Token::Specifier::DoubleQM)
+	{
+		auto t = get(bin_op.lh);
+		if (!t.is_base_type())
+		{
+			Messages::inst().trigger_6_e13(bin_op.op, t.as_str());
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
+		auto* ident_rh = dynamic_cast<IdentExpr*>(bin_op.rh.get());
+		if (ident_rh == nullptr)
+		{
+			// Error: a!!b or a??b <-- b needs to be an identifier.
+			Messages::inst().trigger_6_e14(bin_op.op, bin_op.rh->as_str());
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
+		UnionDeclStmt* decl = scopes.get_union_decl_for(t.get_base_type(), ident_rh->name.text);
+		if (decl == nullptr)
+		{
+			// Error: no member named "decl->name" in trh
+			Messages::inst().trigger_6_e12(bin_op.op, t.as_str(), ident_rh->name.text);
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
+		if (bin_op.op.type == Token::Specifier::DoubleQM)
+		{
+			RETURN_VAL_BIN_OP(Type(scopes.get_type("bool")), true);
+		}
+		else
+		{
+			RETURN_VAL_BIN_OP(Type(scopes.get_type("void")), true);
 		}
 	}
 	return false;

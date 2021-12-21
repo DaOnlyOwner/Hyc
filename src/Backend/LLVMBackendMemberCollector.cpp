@@ -19,7 +19,7 @@ void LLVMBackendMemberCollector::visit(FuncDefStmt& def)
 {
 }
 
-void LLVMBackendMemberCollector::visit(CollectionStmt& stmt)
+void LLVMBackendMemberCollector::visit(TypeDefStmt& stmt)
 {
 	std::vector<llvm::Type*> elements;
 	embedded_in = &stmt;
@@ -31,7 +31,7 @@ void LLVMBackendMemberCollector::visit(CollectionStmt& stmt)
 	stmt.llvm_struct_type->setBody(elements);
 }
 
-void llvm_collect_member(LLVMBackendInfo& be, Tree<CollectionStmt*>& type_hier, Scopes& sc, NamespaceStmt& ns)
+void llvm_collect_member(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, Scopes& sc, NamespaceStmt& ns)
 {
 	LLVMBackendMemberCollector mc(be, type_hier, sc);
 	ns.accept(mc);

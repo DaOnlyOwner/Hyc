@@ -9,7 +9,7 @@ public:
 	ArrayDeclChecker(Scopes& scopes, NamespaceStmt& ns)
 		:scopes(scopes), ns(ns) {}
 
-	virtual void visit(CollectionStmt& cs) override {}
+	virtual void visit(TypeDefStmt& cs) override {}
 	virtual void visit(DeclStmt& decl) override;
 	virtual void visit(FuncDefStmt& func_def) override;
 	virtual void visit(ArrayTypeSpec& array_type_spec) override;

@@ -18,7 +18,7 @@ private:
 	Scopes& scopes;
 	const std::string* must_not_contain=nullptr;
 
-	virtual void visit(CollectionStmt& coll_def) override;
+	virtual void visit(TypeDefStmt& coll_def) override;
 	virtual void visit(BaseTypeSpec& bts) override;
 	virtual void visit(NamespaceStmt& ns) override;
 	virtual void visit(FuncDefStmt& def) override;

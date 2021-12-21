@@ -13,6 +13,7 @@
 #include <cassert>
 #include <variant>
 #include "llvm/IR/DerivedTypes.h"
+#include "UptrCast.h"
 
 #define IMPL_VISITOR virtual void accept(IAstVisitor& visitor) override {visitor.visit(*this);}
 #define IMPL_CLONE(u) uptr<u> clone() const override 
@@ -48,10 +49,12 @@ struct IAstVisitor
 	virtual void visit(struct FuncCallExpr& func_call_expr) {};
 	virtual void visit(struct FuncDeclStmt& func_decl) {};
 	virtual void visit(struct FuncDefStmt& func_def_stmt);
-	virtual void visit(struct CollectionStmt& coll_def) {};
+	virtual void visit(struct TypeDefStmt& struct_def) {};
+	virtual void visit(struct UnionDefStmt& union_def) {};
 	virtual void visit(struct ReturnStmt& ret_stmt) {};
 	virtual void visit(struct ExprStmt& expr_stmt);
 	virtual void visit(struct DeclStmt& decl_stmt) {};
+	virtual void visit(struct UnionDeclStmt& udecl_stmt) {};
 	virtual void visit(struct PointerTypeSpec& pt_spec) {};
 	virtual void visit(struct BaseTypeSpec& bt_spec) {};
 	virtual void visit(struct ArrayTypeSpec& at_spec) {};
@@ -568,34 +571,41 @@ enum class CollectionType
 	Union,Struct
 };
 
-
-struct CollectionStmt : Stmt
+struct UnionDeclStmt : Stmt
 {
-	CollectionStmt(const Token& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
-		:name(name), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
+	UnionDeclStmt(uptr<DeclStmt>&& decl_stmt, std::optional<EvalIntegerResult> eir)
+		:decl_stmt(mv(decl_stmt)), tagged_value(eir) {}
+	uptr<DeclStmt> decl_stmt;
+	std::optional<EvalIntegerResult> tagged_value;
 
-	CollectionStmt(const std::string& name, CollectionType ct = CollectionType::Struct)
-		:name(Token(Token::Specifier::Ident, name)), stmts{}, generic_params{},ct(ct){}
+	IMPL_VISITOR;
+	IMPL_CLONE(Stmt)
+	{
+		auto decl = dynamic_unique_cast<DeclStmt>(decl_stmt->clone());
+		return uptr<Stmt>(new UnionDeclStmt(mv(decl), tagged_value));
+	}
+};
 
+struct TypeDefStmt : Stmt
+{
+	TypeDefStmt(const Token& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts, CollectionType ct)
+		:ct(ct),name(name), generic_params(mv(generic_params)), stmts(mv(stmts)) {}
+	TypeDefStmt(const Token& name, CollectionType ct = CollectionType::Struct)
+		:stmts{}, generic_params{},ct(ct), name(name){}
+	CollectionType ct;
 	Token name;
 	std::vector<GenericInfo> generic_params;
 	std::vector<uptr<Stmt>> stmts;
-	CollectionType ct;
-
-	// Hakish solution
-	llvm::StructType* llvm_struct_type = nullptr;
-
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);
 		std::vector<GenericInfo> gp_cpy;
 		for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type ? p.default_type->clone() : nullptr });
-		return uptr<Stmt>(new CollectionStmt(name, mv(gp_cpy), mv(stmts_cpy),ct));
+		return uptr<Stmt>(new TypeDefStmt(name, mv(gp_cpy), mv(stmts_cpy),ct));
 	}
-	inline std::string get_collection_type()
-	{
-		return ct == CollectionType::Struct ? "struct" : "union";
-	}
+
+	CollectionType get_ct() { return ct; }
+
 };
 
 struct NamespaceStmt : Stmt
