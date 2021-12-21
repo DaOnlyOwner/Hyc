@@ -246,6 +246,7 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 
 void LLVMBackendExpr::visit(DecimalLiteralExpr& lit)
 {
+	get_params();
 	switch (lit.type)
 	{
 	case DecimalLiteralType::Float:
@@ -260,6 +261,7 @@ void LLVMBackendExpr::visit(DecimalLiteralExpr& lit)
 
 void LLVMBackendExpr::visit(IntegerLiteralExpr& lit)
 {
+	get_params();
 	RETURN(llvm::ConstantInt::get(be.context, llvm::APInt(lit.eval_res.amount_bits, lit.eval_res.val, lit.eval_res.is_signed)));
 }
 
@@ -417,7 +419,7 @@ bool LLVMBackendExpr::handle_ptr(const BinOpExpr& bin_op)
 {
 	if (bin_op.lh->sem_type.is_pointer_type() && bin_op.rh->sem_type.is_predefined(scopes))
 	{
-		auto lhs = get_with_params(*bin_op.lh, false);
+		auto lhs = get_with_params(*bin_op.lh, true);
 		auto rhs = get_with_params(*bin_op.rh, true);
 		auto cpy_type = bin_op.lh->sem_type;
 		cpy_type.pop(); // Get the base type
@@ -425,7 +427,7 @@ bool LLVMBackendExpr::handle_ptr(const BinOpExpr& bin_op)
 		{
 		case Token::Specifier::Minus:
 		case Token::Specifier::Plus:
-			RETURN_WITH_TRUE(be.builder.CreateGEP(map_type(cpy_type,scopes,be.context), lhs,rhs));
+			RETURN_WITH_TRUE(be.builder.CreateInBoundsGEP(map_type(cpy_type,scopes,be.context), lhs,rhs));
 		default:
 			assert(false);
 			break;
@@ -465,7 +467,26 @@ bool LLVMBackendExpr::handle_ptr(const BinOpExpr& bin_op)
 
 void LLVMBackendExpr::visit(ArraySubscriptExpr& subs)
 {
-	NOT_IMPLEMENTED;
+	auto [should_load] = get_params();
+	auto amount = get_with_params(subs.inner, true);
+	llvm::Value* ep;
+	if (subs.from->sem_type.is_array_type())
+	{
+		auto val = get_with_params(subs.from, false);
+		auto ci = llvm::ConstantInt::get(be.context, llvm::APInt(32, 0, false));
+		ep = be.builder.CreateInBoundsGEP(map_type(subs.from->sem_type, scopes, be.context), val, { ci,amount });
+	}
+	else
+	{
+		auto val = get_with_params(subs.from, true);
+		ep = be.builder.CreateInBoundsGEP(map_type(subs.sem_type, scopes, be.context), val, amount);
+	}
+	if (should_load)
+	{
+		auto mapped = map_type(should_load ? subs.sem_type : subs.from->sem_type, scopes, be.context);
+		RETURN(be.builder.CreateLoad(mapped, ep));
+	}
+	RETURN(ep);
 }
 
 void LLVMBackendExpr::visit(TernaryExpr& tern)

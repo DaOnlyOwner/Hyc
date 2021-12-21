@@ -159,10 +159,10 @@ struct PointerTypeSpec : TypeSpec
 
 struct BaseTypeSpec : TypeSpec
 {
-	BaseTypeSpec(Token&& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
-		:name(mv(name)), TypeSpec(mv(inner)), generic_list(mv(generic_list)) {}
-	BaseTypeSpec(Token&& name)
-		:name(mv(name)), generic_list{},TypeSpec(nullptr){}
+	BaseTypeSpec(const Token& name, uptr<TypeSpec> inner, std::vector<uptr<TypeSpec>>&& generic_list)
+		:name(name), TypeSpec(mv(inner)), generic_list(mv(generic_list)) {}
+	BaseTypeSpec(const Token& name)
+		:name(name), generic_list{},TypeSpec(nullptr){}
 	Token name;
 	std::vector<uptr<TypeSpec>> generic_list;
 	virtual const Token& get_ident_token() const override { return name; }
@@ -515,8 +515,8 @@ struct ScopeStmt : Stmt
 
 struct DeclOpStmt : TypedStmt
 {
-	DeclOpStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
-		: type(mv(type)), name(mv(name)), expr(mv(expr)) {}
+	DeclOpStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: type(mv(type)), name(name), expr(mv(expr)) {}
 	Token name;
 	uptr<TypeSpec> type;
 	uptr<Expr> expr;
@@ -524,26 +524,26 @@ struct DeclOpStmt : TypedStmt
 
 struct DeclCpyStmt : DeclOpStmt
 {
-	DeclCpyStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
-		: DeclOpStmt(mv(type),mv(name),mv(expr)) {}
+	DeclCpyStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type),name,mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclCpyStmt(type->clone(), Token(name), expr->clone())); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclCpyStmt(type->clone(), name, expr->clone())); }
 };
 
 struct DeclMvStmt : DeclOpStmt
 {
-	DeclMvStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
-		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
+	DeclMvStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), name, mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclMvStmt(type->clone(), Token(name), expr->clone())); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclMvStmt(type->clone(), name, expr->clone())); }
 };
 
 struct DeclInitStmt : DeclOpStmt
 {
-	DeclInitStmt(uptr<TypeSpec> type, Token&& name, uptr<Expr> expr)
-		: DeclOpStmt(mv(type), mv(name), mv(expr)) {}
+	DeclInitStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), name, mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclInitStmt(type->clone(), Token(name), expr->clone())); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclInitStmt(type->clone(), name, expr->clone())); }
 };
 
 struct ContinueStmt : Stmt
@@ -554,13 +554,13 @@ struct ContinueStmt : Stmt
 
 struct DeclStmt : TypedStmt
 {
-	DeclStmt(uptr<TypeSpec> type, Token&& name)
-		:type_spec(mv(type)),name(mv(name)){}
+	DeclStmt(uptr<TypeSpec> type, const Token& name)
+		:type_spec(mv(type)),name(name){}
 
 	Token name;
 	uptr<TypeSpec> type_spec;
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec?type_spec->clone():nullptr, Token(name))); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec?type_spec->clone():nullptr, name)); }
 };
 
 enum class CollectionType
@@ -571,8 +571,8 @@ enum class CollectionType
 
 struct CollectionStmt : Stmt
 {
-	CollectionStmt(Token&& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
-		:name(mv(name)), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
+	CollectionStmt(const Token& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts,CollectionType ct)
+		:name(name), generic_params(mv(generic_params)), stmts(mv(stmts)),ct(ct) {}
 
 	CollectionStmt(const std::string& name, CollectionType ct = CollectionType::Struct)
 		:name(Token(Token::Specifier::Ident, name)), stmts{}, generic_params{},ct(ct){}
@@ -590,7 +590,7 @@ struct CollectionStmt : Stmt
 		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);
 		std::vector<GenericInfo> gp_cpy;
 		for (auto& p : generic_params) gp_cpy.push_back({ p.name,p.default_type ? p.default_type->clone() : nullptr });
-		return uptr<Stmt>(new CollectionStmt(Token(name), mv(gp_cpy), mv(stmts_cpy),ct));
+		return uptr<Stmt>(new CollectionStmt(name, mv(gp_cpy), mv(stmts_cpy),ct));
 	}
 	inline std::string get_collection_type()
 	{
@@ -600,14 +600,14 @@ struct CollectionStmt : Stmt
 
 struct NamespaceStmt : Stmt
 {
-	NamespaceStmt(std::vector<uptr<Stmt>>&& stmts, Token&& name)
-		:stmts(mv(stmts)),name(mv(name)) {}
+	NamespaceStmt(std::vector<uptr<Stmt>>&& stmts, const Token& name)
+		:stmts(mv(stmts)),name(name) {}
 	NamespaceStmt(const Token& name)
 		:name(name){}
 	std::vector<uptr<Stmt>> stmts;
 	Token name;
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { CPY_VEC(stmts, stmts_cpy, uptr<Stmt>) return uptr<Stmt>(new NamespaceStmt(mv(stmts_cpy), Token(name))); }
+	IMPL_CLONE(Stmt) { CPY_VEC(stmts, stmts_cpy, uptr<Stmt>) return uptr<Stmt>(new NamespaceStmt(mv(stmts_cpy), name)); }
 };
 
 struct WhileStmt : Stmt
@@ -663,10 +663,10 @@ struct IfStmt : Stmt
 
 struct FuncDeclStmt : Stmt
 {
-	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
-		: ret_type(mv(ret_type)), name(mv(name)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
-	FuncDeclStmt(uptr<TypeSpec> ret_type, Token&& name, std::vector<uptr<DeclStmt>>&& arg_list)
-		:ret_type(mv(ret_type)),name(mv(name)),arg_list(mv(arg_list)),generic_list{}{}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
+		: ret_type(mv(ret_type)), name(name), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<uptr<DeclStmt>>&& arg_list)
+		:ret_type(mv(ret_type)),name(name),arg_list(mv(arg_list)),generic_list{}{}
 	uptr<TypeSpec> ret_type;
 	Token name;
 	std::vector<uptr<DeclStmt>> arg_list;

@@ -39,9 +39,17 @@ void Error::Warning(const ErrorDescription& descr)
 
 void Error::SyntacticalError(const ErrorDescription& descr)
 {
-	print(descr, fmt::color::orange_red, "Syntax Error");
-	Error = true;
+	if (DoEmit)
+	{
+		print(descr, fmt::color::orange_red, "Syntax Error");
+		Error = true;
+	}
 	throw SyntaxErrorException();
+}
+
+void Error::SetEmit(bool emit)
+{
+	DoEmit = emit;
 }
 
 Error::ErrorDescription Error::FromToken(const Token& t)
@@ -54,3 +62,4 @@ Error::ErrorDescription Error::FromToken(const Token& t)
 }
 
 bool Error::Error = false;
+bool Error::DoEmit = true;

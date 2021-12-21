@@ -13,6 +13,7 @@ public:
 	std::unique_ptr<NamespaceStmt> parse();
 	Lexer& get_lexer() { return tkns; }
 	const Lexer& get_lexer() const { return tkns; }
+
 	std::unique_ptr<NamespaceStmt> parse_compilation_unit();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_function_decl_stmt();
@@ -66,10 +67,38 @@ public:
 	std::unique_ptr<TypeSpec> parse_type_spec();
 	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
+
+	void save();
+
+	void backtrack();
+
+
+	template<typename TReturn, typename Fn>
+	TReturn try_parse(Fn fn)
+	{
+		save();
+		auto emit_before = Error::DoEmit;
+		Error::SetEmit(false);
+		try
+		{
+			auto out = fn();
+			savepoints.pop_back();
+			Error::SetEmit(emit_before);
+			return out;
+		}
+		catch (Error::SyntaxErrorException& e)
+		{
+			backtrack();
+			Error::SetEmit(emit_before);
+			return nullptr;
+		}
+	}
+
 private:
 	Lexer& tkns; 
 	ExprParser expr_parser;
 	std::string file;
+	std::vector<Lexer::TokenPos> savepoints;
 };
 
 

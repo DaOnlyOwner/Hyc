@@ -18,6 +18,10 @@ namespace Error
 		std::string File;
 	};
 	extern bool Error;
+	extern bool DoEmit;
+
+	void SetEmit(bool emit);
+
 	ErrorDescription FromToken(const Token& t);
 	void Debug(const std::string& str);
 	void SemanticError(const ErrorDescription& descr);

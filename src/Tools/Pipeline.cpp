@@ -16,6 +16,7 @@
 #include "fmt/color.h"
 #include "TerminalOutput.h"
 #include <fstream>
+#include "ArrayDeclChecker.h"
 
 namespace
 {
@@ -61,7 +62,6 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	instantiate_generic_repeat(*parsed, sc);
 	collect_funcs(*parsed, sc);
 	collect_members(*parsed, sc);
-	int n = parsed->stmts.size();
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
 	if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitAST)

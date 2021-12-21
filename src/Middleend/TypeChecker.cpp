@@ -141,6 +141,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 		handled = handled || handle_bin_op_pointer_arithmetic(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_array(tlh, trh, bin_op);
 		//handled = handled || handle_bin_op_copy_move(tlh, trh, bin_op);
 		if (!handled)
 		{
@@ -436,7 +437,7 @@ void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 	auto pred = func_def_stmt.decl->ret_type->semantic_type.to_pred(scopes);
 	if (pred.has_value() && (pred.value() != PredefinedType::Void) && !ret_was_there)
 	{
-		Messages::inst().trigger_6_e24(func_def_stmt.decl->name);
+		Messages::inst().trigger_6_w3(func_def_stmt.decl->name);
 	}
 }
 
@@ -550,7 +551,25 @@ void TypeChecker::visit(ContinueStmt& cont_stmt)
 
 void TypeChecker::visit(ArraySubscriptExpr& subs)
 {
-	NOT_IMPLEMENTED;
+	auto t = get(subs.from);
+	auto t_inner = get(subs.inner);
+	auto t_inner_p = t_inner.to_pred(scopes);
+	if (t_inner_p.has_value() && Type::is_integer(t_inner_p.value()))
+	{
+		if (!t.is_pointer_type() && !t.is_array_type())
+		{
+			Messages::inst().trigger_6_e26(subs.inner->first_token(), subs.from->as_str());
+			subs.sem_type = error_type;
+			RETURN(error_type);
+		}
+		t.pop();
+		subs.sem_type = t;
+		RETURN(t);
+	}
+
+	Messages::inst().trigger_6_e27(subs.inner->first_token(),subs.inner->as_str());
+	subs.sem_type = error_type;
+	RETURN(error_type);
 }
 
 void TypeChecker::visit(TernaryExpr& tern)
@@ -831,6 +850,32 @@ bool TypeChecker::handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op)
 		RETURN_VAL_BIN_OP(trh, true);
 	}
 	return is_copy_move;
+}
+
+bool TypeChecker::handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op)
+{
+	if (tlh.is_array_type())
+	{
+		switch (bin_op.op.type)
+		{
+		case Token::Specifier::Equal:
+		case Token::Specifier::PercentEqual:
+		case Token::Specifier::CaretEqual:
+		case Token::Specifier::SlEqual:
+		case Token::Specifier::SrEqual:
+		case Token::Specifier::OrEqual:
+		case Token::Specifier::AmpersandEqual:
+		case Token::Specifier::PlusEqual:
+		case Token::Specifier::MinusEqual:
+		case Token::Specifier::AsterixEqual:
+		case Token::Specifier::SlashEqual:
+			Messages::inst().trigger_6_e16(bin_op.op, tlh.as_str(), trh.as_str());
+			RETURN_VAL_BIN_OP(error_type, true);
+		default:
+			break;
+		}
+	}
+	return false;
 }
 
 void TypeChecker::check_type_is_bool(uptr<Expr>& expr)

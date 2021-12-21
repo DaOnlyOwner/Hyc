@@ -99,6 +99,7 @@ void Messages::trigger_6_e4(const Token& from,const std::string& t1, const std::
 	semantic_error(from, fmt::format("The operator '{}' is not specified for types '{}' and '{}'", from.text, t1, t2));
 }
 
+// TODO: Null pointers syntax (nullptr).
 void Messages::trigger_6_e5(const Token& from, const std::string& expr, const std::string& t, const std::string& ptrtype)
 {
 	semantic_error(from, fmt::format("Only '0' (nullpointer) and other pointer values may be assigned to pointers, here a variable of type '{}' was assigned '{}' which has type '{}'",ptrtype, expr,t));
@@ -140,7 +141,7 @@ void Messages::trigger_6_e8(const Token& from, const std::string& t1, const std:
 
 void Messages::trigger_6_e9(const Token& from, const std::string& expr)
 {
-	semantic_error(from, fmt::format("The type of expression '{}' is void and cannot be used in a binary operator",
+	semantic_error(from, fmt::format("The type of expression '{}' is void and cannot be used as an operand",
 		expr));
 }
 
@@ -206,7 +207,7 @@ void Messages::trigger_6_e20(const Token& from, const std::string& expr)
 
 void Messages::trigger_6_e21(const Token& from, const std::string& args)
 {
-	semantic_error(from, fmt::format("No function defined for name '{}' with argument types {}", from.text, args));
+	semantic_error(from, fmt::format("No function '{}' defined with argument types '{}'", from.text, args));
 }
 
 void Messages::trigger_6_e22(const Token& from, const std::string& expr, const std::string& t)
@@ -219,14 +220,24 @@ void Messages::trigger_6_e23(const Token& from, const std::string& expr, const s
 	semantic_error(from, fmt::format("Cannot dereference a non pointer (expression '{}' has type '{}')", expr,t));
 }
 
-void Messages::trigger_6_e24(const Token& from)
+void Messages::trigger_6_w3(const Token& from)
 {
-	semantic_error(from, "Non void function '{}' has no return stmt", from.text);
+	warning(from, fmt::format("Non void function '{}' has no return statement", from.text));
 }
 
 void Messages::trigger_6_e25(const Token& from, const std::string& t1, const std::string& t2)
 {
 	semantic_error(from, fmt::format("Returned type '{}' does not match the function return type '{}'", t1, t2));
+}
+
+void Messages::trigger_6_e26(const Token& from, const std::string& expr)
+{
+	semantic_error(from, fmt::format("Cannot take subscript of a non pointer/array, in expression '{}'", expr));
+}
+
+void Messages::trigger_6_e27(const Token& from, const std::string& expr)
+{
+	semantic_error(from, fmt::format("The type of the expression '{}' within the array subscript is not an unsigned integer",expr));
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
@@ -244,6 +255,10 @@ void Messages::trigger_9_e1(const Token& from, const std::string& embedded_in)
 	semantic_error(from, fmt::format("Embedding '{}' in '{}' creates a cyclic dependency", from.text, embedded_in));
 }
 
+void Messages::trigger_10_e1(const Token& from)
+{
+	semantic_error(from, "Last type specifier needs to be a pointer");
+}
 
 void Messages::semantic_error(const Token& tk, const std::string& msg, const std::string& hint)
 {

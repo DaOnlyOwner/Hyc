@@ -10,7 +10,7 @@
 
 enum class TypeKind
 {
-	Pointer=0,
+	Pointer = 0,
 	Array,
 	FunctionPointer,
 	Base
@@ -25,19 +25,19 @@ enum class ConversionType
 
 enum class PredefinedType
 {
-	Bool=0,
-	UChar=1,
-	UShort=2,
-	UHalf=3,
-	UInt=4,
-	Char=5,
-	Short=6,
-	Half=7,
-	Int=8,
-	Float=9,
-	Double=10,
-	Quad=11,
-	Void=12,
+	Bool = 0,
+	UChar = 1,
+	UShort = 2,
+	UHalf = 3,
+	UInt = 4,
+	Char = 5,
+	Short = 6,
+	Half = 7,
+	Int = 8,
+	Float = 9,
+	Double = 10,
+	Quad = 11,
+	Void = 12,
 };
 
 struct TypeSpec;
@@ -68,6 +68,7 @@ struct Type
 	bool is_pointer_type() const;
 	bool is_base_type() const;
 	bool is_fptr_type() const;
+	bool is_array_type() const;
 	bool must_be_inferred() const;
 	std::pair<bool, Type> get_pointed_at() const;
 	bool is_predefined(const class Scopes& sc) const;

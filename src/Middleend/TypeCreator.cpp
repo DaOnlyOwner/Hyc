@@ -50,15 +50,16 @@ void TypeCreator::visit(BaseTypeSpec& bt_spec)
 
 void TypeCreator::visit(ArrayTypeSpec& at_spec)
 {
-	NOT_IMPLEMENTED;
-	//uint64_t amount = at_spec.amount->eval_res.amount_uint;
-	//if(at_spec.inner)
-	//{
-	//	auto& type = get(at_spec.inner);
-	//	type.promote_array(amount);
-	//	RETURN(type);
-	//}
-	//RETURN(Type(amount));
+	if (at_spec.inner != nullptr)
+	{
+		auto& type = get(at_spec.inner);
+		type.promote_array(at_spec.amount->eval_res.val);
+		RETURN(type);
+	}
+
+	Type t;
+	t.promote_array(at_spec.amount->eval_res.val);
+	RETURN(std::move(t));
 }
 
 void TypeCreator::visit(FptrTypeSpec& fptr)

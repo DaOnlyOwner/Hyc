@@ -90,6 +90,8 @@ struct Token
 		KwAuto,
 		GenFCallOpen,
 		GenFCallClose,
+		ArrayStart,
+		ArrayEnd,
 		Quad
 	};
 
@@ -314,6 +316,10 @@ struct Token
 			return ".>";
 		case Specifier::Quad:
 			return "quad";
+		case Specifier::ArrayEnd:
+			return ".]";
+		case Specifier::ArrayStart:
+			return "[.";
 		}
 		return "Unknown";
 

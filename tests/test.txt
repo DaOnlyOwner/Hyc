@@ -1,16 +1,4 @@
-struct C
+void test(int[10][10] a)
 {
-   int* val;
+   a = a;
 }
-
-
-T test<T>(T a)
-{
-   return a;
-}
-
-int main()
-{
-    return test(1) + test(3.5);
-}
-

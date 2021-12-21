@@ -30,34 +30,6 @@ TODO:
   moving and copying are done explicitly!
 - const can only be defined in front of a type, no const ptrs etc!
 - no array type -> int[3] has type int*!
-- special function syntax:
-I want to to something like this:
-gen_vec().map().sum(); OR
-gen_vec()->map()->sum();
-desugared:
-reduce(map(gen_vec()))
-Thus: 
-function decl:
-vec<int>* gen_vec(vec<int>* v = auto) 
- 				^-- auto signals that the variable should be allocated automatically in the caller stack frame
-				    It is only allowed at the end of a function arg list.
-				    Needs to be a pointer!
-{
-	v->add(1);  
-	return v;
-}
-Use it like this
-gen_vec()->sum()
-becomes this:
-vec<int> _a0;
-gen_vec(&_a0)->sum();
-not allowed is when you pass in a value to the automatic variable.
-Also not allowed is something like this:
-vec<int>* gen_vec()
-vec<int>* gen_vec(vec<int> v = automatic)
-counts as a duplicate function definition, the automatic variables don't count!.
-automatic variables may not depend on generic type parameters. 
-
 - lambda expressions:
 type declaration: [a,b](int,int)->void 
 e.g. 
@@ -93,7 +65,8 @@ a.l.c1 <-- has value of b
 calling it:
 a.l..fn(3,4); <-- the .. avoids the desugaring into fn(&a.l,3,4);
 similarly if l would be a pointer: a.l->>f(3,4) avoids the above mentioned desugaring. 
-  
+- array:
+int[3][3]
 - unions:
 union A
 {

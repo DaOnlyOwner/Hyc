@@ -41,6 +41,7 @@ private:
 	bool handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_member_acc(BinOpExpr& bin_op);
 	bool handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op);
+	bool handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op);
 
 	void check_type_is_bool(uptr<Expr>& expr);
 

@@ -62,10 +62,17 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 		}
 		break;
 		case TypeKind::Pointer:
+		{
 			out = out->getPointerTo();
-			break;
+		}
+		break;
 		case TypeKind::Array:
-			NOT_IMPLEMENTED;
+		{
+			auto& val = std::get<ArrayType>(var);
+			out = llvm::ArrayType::get(out, val.amount);
+		
+		}
+		break;
 		case TypeKind::FunctionPointer:
 			NOT_IMPLEMENTED;
 		default:

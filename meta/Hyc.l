@@ -20,6 +20,9 @@
    }
 
 public:
+   typedef size_t TokenPos;
+   TokenPos get_tk_pos(){return m_current_token;}
+   void goto_tk_pos(TokenPos tp) {m_current_token = tp;}
    void set_filename(const std::string& filename)
    {
         file=filename;
@@ -149,6 +152,8 @@ amp		"&"
 perc		"%"
 sr		"|>"
 sl		"<|"
+array_start	"[."
+array_end	".]"
 thrway		"<=>"
 lessEql		"<="
 grEql		">="
@@ -209,6 +214,8 @@ or_eql		"|="
 {not_equal}	{ PUSH(NotEqual);}
 {caret}		{ PUSH(Caret);}
 {or}   		{ PUSH(Or);}
+{array_start}	{ PUSH(ArrayStart);}
+{array_end}	{ PUSH(ArrayEnd);}
 {hashtag}	{ PUSH(Hashtag);}
 {double_amp}	{ PUSH(DoubleAmpersand);}
 {double_or}	{ PUSH(DoubleOr);}

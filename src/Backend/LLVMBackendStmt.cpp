@@ -113,6 +113,11 @@ void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 	mem.enter_function(func);
 	func_def.decl->accept(*this);
 	for (auto& p : func_def.body) p->accept(*this);
+	auto curr_fn = get_curr_fn();
+	if (!curr_fn->back().back().isTerminator())
+	{
+		be.builder.CreateUnreachable();
+	}
 }
 
 void LLVMBackendStmt::visit(ReturnStmt& return_stmt)

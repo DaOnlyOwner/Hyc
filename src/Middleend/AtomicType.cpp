@@ -122,66 +122,10 @@ void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args
 	stored_types.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
-//ConversionType Type::get_conversion_into(const Type& other, const Scopes& scopes)
-//{
-//	if (other.stored_types.size() != stored_types.size()) return ConversionType::NeedsCasting;
-//	ConversionType ctype = ConversionType::ImplicitCasting;
-//	for (int i = 0; i < stored_types.size(); i++)
-//	{
-//		auto& [kind, acc] = stored_types[i];
-//		auto& [okind, oacc] = other.stored_types[i];
-//		if (kind != okind)
-//		{
-//			if (kind == TypeKind::Array && okind == TypeKind::Pointer) continue; // Array to pointer is implicitly casted
-//			return ConversionType::NeedsCasting;
-//		}
-//		switch (kind)
-//		{
-//		case TypeKind::Pointer:
-//			break;
-//		case TypeKind::Base:
-//		{
-//			std::array<std::string, (int)Primitive::Specifier::Count> primitives = { "u8","u16","u32","uint","s8","s16","s32","int","float","double" };
-//			CollectionStmt* bt = std::get<CollectionStmt*>(acc);
-//			CollectionStmt* obt = std::get<CollectionStmt*>(oacc);
-//			if (bt == obt)
-//			{
-//				ctype = ConversionType::None;
-//			}
-//			else
-//			{
-//				bool contains = std::find(primitives.begin(), primitives.end(), bt->name.text) != primitives.end();
-//				bool ocontains = std::find(primitives.begin(), primitives.end(), obt->name.text) != primitives.end();
-//				if (!(contains && ocontains)) return ConversionType::NeedsCasting;
-//			}
-//		}
-//		break;
-//		case TypeKind::Array:
-//			if(std::get<ArrayType>(acc).amount != std::get<ArrayType>(oacc).amount) return ConversionType::NeedsCasting;
-//			break;
-//		// Function pointers need to be exact
-//		case TypeKind::FunctionPointer:
-//			auto& fp = std::get<FunctionPointerType>(acc);
-//			auto& ofp = std::get<FunctionPointerType>(oacc);
-//			if (fp.args.size() != ofp.args.size()) return ConversionType::NeedsCasting;
-//			if (*fp.return_type != *ofp.return_type) return ConversionType::NeedsCasting;
-//			for (int j = 0; j < fp.args.size(); j++)
-//			{
-//				Type& t = *fp.args[j];
-//				Type& ot = *ofp.args[j];
-//				if (t != ot) return ConversionType::NeedsCasting;
-//				ctype = ConversionType::None;
-//			}
-//			break;
-//		}
-//	}
-//	return ctype;
-//}
-
-std::string Type::as_str() const 
+std::string Type::as_str() const
 {
 	std::string out = "";
-	for (auto& [kind,var] : stored_types)
+	for (auto& [kind, var] : stored_types)
 	{
 		switch (kind)
 		{
@@ -222,7 +166,7 @@ std::string Type::as_str_for_mangling() const
 		switch (kind)
 		{
 		case TypeKind::Array:
-			assert(false); // No array in function
+			out += fmt::format("[{}]", std::get<ArrayType>(var).amount); // No array in function
 			break;
 		case TypeKind::Base:
 			out += std::get<CollectionStmt*>(var)->name.text;
@@ -253,7 +197,7 @@ std::string Type::as_str_for_mangling() const
 std::unique_ptr<TypeSpec> Type::to_ast() const
 {
 	std::unique_ptr<TypeSpec> to_build;
-	
+
 	if (is_base_type())
 	{
 		auto coll = std::get<CollectionStmt*>(stored_types[0].second);
@@ -269,7 +213,7 @@ std::unique_ptr<TypeSpec> Type::to_ast() const
 			args.push_back(arg->to_ast());
 		}
 		auto ret_type = fptr.return_type->to_ast();
-		to_build = std::make_unique<FptrTypeSpec>(std::move(args), std::move(ret_type),nullptr);
+		to_build = std::make_unique<FptrTypeSpec>(std::move(args), std::move(ret_type), nullptr);
 	}
 
 	else if (must_be_inferred())
@@ -308,6 +252,11 @@ std::unique_ptr<TypeSpec> Type::to_ast() const
 bool Type::is_fptr_type() const
 {
 	return !not_specified && stored_types.back().first == TypeKind::FunctionPointer;
+}
+
+bool Type::is_array_type() const
+{
+	return !not_specified && stored_types.back().first == TypeKind::Array;
 }
 
 
@@ -449,4 +398,3 @@ CollectionStmt* Type::get_base_type() const
 	assert(false);
 	return nullptr;
 }
-
