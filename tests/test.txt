@@ -31,6 +31,16 @@ void main()
          *d = 1.0;
       }
    }
+
+   B b;
+   match(b)
+   {
+      case b
+      {
+         
+      }
+   }
+
 }
 
 
