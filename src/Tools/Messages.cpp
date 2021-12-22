@@ -115,6 +115,11 @@ void Messages::trigger_6_w2(const Token& from, const std::string& expr)
 	warning(from, fmt::format("Casting type of expression '{}' to unsigned integer", expr));
 }
 
+void Messages::trigger_6_w3(const Token& from, const std::string& name)
+{
+	warning(from, fmt::format("Match statement has no case for '{}'", name));
+}
+
 void Messages::trigger_6_e6(const Token& from, const std::string& t1, const std::string& t2)
 {
 	semantic_error(from, fmt::format("For atomic types: The types of operator '{}' must be integer, not '{}' and '{}'", 
@@ -186,7 +191,7 @@ void Messages::trigger_6_e16(const Token& from, const std::string& t1, const std
 
 void Messages::trigger_6_e17(const Token& from)
 {
-	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope",
+	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope or above",
 		from.text));
 }
 
@@ -238,6 +243,16 @@ void Messages::trigger_6_e26(const Token& from, const std::string& expr)
 void Messages::trigger_6_e27(const Token& from, const std::string& expr)
 {
 	semantic_error(from, fmt::format("The type of the expression '{}' within the array subscript is not an unsigned integer",expr));
+}
+
+void Messages::trigger_6_e28(const Token& from, const std::string& t)
+{
+	semantic_error(from, fmt::format("The type of '{}' is not a union, but is '{}'", from.text, t));
+}
+
+void Messages::trigger_6_e29(const Token& from, const std::string& name, const std::string& t)
+{
+	semantic_error(from, fmt::format("Cannot create a pointer to untyped member '{}' of union '{}'", from.text, t));
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)

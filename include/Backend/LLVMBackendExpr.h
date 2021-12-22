@@ -10,8 +10,8 @@
 class LLVMBackendExpr : public IAstVisitor, public ValueStorageStack<llvm::Value*,bool>
 {
 public:
-	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc, StackAllocatedMem& mem)
-		:scopes(sc), be(be), ValueStorageStack(this), mem(mem) {}
+	LLVMBackendExpr(LLVMBackendInfo& be, Scopes& sc)
+		:scopes(sc), be(be), ValueStorageStack(this) {}
 
 	llvm::Value* gen(Expr& expr, bool should_load = true)
 	{
@@ -21,10 +21,10 @@ public:
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
-	StackAllocatedMem& mem;
 
 	bool handle_pred(bool should_load, const BinOpExpr& bin_op);
 	bool handle_member_acc(bool should_load, const BinOpExpr& bin_op);
+	bool handle_union(const BinOpExpr& bin_op);
 	bool handle_assign(const BinOpExpr& bin_op);
 	bool handle_ptr(const BinOpExpr& bin_op);
 

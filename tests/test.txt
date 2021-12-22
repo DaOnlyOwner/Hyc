@@ -1,4 +1,36 @@
-void test(int[10][10] a)
+union A
 {
-   a = a;
+   int a : 0;
+   float b;
+   double c;
 }
+
+union B
+{
+   a:0;b;c;
+}
+
+void main()
+{
+   A a;
+   a.a = 1;
+   match(a)
+   {
+      case a as i
+      {
+         *i = 1;
+      }
+
+      case b
+      {
+         return;
+      }
+
+      case c as d
+      {
+         *d = 1.0;
+      }
+   }
+}
+
+

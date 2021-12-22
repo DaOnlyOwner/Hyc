@@ -22,7 +22,6 @@ void IAstVisitor::visit(struct ForStmt& for_stmt) {
 void IAstVisitor::visit(struct MatchStmt& match) {
 	for (auto& case_ : match.match_cases)
 	{
-		case_.decl_stmt->accept(*this);
 		for (auto& p : case_.body)
 		{
 			p->accept(*this);

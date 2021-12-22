@@ -4,6 +4,8 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
 
+#define UNION_TAG 0
+#define UNION_FIELD 1
 
 struct LLVMBackendInfo
 {
@@ -14,17 +16,17 @@ struct LLVMBackendInfo
 	llvm::IRBuilder<> builder;
 };
 
-struct StackAllocatedMem
-{
-	std::unordered_map<std::string, llvm::Value*> global_mem;
-	std::unordered_map<std::string, llvm::Value*> function_stack;
 
-	void enter_function(llvm::Function* func)
-	{
-		function_stack.clear();
-		for (auto& arg : func->args())
-		{
-			function_stack[arg.getName().str()] = &arg;
-		}
-	}
-};
+inline llvm::ConstantInt* create_ci(uint64_t val, llvm::LLVMContext& ctxt)
+{
+	return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctxt), val);
+}
+
+inline llvm::Value* create_casted_union_field(Scopes& scopes,UnionDeclStmt* udecl, LLVMBackendInfo& be, llvm::Value* lhs)
+{
+	auto t = udecl->decl_stmt->type;
+	t.promote_pointer();
+	auto llvm_t = map_type(t, scopes, be.context);
+	auto untyped_field = be.builder.CreateStructGEP(lhs, UNION_FIELD);
+	return be.builder.CreateBitCast(untyped_field, llvm_t);
+}

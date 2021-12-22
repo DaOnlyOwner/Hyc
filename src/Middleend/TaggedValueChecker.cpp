@@ -1,10 +1,5 @@
 #include "TaggedValueChecker.h"
 
-void TaggedValueChecker::visit(NamespaceStmt& ns)
-{
-
-}
-
 void TaggedValueChecker::visit(TypeDefStmt& td)
 {
 	if (td.get_ct() == CollectionType::Struct

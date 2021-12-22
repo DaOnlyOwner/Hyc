@@ -468,7 +468,7 @@ std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()
 {
 	uptr<DeclStmt> decl_stmt;
-	if (tkns.lookahead(2).type == Token::Specifier::Semicolon)
+	if (tkns.lookahead(2).type == Token::Specifier::Semicolon || tkns.lookahead(2).type == Token::Specifier::Colon)
 	{
 		// Untyped:
 		auto name = tkns.match_token(Token::Specifier::Ident);
@@ -487,8 +487,8 @@ std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()
 	if (tkns.lookahead(1).type == Token::Specifier::Colon)
 	{
 		tkns.eat(); // :
-		auto val = tkns.match_token(Token::Specifier::UInt);
-		auto [succ,res] = eval_integer_val(val, IntegerLiteralType::UInt);
+		auto val = tkns.match_token(Token::Specifier::Int);
+		auto [succ,res] = eval_integer_val(val, IntegerLiteralType::Int);
 		if (!succ)
 		{
 			auto descr = Error::FromToken(val);
@@ -497,7 +497,7 @@ std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()
 		}
 		tagged_value = res;
 	}
-
+	tkns.match_token(Token::Specifier::Semicolon);
 	return std::make_unique<UnionDeclStmt>(mv(decl_stmt), tagged_value);
 }
 
@@ -685,13 +685,17 @@ std::unique_ptr<Stmt> Parser::parse_match_stmt(bool in_loop)
 MatchCase Parser::parse_match_case(bool in_loop)
 {
 	tkns.match_token(Token::Specifier::KwCase);
-	auto type = parse_type_spec();
-	tkns.match_token(Token::Specifier::KwAs);
-	auto name = tkns.match_token(Token::Specifier::Ident);
+	auto var = tkns.match_token(Token::Specifier::Ident);
+	std::optional<Token> as;
+	if (tkns.lookahead(1).type == Token::Specifier::KwAs)
+	{
+		tkns.eat(); // as
+		as = tkns.match_token(Token::Specifier::Ident);
+	}
 	tkns.match_token(Token::Specifier::BraceL);
 	std::vector<uptr<Stmt>> body = parse_allowed_func_stmts(in_loop);
 	tkns.match_token(Token::Specifier::BraceR);
-	return MatchCase(std::make_unique<DeclStmt>(mv(type), name), mv(body));
+	return MatchCase(var,as, mv(body));
 }
 
 std::unique_ptr<Stmt> Parser::parse_continue_stmt()
@@ -890,6 +894,11 @@ std::unique_ptr<Stmt> Parser::parse_expr_stmt()
 std::unique_ptr<Stmt> Parser::parse_return_stmt()
 {
 	auto& rk = tkns.match_token(Token::Specifier::KwReturn);
+	if (tkns.lookahead(1).type == Token::Specifier::Semicolon)
+	{
+		tkns.eat();
+		return std::make_unique<ReturnStmt>(nullptr, rk);
+	}
 	auto out = std::make_unique<ReturnStmt>(expr_parser.parse(),rk);
 	tkns.match_token(Token::Specifier::Semicolon);
 	return out;

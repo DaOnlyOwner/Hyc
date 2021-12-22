@@ -573,7 +573,7 @@ enum class CollectionType
 
 struct UnionDeclStmt : Stmt
 {
-	UnionDeclStmt(uptr<DeclStmt>&& decl_stmt, std::optional<EvalIntegerResult> eir)
+	UnionDeclStmt(uptr<DeclStmt>&& decl_stmt, const std::optional<EvalIntegerResult>& eir)
 		:decl_stmt(mv(decl_stmt)), tagged_value(eir) {}
 	uptr<DeclStmt> decl_stmt;
 	std::optional<EvalIntegerResult> tagged_value;
@@ -581,7 +581,7 @@ struct UnionDeclStmt : Stmt
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt)
 	{
-		auto decl = dynamic_unique_cast<DeclStmt>(decl_stmt->clone());
+		auto decl = uptr<DeclStmt>(dynamic_cast<DeclStmt*>(decl_stmt->clone().release()));
 		return uptr<Stmt>(new UnionDeclStmt(mv(decl), tagged_value));
 	}
 };
@@ -590,12 +590,13 @@ struct TypeDefStmt : Stmt
 {
 	TypeDefStmt(const Token& name, std::vector<GenericInfo>&& generic_params, std::vector<uptr<Stmt>>&& stmts, CollectionType ct)
 		:ct(ct),name(name), generic_params(mv(generic_params)), stmts(mv(stmts)) {}
-	TypeDefStmt(const Token& name, CollectionType ct = CollectionType::Struct)
-		:stmts{}, generic_params{},ct(ct), name(name){}
+	TypeDefStmt(const std::string& name)
+		:stmts{}, generic_params{},ct(CollectionType::Struct), name(Token(Token::Specifier::Ident,name)){}
 	CollectionType ct;
 	Token name;
 	std::vector<GenericInfo> generic_params;
 	std::vector<uptr<Stmt>> stmts;
+	llvm::StructType* llvm_struct_type = nullptr;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 		CPY_VEC(stmts, stmts_cpy, uptr<Stmt>);
@@ -605,6 +606,10 @@ struct TypeDefStmt : Stmt
 	}
 
 	CollectionType get_ct() { return ct; }
+	std::string get_collection_type()
+	{
+		return ct == CollectionType::Union ? "union" : "struct";
+	}
 
 };
 
@@ -707,14 +712,16 @@ struct FuncDefStmt : Stmt
 
 struct MatchCase 
 {
-	MatchCase(uptr<DeclStmt>&& decl_stmt, std::vector<uptr<Stmt>>&& body)
-		:decl_stmt(mv(decl_stmt)),body(mv(body)){}
-	uptr<DeclStmt> decl_stmt;
+	MatchCase(const Token& var, const std::optional<Token>& as, std::vector<uptr<Stmt>>&& body)
+		:var(var),as(as), body(mv(body)){}
+	Token var;
+	std::optional<Token> as;
+	uptr<DeclStmt> as_decl = nullptr;
 	std::vector<uptr<Stmt>> body;
 	MatchCase clone() const
 	{
 		CPY_VEC(body, body_cpy, uptr<Stmt>);
-		return MatchCase(uptr<DeclStmt>(dynamic_cast<DeclStmt*>(decl_stmt->clone().release())), mv(body_cpy));
+		return MatchCase(var, as, mv(body_cpy));
 	}
 };
 

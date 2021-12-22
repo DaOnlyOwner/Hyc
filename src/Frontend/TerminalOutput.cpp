@@ -20,7 +20,7 @@ void TerminalOutput::visit(MatchStmt& match)
 	for (MatchCase& mc : match.match_cases)
 	{
 		make_indent();
-		out += fmt::format("MatchCase: type='{}', name='{}'\n", mc.decl_stmt->type_spec->as_str(), mc.decl_stmt->name.text);
+		out += fmt::format("MatchCase: matched='{}', as='{}'\n", mc.var.text, mc.as.has_value() ? mc.as.value().text : "");
 		indent++;
 		for (auto& stmt : mc.body)
 			stmt->accept(*this);
@@ -69,6 +69,15 @@ void TerminalOutput::visit(TypeDefStmt& coll_def)
 	{
 		stmt->accept(*this);
 	}
+	indent--;
+}
+
+void TerminalOutput::visit(UnionDeclStmt& udecl)
+{
+	make_indent();
+	out += fmt::format("UnionDeclStmt: tagged_value='{}'\n",udecl.tagged_value.value().val);
+	indent++;
+	udecl.decl_stmt->accept(*this);
 	indent--;
 }
 

@@ -96,6 +96,19 @@ DeclStmt* Scopes::get_variable(const std::string& name)
 	return nullptr;
 }
 
+llvm::Value* Scopes::get_value(const std::string& name)
+{
+	auto tl = top_level.get_value(name);
+	if (tl) return tl;
+	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	{
+		t_entry& e = get_entry(i);
+		auto* elem = e.table.get_value(name);
+		if (elem != nullptr) return elem;
+	}
+	return nullptr;
+}
+
 //AllocaInst* Scopes::get_alloca_inst(const std::string& name)
 //{
 //	return get_current_entry().table.get_alloca_inst(name);

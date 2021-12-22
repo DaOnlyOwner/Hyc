@@ -31,6 +31,7 @@ private:
 	virtual void visit(WhileStmt& while_stmt) override;
 	virtual void visit(ForStmt& for_stmt) override;
 	virtual void visit(TypeDefStmt& collection_def) override;
+	virtual void visit(UnionDeclStmt& udecl) override;
 	virtual void visit(ContinueStmt& cont_stmt) override;
 	virtual void visit(FptrTypeSpec& fptr) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;

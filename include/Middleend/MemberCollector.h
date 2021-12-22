@@ -12,6 +12,7 @@ public:
 private:
 	virtual void visit(TypeDefStmt& coll_def) override;
 	virtual void visit(DeclStmt& decl) override;
+	virtual void visit(UnionDeclStmt& udecl) override;
 	virtual void visit(FuncDefStmt& fdecl) override;
 	virtual void visit(NamespaceStmt& ns) override;
 	

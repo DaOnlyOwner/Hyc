@@ -77,12 +77,16 @@ bool SymbolTable::add(TypeDefStmt* td, UnionDeclStmt* udecl)
 		auto succ = coll_decls.insert({ udecl->decl_stmt->name.text,udecl });
 		return succ.second;
 	}
-
 }
 
 bool SymbolTable::add(DeclStmt* decl)
 {
 	return variables.insert({ decl->name.text,decl}).second;
+}
+
+bool SymbolTable::add(const std::string& name, llvm::Value* val)
+{
+	return llvm_variables.insert({ name,val }).second;
 }
 
 TypeDefStmt* SymbolTable::get_type(const std::string& name) const
@@ -101,6 +105,15 @@ DeclStmt* SymbolTable::get_decl_for(TypeDefStmt* bt, const std::string& name)
 	else return decl_it->second.stmt;
 }
 
+UnionDeclStmt* SymbolTable::get_union_decl_for(TypeDefStmt* td, const std::string& name)
+{
+	auto it = union_decl_in_collection.find(td);
+	if (it == union_decl_in_collection.end()) return nullptr;
+	auto decl_it = it->second.find(name);
+	if (decl_it == it->second.end()) return nullptr;
+	else return decl_it->second;
+}
+
 size_t SymbolTable::get_decl_idx_for(TypeDefStmt* cs, const std::string& name)
 {
 	auto it = decl_in_collection.find(cs);
@@ -114,5 +127,12 @@ DeclStmt* SymbolTable::get_variable(const std::string& name)
 {
 	auto it = variables.find(name);
 	if (it != variables.end()) return it->second;
+	return nullptr;
+}
+
+llvm::Value* SymbolTable::get_value(const std::string& name)
+{
+	auto it = llvm_variables.find(name);
+	if (it != llvm_variables.end()) return it->second;
 	return nullptr;
 }

@@ -32,6 +32,7 @@ public:
 	bool add(TypeDefStmt* td, DeclStmt* decl, int idx) { return top_level.add(td, decl,idx); }
 	bool add(TypeDefStmt* td, UnionDeclStmt* decl) { return top_level.add(td, decl); }
 	bool add(DeclStmt* decl);
+	bool add(const std::string& name, llvm::Value* val) { return get_current_entry().table.add(name, val); }
 	//bool add_to_existing(const std::string& name, class AllocaInst* inst);
 
 	//Variable* get_var(const std::string& name);
@@ -46,6 +47,7 @@ public:
 	size_t get_decl_idx_for(TypeDefStmt* cs, const std::string& name) { return top_level.get_decl_idx_for(cs, name); }
 	UnionDeclStmt* get_union_decl_for(TypeDefStmt* td, const std::string& name) { return top_level.get_union_decl_for(td, name); }
 	DeclStmt* get_variable(const std::string& name);
+	llvm::Value* get_value(const std::string& name);
 	//class AllocaInst* get_alloca_inst(const std::string& name);
 	
 	template<typename Pred>

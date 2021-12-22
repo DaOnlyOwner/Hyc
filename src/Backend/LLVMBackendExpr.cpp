@@ -3,6 +3,7 @@
 #include "llvm/IR/Constant.h"
 #include "Messages.h"
 #include "TypeToLLVMType.h"
+#include "llvm/IR/DerivedTypes.h"
 
 bool LLVMBackendExpr::handle_pred(bool should_load, const BinOpExpr& bin_op)
 {
@@ -220,9 +221,25 @@ bool LLVMBackendExpr::handle_member_acc(bool should_load, const BinOpExpr& bin_o
 	{
 		auto lhs = get_with_params(*bin_op.lh,false);
 		auto rh_expr = dynamic_cast<IdentExpr*>(bin_op.rh.get());
-		size_t idx = scopes.get_decl_idx_for(bin_op.lh->sem_type.get_base_type(), rh_expr->name.text);
-		assert(idx != std::numeric_limits<size_t>::max());
-		auto addr = be.builder.CreateStructGEP(lhs, idx);
+
+		UnionDeclStmt* udecl = scopes.get_union_decl_for(bin_op.lh->sem_type.get_base_type(),rh_expr->name.text);
+		llvm::Value* addr;
+		if (udecl)
+		{
+			addr = create_casted_union_field(scopes, udecl, be, lhs);
+			if (should_load)
+			{
+				auto tagged = be.builder.CreateStructGEP(lhs, 0);
+				auto ci = llvm::ConstantInt::get(llvm::Type::getInt64Ty(be.context), udecl->tagged_value.value().val);
+				be.builder.CreateStore(ci, tagged);
+			}
+		}
+		else
+		{
+			size_t idx = scopes.get_decl_idx_for(bin_op.lh->sem_type.get_base_type(), rh_expr->name.text);
+			assert(idx != std::numeric_limits<size_t>::max());
+			addr = be.builder.CreateStructGEP(lhs, idx);
+		}
 		if (should_load)
 		{
 			RETURN_WITH_TRUE(be.builder.CreateLoad(addr));
@@ -230,6 +247,32 @@ bool LLVMBackendExpr::handle_member_acc(bool should_load, const BinOpExpr& bin_o
 		RETURN_WITH_TRUE(addr)
 	}
 
+	return false;
+}
+
+bool LLVMBackendExpr::handle_union(const BinOpExpr& bin_op)
+{
+	if (bin_op.op.type == Token::Specifier::DoubleQM || bin_op.op.type == Token::Specifier::DoubleEM)
+	{
+		auto lhs = get_with_params(*bin_op.lh, false);
+		auto* rh_expr = dynamic_cast<IdentExpr*>(bin_op.rh.get());
+		UnionDeclStmt* udecl = scopes.get_union_decl_for(bin_op.lh->sem_type.get_base_type(),rh_expr->name.text);
+		assert(udecl);
+		auto ci = llvm::ConstantInt::get(llvm::Type::getInt64Ty(be.context), udecl->tagged_value.value().val);
+		if (bin_op.op.type == Token::Specifier::DoubleEM)
+		{
+			auto tagged = be.builder.CreateStructGEP(lhs, 0);
+			RETURN_WITH_TRUE(be.builder.CreateStore(ci, tagged));
+		}
+		else if (bin_op.op.type == Token::Specifier::DoubleQM)
+		{
+			auto tagged = be.builder.CreateStructGEP(lhs, 0);
+			llvm::Type* t = llvm::Type::getInt64Ty(be.context);
+			auto val = be.builder.CreateLoad(t, tagged);
+			RETURN_WITH_TRUE(be.builder.CreateICmpEQ(val, ci));
+		}
+		assert(false);
+	}
 	return false;
 }
 
@@ -270,6 +313,7 @@ void LLVMBackendExpr::visit(BinOpExpr& bin_op)
 	auto [should_load] = get_params();
 	bool handled = false;
 	handled = handled || handle_member_acc(should_load, bin_op);
+	handled = handled || handle_union(bin_op);
 	handled = handled || handle_assign(bin_op);
 	handled = handled || handle_pred(should_load, bin_op);
 }
@@ -321,20 +365,15 @@ void LLVMBackendExpr::visit(IdentExpr& ident)
 	// TODO: What if we are in global scope?
 	auto [should_load] = get_params();
 	auto current_func_name = get_curr_fn()->getName().str();
-	auto it = mem.function_stack.find(ident.name.text);
-	if (it == mem.function_stack.end())
-	{
-		it = mem.global_mem.find(ident.name.text);
-		assert(it != mem.global_mem.end());
-	}
+	auto val = scopes.get_value(ident.name.text);
 	if (!should_load)
 	{
-		RETURN(it->second);
+		RETURN(val);
 	}
 	else
 	{
 		auto mapped = map_type(ident.sem_type, scopes, be.context);
-		RETURN(be.builder.CreateLoad(mapped, it->second, ident.name.text));
+		RETURN(be.builder.CreateLoad(mapped, val, ident.name.text));
 	}
 }
 

@@ -13,6 +13,7 @@ public:
 private:
 	virtual void visit(TypeDefStmt& stmt) override;
 	virtual void visit(DeclStmt& decl) override;
+	virtual void visit(UnionDeclStmt& udecl) override;
 	virtual void visit(FuncDefStmt& def) override;
 	LLVMBackendInfo& be;
 	Tree<TypeDefStmt*>& type_hier;

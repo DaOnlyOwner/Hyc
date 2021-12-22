@@ -5,6 +5,7 @@
 #include "GenericInstantiation.h"
 #include "MemberCollector.h"
 #include "ExpandScopes.h"
+#include "TaggedValueChecker.h"
 
 #define RETURN_VAL_BIN_OP(p,val) bin_op.sem_type = p; RETURN_VAL(p,val);  
 #define RETURN_PREFIX_OP(p) pre_op.sem_type = p; RETURN(p); 
@@ -448,10 +449,13 @@ void TypeChecker::visit(TypeDefStmt& coll_def)
 
 void TypeChecker::visit(ReturnStmt& ret_stmt)
 {
-	auto type = get(ret_stmt.returned_expr);
+	Type type;
+	if (ret_stmt.returned_expr)
+		type = get(ret_stmt.returned_expr);
+	else type = Type(scopes.get_type("void"));
 	auto pred_expr_ = type.to_pred(scopes);
 	auto pred_func_ = current_function->decl->ret_type->semantic_type.to_pred(scopes);
-	if (pred_expr_.has_value() && pred_func_.has_value())
+	if (pred_expr_.has_value() && pred_func_.has_value() && pred_expr_ != PredefinedType::Void && pred_func_ != PredefinedType::Void)
 	{
 		auto pred_expr = pred_expr_.value();
 		auto pred_func = pred_func_.value();
@@ -475,7 +479,6 @@ void TypeChecker::visit(ReturnStmt& ret_stmt)
 	{
 		Messages::inst().trigger_6_e25(ret_stmt.return_kw, type.as_str(),t_func.as_str());
 	}
-
 }
 
 void TypeChecker::visit(ExprStmt& expr_stmt)
@@ -580,11 +583,63 @@ void TypeChecker::visit(TernaryExpr& tern)
 
 void TypeChecker::visit(MatchStmt& match)
 {
-	NOT_IMPLEMENTED;
+	auto t = get(match.match_on);
+	if (!t.is_base_type() || t.get_base_type()->ct != CollectionType::Union)
+	{
+		Messages::inst().trigger_6_e28(match.match_on->first_token(), t.as_str());
+	}
+	auto current_union_var = t.get_base_type();
+	if (current_union_var->stmts.size() != match.match_cases.size())
+	{
+		for (auto& p : current_union_var->stmts)
+		{
+			auto udecl = dynamic_cast<UnionDeclStmt*>(p.get());
+			auto it = std::find_if(match.match_cases.begin(), match.match_cases.end(), [&](const MatchCase& mc) {
+				return udecl->decl_stmt->name.text == mc.var.text;
+				});
+			if (it == match.match_cases.end())
+			{
+				Messages::inst().trigger_6_w3(match.match_on->first_token(),udecl->decl_stmt->name.text);
+			}
+		}
+	}
 	for (auto& case_ : match.match_cases)
 	{
 		scopes.descend();
-		case_.decl_stmt->accept(*this);
+		auto* udecl = scopes.get_union_decl_for(current_union_var, case_.var.text);
+		if (!udecl)
+		{		
+			// Error: no member named "decl->name" in trh
+			Messages::inst().trigger_6_e12(case_.var, current_union_var->name.text, case_.var.text);
+		}
+		else
+		{
+			auto t2 = udecl->decl_stmt->type;
+			auto pd = t2.to_pred(scopes);
+			if (!(pd.has_value() && pd.value() == PredefinedType::Void))
+			{
+				if (case_.as.has_value())
+				{
+					t2.promote_pointer();
+					uptr<DeclStmt> decl = std::make_unique<DeclStmt>(nullptr, case_.as.value());
+					case_.as_decl = mv(decl);
+					case_.as_decl->type = t2;
+					bool succ = scopes.add(case_.as_decl.get());
+					if (!succ)
+					{
+						// Already defined in this scope
+						Messages::inst().trigger_6_e17(case_.as_decl->name);
+					}
+				}
+			}
+			else
+			{
+				if (case_.as.has_value())
+				{
+					Messages::inst().trigger_6_e29(case_.as.value(), case_.var.text, t.as_str());
+				}
+			}
+		}
 		for (auto& p : case_.body)
 		{
 			p->accept(*this);
@@ -903,8 +958,10 @@ bool TypeChecker::handle_bin_op_union(BinOpExpr& bin_op)
 		{
 			// Error: no member named "decl->name" in trh
 			Messages::inst().trigger_6_e12(bin_op.op, t.as_str(), ident_rh->name.text);
+			ident_rh->sem_type = error_type;
 			RETURN_VAL_BIN_OP(error_type, true);
 		}
+		ident_rh->sem_type = decl->decl_stmt->type;
 		if (bin_op.op.type == Token::Specifier::DoubleQM)
 		{
 			RETURN_VAL_BIN_OP(Type(scopes.get_type("bool")), true);
@@ -1006,12 +1063,18 @@ bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 		DeclStmt* decl = scopes.get_decl_for(cpy_tlh.get_base_type(), ident_rh->name.text);
 		if (decl == nullptr)
 		{
-			// Error: no member named "decl->name" in trh
-			Messages::inst().trigger_6_e12(bin_op.op,cpy_tlh.as_str(),ident_rh->name.text);
-			RETURN_VAL_BIN_OP(error_type,true);
+			auto* udecl = scopes.get_union_decl_for(cpy_tlh.get_base_type(), ident_rh->name.text);
+			if (!udecl)
+			{
+				// Error: no member named "decl->name" in trh
+				Messages::inst().trigger_6_e12(bin_op.op, cpy_tlh.as_str(), ident_rh->name.text);
+				RETURN_VAL_BIN_OP(error_type, true);
+			}
+			ident_rh->sem_type = udecl->decl_stmt->type;
+			RETURN_VAL_BIN_OP(ident_rh->sem_type, true);
 		}
 		ident_rh->sem_type = decl->type;
-		RETURN_VAL_BIN_OP(decl->type,true)
+		RETURN_VAL_BIN_OP(decl->type, true);
 		// TODO: Look up member (lhs) and get it's type
 	}
 	return false;
@@ -1035,5 +1098,6 @@ void check_type_repeat(NamespaceStmt& ns, Scopes& sc)
 		// Collect the members of the new structs (generic instantiation is done when pasting the new function)
 		instantiate_generic_repeat(ns, sc, n);
 		collect_members(ns, sc, n); 
+		check_tagged_values(ns, n);		
 	}
 }

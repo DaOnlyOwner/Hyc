@@ -7,7 +7,7 @@ class LLVMBackendStmt : public IAstVisitor, public ValueStorage<llvm::AllocaInst
 {
 public:
 	LLVMBackendStmt(LLVMBackendInfo& be,Scopes& sc)
-		:be(be),scopes(sc),expr_getter(be,sc,mem),ValueStorage(this) {}
+		:be(be),scopes(sc),expr_getter(be,sc),ValueStorage(this) {}
 private:
 
 	void insert_bb(llvm::BasicBlock* bb)
@@ -22,8 +22,11 @@ private:
 		return be.builder.GetInsertBlock()->getParent();
 	}
 
+	//void enter_function(llvm::Function* func);
+
 	// This is from the kaleidoskop tutorial
 	llvm::AllocaInst* create_alloca(const Type& t, const std::string& name);
+
 
 	virtual void visit(IfStmt& if_stmt) override;
 	virtual void visit(WhileStmt& while_stmt) override;
@@ -32,8 +35,9 @@ private:
 	virtual void visit(ReturnStmt& return_stmt) override;
 	virtual void visit(FuncDeclStmt& func_decl) override;
 	virtual void visit(ExprStmt& expr_stmt) override;
+	virtual void visit(NamespaceStmt& ns) override;
+	virtual void visit(MatchStmt& ms) override;
 
-	StackAllocatedMem mem;
 	LLVMBackendInfo& be;
 	Scopes& scopes;
 	LLVMBackendExpr expr_getter;

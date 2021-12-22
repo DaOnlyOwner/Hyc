@@ -17,6 +17,7 @@
 #include "TerminalOutput.h"
 #include <fstream>
 #include "ArrayDeclChecker.h"
+#include "TaggedValueChecker.h"
 
 namespace
 {
@@ -62,6 +63,7 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	instantiate_generic_repeat(*parsed, sc);
 	collect_funcs(*parsed, sc);
 	collect_members(*parsed, sc);
+	check_tagged_values(*parsed, 0);
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
 	if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitAST)
