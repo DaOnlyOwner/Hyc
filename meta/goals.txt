@@ -114,3 +114,17 @@ A a {.first{"" },.second{""}};
 - metaprogramming by completely compile time code execution.
 - maybe simd vecs as they are already in llvm.
 - for loop like: for(0..10){}...
+// Need further improvement.
+- define what happens when you =:
+  define function copy():
+  void =(A* a, B* b) <-- will be called by the compiler when copying
+  {
+  }
+  A a;
+  B b;
+  the call to a = b;
+  desugars into =(&a,&b);
+  -> Cannot be generic
+- define what happens when you move:
+    
+

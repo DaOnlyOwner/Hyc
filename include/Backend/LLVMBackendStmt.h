@@ -12,7 +12,7 @@ private:
 
 	void insert_bb(llvm::BasicBlock* bb)
 	{
-		auto current_function = be.builder.GetInsertBlock()->getParent();
+		//auto current_function = be.builder.GetInsertBlock()->getParent();
 		//current_function->getBasicBlockList().push_back(bb);
 		be.builder.SetInsertPoint(bb);
 	}

@@ -68,7 +68,7 @@ public:
 	void descend();
 	void descend(int64_t nthChild);
 
-	void go_to_root() { m_current_index = 0; }
+	void go_to_root() { m_current_index = -1; }
 	bool go_to_father(int amount);
 
 private:

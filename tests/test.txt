@@ -1,46 +1,13 @@
-union A
+int main()
 {
-   int a : 0;
-   float b;
-   double c;
+    return fac(5);
 }
 
-union B
+int fac(int n)
 {
-   a:0;b;c;
+    if(n == 0)
+    {
+        return 1;
+    }
+    return n*fac(n-1); 
 }
-
-void main()
-{
-   A a;
-   a.a = 1;
-   match(a)
-   {
-      case a as i
-      {
-         *i = 1;
-      }
-
-      case b
-      {
-         return;
-      }
-
-      case c as d
-      {
-         *d = 1.0;
-      }
-   }
-
-   B b;
-   match(b)
-   {
-      case b
-      {
-         
-      }
-   }
-
-}
-
-
