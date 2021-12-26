@@ -7,21 +7,8 @@ std::unordered_map<TypeDefStmt*, PredefinedType> Scopes::coll_to_predef={};
 DeclStmt Scopes::declTrue{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"true") };
 DeclStmt Scopes::declFalse{ std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident,"bool")),Token(Token::Specifier::Ident,"false") };
 
-/*
-std::vector<Function> Scopes::get_all_funcs(const std::string& name)
-{
-	std::vector<Function> out;
-	int father = get_entry(m_current_index).father;
-	for (int i = m_current_index; i >= 0; i = get_entry(i).father)
-	{
-		t_entry& e = get_entry(i);
-		auto elem = e.table.get_funcs(name);
-		out.insert(out.begin(), elem.begin(), elem.end());
-	}
-	return out;
-}*/
-
 Scopes::Scopes()
+	:top_level(nullptr),current_entry(&top_level)
 {
 	if (!predefined_types_init)
 	{
@@ -64,33 +51,22 @@ Scopes::Scopes()
 		add(&p);
 	}
 
-	top_level.add(&declTrue);
-	top_level.add(&declFalse);
+	top_level.table.add(&declTrue);
+	top_level.table.add(&declFalse);
 }
 
-//bool Scopes::add_to_existing(const std::string& name, AllocaInst* inst) { get_current_entry().table.add_to_existing(name, inst); }
-
-// No shadowing allowed.
 bool Scopes::add(DeclStmt* decl)
 {
-	if (!get_current_entry().table.add(decl)) return false;
-	for (int64_t i = get_current_entry().father; i >= 0; i = get_entry(i).father)
-	{
-		t_entry& e = get_entry(i);
-		auto* elem = e.table.get_variable(decl->name.text);
-		if (elem != nullptr) return false;
-	}
-	return true;
+	return current_entry->table.add(decl);
 }
 
 DeclStmt* Scopes::get_variable(const std::string& name)
 {
-	auto tl = top_level.get_variable(name);
+	auto tl = top_level.table.get_variable(name);
 	if (tl) return tl;
-	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	for (entry* tbl = current_entry; tbl != nullptr; tbl = tbl->father)
 	{
-		t_entry& e = get_entry(i);
-		auto* elem = e.table.get_variable(name);
+		auto* elem = tbl->table.get_variable(name);
 		if (elem != nullptr) return elem;
 	}
 	return nullptr;
@@ -98,87 +74,41 @@ DeclStmt* Scopes::get_variable(const std::string& name)
 
 llvm::Value* Scopes::get_value(const std::string& name)
 {
-	auto tl = top_level.get_value(name);
+	auto tl = top_level.table.get_value(name);
 	if (tl) return tl;
-	for (int64_t i = m_current_index; i >= 0; i = get_entry(i).father)
+	for (entry* tbl = current_entry; tbl != nullptr; tbl = tbl->father)
 	{
-		t_entry& e = get_entry(i);
-		auto* elem = e.table.get_value(name);
+		auto* elem = tbl->table.get_value(name);
 		if (elem != nullptr) return elem;
 	}
 	return nullptr;
 }
 
-//AllocaInst* Scopes::get_alloca_inst(const std::string& name)
-//{
-//	return get_current_entry().table.get_alloca_inst(name);
-//}
-
 void Scopes::ascend()
 {
-	t_entry& current = get_current_entry();
-	m_current_index = current.father;
+	current_entry = current_entry->father;
 }
 
 // Expands the tree, allocates a new node and descends to it
 
-int64_t Scopes::expand()
+void Scopes::expand()
 {
-	auto indexTablePair = t_entry(m_current_index, SymbolTable());
-	m_collection.push_back(std::move(indexTablePair));
-	if(m_current_index > 0) get_current_entry().children.push_back(m_collection.size()-1);
-	m_current_index = m_collection.size() - 1;
-	return m_current_index;
+	std::unique_ptr<entry> e = std::make_unique<entry>(current_entry);
+	current_entry->children.push_back(std::move(e));
+	current_entry = current_entry->children.back().get();
 }
-
-/*bool Scopes::is_type_defined(const Type& t)
-{
-	std::string base = t.get_base_type();
-	return get_type(base) != nullptr;
-}*/
 
 void Scopes::descend()
 {
-	if (m_current_index < 0)
+	int64_t& child_idx = current_entry->current_child;
+	int64_t child_size = current_entry->children.size();
+	assert(child_size > 0);
+	current_entry = current_entry->children[child_idx].get();
+	child_idx++;
+	if (child_idx >= child_size)
 	{
-		m_current_index = 0;
-		return;
-	}
-	auto& e = get_current_entry();
-	if (e.children.empty())
-	{
-		m_current_index++;
-		return;
-	}
-	m_current_index = e.children[e.current_child];
-	e.current_child += 1;
-	if (e.current_child >= e.children.size())
-	{
-		e.current_child = 0;
-		return;
+		child_idx = 0;
 	}
 }
 
-void Scopes::descend(int64_t nthChild)
-{
-	// Iterate until we find the nth node that points to the current index
-	auto& e = get_current_entry();
-	m_current_index = e.children[nthChild];
-	e.current_child += 1;
-	if (e.current_child >= e.children.size())
-		e.current_child = 0;
-}
 
-bool Scopes::go_to_father(int amount)
-{
-	for (int i = 0; i < amount; i++)
-	{
-		m_current_index = get_entry(m_current_index).father;
-		if (m_current_index == -1)
-		{
-			m_current_index = 0;
-			return false;
-		}
-	}
-	return true;
-}

@@ -35,6 +35,7 @@ int execute(int argc, char** argv)
 		return 1;
 	}
 
+
 	if (result.count("h") >= 1)
 	{
 		fmt::print("{}",options.help());

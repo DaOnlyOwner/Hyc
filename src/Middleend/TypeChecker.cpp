@@ -256,11 +256,9 @@ void TypeChecker::visit(IdentExpr& ident)
 
 void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 {
-	scopes.descend();
 	size_t size_before_pasting = namespace_stmt.stmts.size();
 	for (int i = new_elem_idx; i < size_before_pasting; i++) namespace_stmt.stmts[i]->accept(*this);
 	new_elem_idx = size_before_pasting;
-	scopes.go_to_root();
 }
 
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
@@ -441,6 +439,7 @@ void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 	{
 		Messages::inst().trigger_6_w3(func_def_stmt.decl->name);
 	}
+	scopes.ascend();
 }
 
 void TypeChecker::visit(TypeDefStmt& coll_def)
@@ -514,6 +513,7 @@ void TypeChecker::visit(IfStmt& if_stmt)
 	check_type_is_bool(if_stmt.if_expr);
 	scopes.descend();
 	for (auto& p : if_stmt.if_stmts) p->accept(*this);
+	scopes.ascend(); 
 	for (int i = 0; i<if_stmt.all_elif_stmts.size(); i++)
 	{
 		auto& elif = if_stmt.all_elif_stmts[i];
@@ -525,6 +525,7 @@ void TypeChecker::visit(IfStmt& if_stmt)
 			p->accept(*this);
 			if (p->is_return_stmt()) break;
 		}
+		scopes.ascend();
 	}
 	if (!if_stmt.else_stmts.empty())
 	{
@@ -534,6 +535,7 @@ void TypeChecker::visit(IfStmt& if_stmt)
 			p->accept(*this);
 			if (p->is_return_stmt()) break;
 		}
+		scopes.ascend();
 	}
 }
 
@@ -546,6 +548,7 @@ void TypeChecker::visit(WhileStmt& while_stmt)
 		p->accept(*this);
 		if (p->is_return_stmt()) break;
 	}
+	scopes.ascend();
 }
 
 void TypeChecker::visit(ContinueStmt& cont_stmt)
@@ -644,6 +647,7 @@ void TypeChecker::visit(MatchStmt& match)
 		{
 			p->accept(*this);
 		}
+		scopes.ascend();
 	}
 }
 

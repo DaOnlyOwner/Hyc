@@ -2,13 +2,11 @@
 
 void ExpandScopes::visit(NamespaceStmt& namespace_stmt)
 {
-	if(entry == 0) scopes.expand();
 	for (int i = entry; i<namespace_stmt.stmts.size(); i++)
 	{
 		auto& stmt = namespace_stmt.stmts[i];
 		stmt->accept(*this);
 	}
-	if(entry == 0) scopes.ascend();
 }
 
 void ExpandScopes::visit(FuncDefStmt& func_call_stmt)

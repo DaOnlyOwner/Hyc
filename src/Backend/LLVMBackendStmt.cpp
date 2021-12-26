@@ -29,6 +29,7 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		insert_bb(then_bb);
 		scopes.descend();
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
+		scopes.ascend();
 		for (int i = 0; i < elifs_bb.size()-1; i++)
 		{
 			insert_bb(elifs_bb[i].first);
@@ -36,7 +37,9 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 			if(!elifs_bb[i].first->back().isTerminator())
 				be.builder.CreateCondBr(elif_cond, elifs_bb[i].second, elifs_bb[i + 1].first);
 			insert_bb(elifs_bb[i].second);
+			scopes.descend();
 			for (auto& p : if_stmt.all_elif_stmts[i]) p->accept(*this);
+			scopes.ascend();
 		}
 
 		auto& last = elifs_bb.back();
@@ -49,6 +52,7 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		insert_bb(last.second);
 		scopes.descend();
 		for (auto& p : last_stmts) p->accept(*this);
+		scopes.ascend();
 	}
 	else
 	{
@@ -56,6 +60,7 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		insert_bb(then_bb);
 		scopes.descend();
 		for (auto& p : if_stmt.if_stmts) p->accept(*this);
+		scopes.ascend();
 	}
 
 	if (else_bb)
@@ -63,6 +68,7 @@ void LLVMBackendStmt::visit(IfStmt& if_stmt)
 		insert_bb(else_bb);
 		if (!if_stmt.else_stmts.empty()) scopes.descend();
 		for (auto& p : if_stmt.else_stmts) p->accept(*this);
+		if (!if_stmt.else_stmts.empty()) scopes.ascend();
 		if(else_bb->back().isTerminator())
 			be.builder.CreateBr(cont_bb);
 	}
@@ -83,6 +89,7 @@ void LLVMBackendStmt::visit(WhileStmt& while_stmt)
 	for (auto& p : while_stmt.stmts) p->accept(*this);
 	be.builder.CreateBr(while_start_bb);
 	insert_bb(while_end_bb);
+	scopes.ascend();
 }
 
 void LLVMBackendStmt::visit(DeclStmt& decl_stmt)
@@ -112,7 +119,6 @@ void LLVMBackendStmt::visit(ExprStmt& expr_stmt)
 
 void LLVMBackendStmt::visit(NamespaceStmt& ns)
 {
-	scopes.descend();
 	for (auto& p : ns.stmts) p->accept(*this);
 }
 
@@ -157,6 +163,7 @@ void LLVMBackendStmt::visit(MatchStmt& ms)
 		for (auto& p : case_.body) p->accept(*this);
 		if(!be.builder.GetInsertBlock()->back().isTerminator())
 			be.builder.CreateBr(switch_end);
+		scopes.ascend();
 
 	}
 	be.builder.SetInsertPoint(switch_end);
@@ -166,13 +173,14 @@ void LLVMBackendStmt::visit(MatchStmt& ms)
 void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 {
 	if (!func_def.decl->generic_list.empty()) return;
-	scopes.descend();
 	auto func = be.mod.getFunction(mangle(*func_def.decl));
 	auto entry_bb = llvm::BasicBlock::Create(be.context, "entry", func);
 	be.builder.SetInsertPoint(entry_bb);
 	//enter_function(func);
 	func_def.decl->accept(*this);
+	scopes.descend();
 	for (auto& p : func_def.body) p->accept(*this);
+	scopes.ascend();
 	auto curr_fn = get_curr_fn();
 	if (!curr_fn->back().back().isTerminator())
 	{

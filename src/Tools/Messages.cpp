@@ -191,7 +191,7 @@ void Messages::trigger_6_e16(const Token& from, const std::string& t1, const std
 
 void Messages::trigger_6_e17(const Token& from)
 {
-	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope or above",
+	semantic_error(from, fmt::format("Variable with name '{}' is already defined in this scope",
 		from.text));
 }
 
