@@ -74,7 +74,18 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 		}
 		break;
 		case TypeKind::FunctionPointer:
-			NOT_IMPLEMENTED;
+		{
+			auto& val = std::get<FunctionPointerType>(var);
+			std::vector<llvm::Type*> params;
+			params.reserve(val.args.size());
+			for (auto& p : val.args)
+			{
+				params.push_back(map_type(*p, scopes, ctxt));
+			}
+			auto ret_type = map_type(*val.return_type, scopes, ctxt);
+			out = llvm::FunctionType::get(ret_type, params, false);
+		}
+		break;
 		default:
 			assert(false);
 			break;

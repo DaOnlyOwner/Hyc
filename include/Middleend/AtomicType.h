@@ -77,6 +77,7 @@ struct Type
 
 
 	TypeDefStmt* get_base_type() const;
+	const FunctionPointerType* get_fptr() const;
 	//PredefinedType pred_type;
 
 	// Also account for cast operators later

@@ -69,6 +69,7 @@ struct IAstVisitor
 	virtual void visit(struct TernaryExpr& tern) {};
 	virtual void visit(struct MatchStmt& match);
 	virtual void visit(struct ScopeStmt& sc);
+	virtual void visit(struct FptrIdentExpr& fptr){};
 };
 
 struct Node
@@ -361,6 +362,49 @@ struct FptrIdentExpr : Expr
 	Token name;
 	std::vector<uptr<TypeSpec>> generic_params;
 	std::vector<uptr<TypeSpec>> params;
+
+	DeclStmt* decl = nullptr;
+	IMPL_FT
+	{
+		return name;
+	}
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+		CPY_VEC(generic_params, gp_cpy, uptr<TypeSpec>);
+		CPY_VEC(params, p_cpy, uptr<TypeSpec>);
+		return uptr<Expr>(new FptrIdentExpr(name, mv(gp_cpy), mv(p_cpy)));
+	}
+	IMPL_ASSTR
+	{
+		std::string gl = "<";
+		if (!generic_params.empty())
+		{
+			gl += generic_params[0]->as_str();
+		}
+
+		for (int i = 1; i < generic_params.size(); i++)
+		{
+			auto& ts = generic_params[i];
+			gl += "," + ts->as_str();
+		}
+		gl += ">";
+
+		std::string p = "(;";
+		if (!params.empty())
+		{
+			p += generic_params[0]->as_str();
+		}
+
+		for (int i = 1; i < params.size(); i++)
+		{
+			auto& ts = params[i];
+			p += "," + ts->as_str();
+		}
+		p += ")";
+
+		return name.text + (generic_params.empty() ? "" : gl) + p;
+	}
 };
 
 struct IdentExpr : Expr

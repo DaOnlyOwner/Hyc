@@ -156,9 +156,9 @@ namespace
 					params.push_back(parser.overall_parser->parse_type_spec());
 				}
 				l.match_token(Token::Specifier::RParenR);
-				return std::make_unique<FptrIdentExpr>(token, mv(generic_params), mv(params));
+				return static_cast<std::unique_ptr<Expr>>(std::make_unique<FptrIdentExpr>(token, mv(generic_params), mv(params)));
 			}
-			return std::make_unique<IdentExpr>(token,mv(generic_params));
+			return static_cast<std::unique_ptr<Expr>>(std::make_unique<IdentExpr>(token,mv(generic_params)));
 	} };
 
 	// Precedence  right_assoc?  Parsing function

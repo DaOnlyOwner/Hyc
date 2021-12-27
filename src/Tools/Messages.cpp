@@ -260,6 +260,11 @@ void Messages::trigger_6_e30(const Token& from)
 	semantic_error(from, fmt::format("The identifier '{}' is neither a function nor a function pointer", from.text));
 }
 
+void Messages::trigger_6_e31(const Token& from, const std::string& expr)
+{
+	semantic_error(from, fmt::format("The call expression '{}' is not a function pointer", expr));
+}
+
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));
