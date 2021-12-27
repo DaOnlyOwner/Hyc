@@ -350,6 +350,19 @@ struct DecimalLiteralExpr : Expr
 
 
 struct TypeSpec;
+
+
+struct FptrIdentExpr : Expr
+{
+	FptrIdentExpr(const Token& token, std::vector<uptr<TypeSpec>>&& generic_params, std::vector<uptr<TypeSpec>>&& params)
+		: name(token), generic_params(mv(generic_params)),params(mv(params)) {}
+	FptrIdentExpr(const Token& token)
+		:name(token), generic_params{}, params{} {}
+	Token name;
+	std::vector<uptr<TypeSpec>> generic_params;
+	std::vector<uptr<TypeSpec>> params;
+};
+
 struct IdentExpr : Expr
 {
 	IdentExpr(const Token& token, std::vector<uptr<TypeSpec>>&& generic_params)

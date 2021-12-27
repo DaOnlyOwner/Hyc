@@ -398,3 +398,18 @@ TypeDefStmt* Type::get_base_type() const
 	assert(false);
 	return nullptr;
 }
+
+const FunctionPointerType* Type::get_fptr() const
+{
+	if (not_specified) return nullptr;
+	for (auto& ti : stored_types)
+	{
+		if (ti.first == TypeKind::FunctionPointer)
+		{
+			const FunctionPointerType& fptr = std::get<FunctionPointerType>(ti.second);
+			return &fptr;
+		}
+	}
+	assert(false);
+	return nullptr;
+}

@@ -16,6 +16,7 @@ private:
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
+	virtual void visit(FptrIdentExpr& fptr) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;
 	virtual void visit(FuncCallExpr& func_call_expr) override;
@@ -43,6 +44,7 @@ private:
 	bool handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_union(BinOpExpr& bin_op);
+	void handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr* ident);
 
 	void check_type_is_bool(uptr<Expr>& expr);
 

@@ -143,6 +143,21 @@ namespace
 				}
 				l.match_token(Token::Specifier::GenFCallClose); // .>
 			}
+			if (l.lookahead(1).type == Token::Specifier::RParenL && l.lookahead(1).type == Token::Specifier::Semicolon)
+			{
+				std::vector<uptr<TypeSpec>> params;
+				l.eat(); // (
+				l.eat(); // ;
+				auto fst = parser.overall_parser->parse_type_spec();
+				if (fst) params.push_back(mv(fst));
+				while (l.lookahead(1).type == Token::Specifier::Comma)
+				{
+					l.eat(); // ,
+					params.push_back(parser.overall_parser->parse_type_spec());
+				}
+				l.match_token(Token::Specifier::RParenR);
+				return std::make_unique<FptrIdentExpr>(token, mv(generic_params), mv(params));
+			}
 			return std::make_unique<IdentExpr>(token,mv(generic_params));
 	} };
 
@@ -392,7 +407,7 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec_part()
 	else return nullptr;
 }
 
-// type_spec := (ident(< ident* >)? | fptr(type_spec*;type_spec) | "*" | "[integer_literal]") type_spec
+// type_spec := (ident(< ident* >)? | fptr(type_spec;type_spec*) | "*" | "[integer_literal]") type_spec
 std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 {
 	if (tkns.lookahead(1).type == Token::Specifier::Ident)
@@ -440,6 +455,8 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 		tkns.eat();
 		tkns.match_token(Token::Specifier::RParenL);
 		std::vector<uptr<TypeSpec>> args;
+		auto ret_type = parse_type_spec();
+		tkns.match_token(Token::Specifier::Semicolon);
 		while (tkns.lookahead(1).type != Token::Specifier::Semicolon && tkns.lookahead(1).type != Token::Specifier::Eof)
 		{
 			args.push_back(parse_type_spec()); 
@@ -447,8 +464,6 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 				tkns.eat();
 			else if (tkns.lookahead(1).type != Token::Specifier::Semicolon) break;
 		}
-		tkns.match_token(Token::Specifier::Semicolon);
-		auto ret_type = parse_type_spec();
 		tkns.match_token(Token::Specifier::RParenR);
 		auto inner = parse_type_spec_part();
 		return std::make_unique<FptrTypeSpec>(mv(args), mv(ret_type),mv(inner));
