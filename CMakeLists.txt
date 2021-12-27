@@ -29,20 +29,56 @@ set(TARGET_INC_DIRS ${CMAKE_SOURCE_DIR}/include/Frontend ${CMAKE_SOURCE_DIR}/inc
 ${CMAKE_SOURCE_DIR}/include/Backend ${CMAKE_SOURCE_DIR}/include/Tools ${CMAKE_SOURCE_DIR}/lib/Re-flex/include)
 
 find_package(LLVM REQUIRED CONFIG)
+find_package(lld REQUIRED CONFIG)
 llvm_map_components_to_libnames(LLVM_LIBS 
 support
 analysis
 passes
 core
+option
+lto
+X86CodeGen #x86
+#X86AsmParser
 X86Info
-X86Desc
-X86CodeGen)
+AArch64CodeGen #Arch
+#AArch64AsmParser
+AMDGPUCodeGen #Amd GPU
+#AMDGPUAsmParser
+ARMCodeGen # ARM
+#ARMAsmParser
+AVRCodeGen # AVR
+#AVRAsmParser
+BPFCodeGen # BPF
+#BPFAsmParser
+HexagonCodeGen # Hexagon
+#HexagonAsmParser
+LanaiCodeGen # Lanai
+#LanaiAsmParser
+MipsCodeGen # MIPS
+#MipsAsmParser
+MSP430CodeGen #MSP430
+#MSP430AsmParser
+NVPTXCodeGen # NVPTX
+PowerPCCodeGen # PowerPC
+#PowerPCAsmParser
+RISCVCodeGen # RISCV
+#RISCVAsmParser
+SparcCodeGen # Sparc
+#SparcAsmParser
+SystemZCodeGen # SystemZ
+#SystemZAsmParser
+WebAssemblyCodeGen # WebAssembly
+#WebAssemblyAsmParser
+XCoreCodeGen # XCore
+)
+
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Here: ${LLVM_DIR}")
 message(STATUS "Linking to LLVM libs: ${LLVM_LIBS}")
 
 #add_subdirectory(tests)
 add_subdirectory(lib/fmt)
+add_subdirectory(lib/subprocess)
 
 add_definitions(-DROOT=\"${CMAKE_SOURCE_DIR}\")
 separate_arguments(LLVM_DEF_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
@@ -51,7 +87,6 @@ add_executable(Hyc ${FRONTEND_SRC} ${MIDDLEEND_SRC} ${BACKEND_SRC}
 ${TOOLS_SRC} ${REFLEX_SRC} ${FRONTEND_HEADERS} ${MIDDLEEND_HEADERS} ${BACKEND_HEADERS} ${TOOLS_HEADERS}  src/main.cpp)
 
 target_compile_features(Hyc PRIVATE cxx_std_17)
-
 
 source_group("Frontend\\Source Files" FILES ${FRONTEND_SRC})
 source_group("Frontend\\Header Files" FILES ${FRONTEND_HEADERS})
@@ -64,8 +99,12 @@ source_group("Tools\\Header Files" FILES ${TOOLS_HEADERS})
 source_group("Tools\\Source Files" FILES ${TOOLS_SRC})
 source_group("Embedded" FILES ${REFLEX_SRC})
 
+
 target_include_directories(Hyc PRIVATE ${TARGET_INC_DIRS})
 target_include_directories(Hyc PRIVATE ${LLVM_INCLUDE_DIRS})
 target_include_directories(Hyc PRIVATE "lib/cxxopts/include")
 target_link_libraries(Hyc fmt)
 target_link_libraries(Hyc ${LLVM_LIBS})
+target_link_libraries(Hyc subprocess)
+
+

@@ -3,10 +3,13 @@
 #include "fmt/color.h"
 #include <unordered_map>
 #include <string>
+#include <algorithm>
 
 std::string get_before_delim(const std::string& str, char delim)
 {
-	return str.substr(0, str.find(delim));
+	auto rev = str;
+	std::reverse(rev.begin(), rev.end());
+	return str.substr(0, rev.size()-rev.find(delim)-1);
 }
 
 int execute(int argc, char** argv)
@@ -14,7 +17,7 @@ int execute(int argc, char** argv)
 	cxxopts::Options options("Hyc", "The compiler for Hyc");
 	options.add_options()
 		("O,opt", "Optimization level (0-3 or z)", cxxopts::value<std::string>()->default_value("1"))
-		("e,emit", "Emit (specify 'ir' for IR output, 'obj' for object file output or 'ast' for AST output)", cxxopts::value<std::string>()->default_value("obj"))
+		("e,emit", "Emit (specify 'ir' for IR output, 'obj' for object file output, 'ast' for AST output or 'exe' for exe output)", cxxopts::value<std::string>()->default_value("exe"))
 		("t,target_triple", "The target triple that should be targeted", cxxopts::value<std::string>())
 		("f,file", "The input file", cxxopts::value<std::string>())
 		("o,output", "The output file", cxxopts::value<std::string>())
@@ -85,6 +88,7 @@ int execute(int argc, char** argv)
 	}
 	else if (ei == "obj") ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitObjCode;
 	else if (ei == "ast") ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitAST;
+	else if (ei == "exe") ci.emit_info = LLVMBackend::CompilerInfo::EmitInfo::EmitExe;
 	else
 	{
 		fmt::print(fmt::fg(fmt::color::orange_red), "Value '{}' for option -e not recognized",ei);
@@ -110,8 +114,13 @@ int execute(int argc, char** argv)
 		{
 			out = fmt::format("{}.o", get_before_delim(filename, '.'));
 		}
+		else if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitExe)
+		{
+			out = fmt::format("{}.exe", get_before_delim(filename, '.'));
+		}
 		ci.filename_output = out;
 	}
+	else ci.filename_output = result["o"].as<std::string>();
 
 	ci.emit_to_stdout = result.count("stdout") > 0;
 

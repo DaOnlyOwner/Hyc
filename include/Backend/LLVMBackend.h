@@ -19,7 +19,8 @@ public:
 		{
 			EmitObjCode,
 			EmitIRCode,
-			EmitAST
+			EmitAST,
+			EmitExe
 		};
 
 		EmitInfo emit_info;
