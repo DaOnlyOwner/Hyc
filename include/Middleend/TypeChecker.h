@@ -45,6 +45,9 @@ private:
 	bool handle_bin_op_array(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_union(BinOpExpr& bin_op);
 	void handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr* ident);
+	std::pair<std::vector<Type>, bool> deduce_template_args(FuncDefStmt* def, const std::vector<Type>& params, const std::vector<uptr<TypeSpec>>& gparams, Expr& expr);
+
+	FuncDefStmt* paste_new_function(FuncDefStmt* def, const std::vector<Type>& deduced_types, const Token& name, const std::vector<Type>& params, Expr& expr);
 
 	void check_type_is_bool(uptr<Expr>& expr);
 

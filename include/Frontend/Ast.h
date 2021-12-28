@@ -363,7 +363,8 @@ struct FptrIdentExpr : Expr
 	std::vector<uptr<TypeSpec>> generic_params;
 	std::vector<uptr<TypeSpec>> params;
 
-	DeclStmt* decl = nullptr;
+	FuncDefStmt* def = nullptr;
+	
 	IMPL_FT
 	{
 		return name;
@@ -393,7 +394,7 @@ struct FptrIdentExpr : Expr
 		std::string p = "(;";
 		if (!params.empty())
 		{
-			p += generic_params[0]->as_str();
+			p += params[0]->as_str();
 		}
 
 		for (int i = 1; i < params.size(); i++)

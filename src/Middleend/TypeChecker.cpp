@@ -52,11 +52,11 @@ namespace
 		}
 	}
 
-	void trigger_e6_21(const Token& name, const std::vector<FuncCallArg>& arg_list)
+	void trigger_e6_21(const Token& name, const std::vector<Type>& arg_list)
 	{
 		std::string args = "";
-		if (!arg_list.empty()) args += arg_list[0].expr->sem_type.as_str();
-		for (int i = 1; i < arg_list.size(); i++) args += ", " + arg_list[i].expr->sem_type.as_str();
+		if (!arg_list.empty()) args += arg_list[0].as_str();
+		for (int i = 1; i < arg_list.size(); i++) args += ", " + arg_list[i].as_str();
 		Messages::inst().trigger_6_e21(name, args);
 	}
 
@@ -138,13 +138,18 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 	{
 		auto tlh = get(bin_op.lh);
 		auto trh = get(bin_op.rh);
+		if (tlh.is_error_type() || trh.is_error_type())
+		{
+			bin_op.sem_type = error_type;
+			RETURN(error_type);
+		}
 		handled = handled || handle_bin_op_void(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_predefined(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_pointer_arithmetic(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_array(tlh, trh, bin_op);
-		//handled = handled || handle_bin_op_copy_move(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_copy(tlh, trh, bin_op);
 		if (!handled)
 		{
 			// Error: Operator not defined for types. 
@@ -161,6 +166,11 @@ void TypeChecker::visit(PrefixOpExpr& pre_op)
 	{
 		// Prefix operation: must have a type.
 		Messages::inst().trigger_6_e1(pre_op.op, pre_op.lh->as_str());
+		RETURN_PREFIX_OP(error_type);
+	}
+	if (t.is_error_type())
+	{
+		pre_op.sem_type = error_type;
 		RETURN_PREFIX_OP(error_type);
 	}
 	if (is_pred(scopes,t))
@@ -237,6 +247,54 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 void TypeChecker::visit(FptrIdentExpr& fptr)
 {
 	// TODO: Fptr
+	for (auto& p : fptr.params)
+	{
+		auto [t,succ] = create_type(*p, scopes, ns);
+		assert(succ);
+		p->semantic_type = t;
+	}
+
+	auto def = scopes.get_func(fptr.name.text, [&](const FuncDeclStmt& decl) {
+		if (decl.arg_list.size() != fptr.params.size()) return false;
+		if (!decl.generic_list.empty()) return true;// If it's generic, return it because it is the only function with the specified name and argument amount in the list (this might be a canditate)
+		for (int i = 0; i < decl.arg_list.size(); i++)
+		{
+			auto argtype_call = fptr.params[i]->semantic_type;
+			if (argtype_call != decl.arg_list[i]->type) return false;
+		}
+		return true;
+		});
+
+	std::vector<Type> tv;
+	std::transform(fptr.params.begin(), fptr.params.end(), std::back_inserter(tv), [&](const auto& t) {
+		return t->semantic_type;
+		});
+	
+	if (!def)
+	{
+		Messages::inst().trigger_6_e32(fptr.name, fptr.as_str());
+		fptr.sem_type = error_type;
+		RETURN(error_type);
+	}
+	
+	auto [ded_types, succ] = deduce_template_args(def, tv, fptr.generic_params, fptr);
+	if (!succ)
+	{
+		fptr.sem_type = error_type;
+		RETURN(error_type);
+	}
+
+	auto non_generic_def = paste_new_function(def, ded_types, fptr.name, tv, fptr);
+	if (non_generic_def)
+	{
+		fptr.def = non_generic_def;
+		fptr.sem_type = create_fptr_type(tv, non_generic_def->decl->ret_type->semantic_type);
+		RETURN(fptr.sem_type);
+	}
+	else
+	{
+		RETURN(error_type);
+	}
 }
 
 void TypeChecker::visit(IdentExpr& ident)
@@ -265,43 +323,8 @@ void TypeChecker::visit(NamespaceStmt& namespace_stmt)
 	new_elem_idx = size_before_pasting;
 }
 
-void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr* ident)
+std::pair<std::vector<Type>,bool> TypeChecker::deduce_template_args(FuncDefStmt* def, const std::vector<Type>& params, const std::vector<uptr<TypeSpec>>& gparams, Expr& expr)
 {
-	// First look up the name in the variables, maybe it is a function pointer.
-	auto decl = scopes.get_variable(ident->name.text);
-	if (decl)
-	{
-		if (!decl->type.is_fptr_type())
-		{
-			// Function call needs to be either a function or a function pointer
-			Messages::inst().trigger_6_e30(ident->name);
-			func_call_expr.sem_type = error_type;
-			RETURN(error_type);
-		}
-
-		func_call_expr.sem_type = *decl->type.get_fptr()->return_type;
-		RETURN(func_call_expr.sem_type);
-	}
-
-
-	auto def = scopes.get_func(ident->name.text, [&](const FuncDeclStmt& decl) {
-		if (decl.arg_list.size() != func_call_expr.arg_list.size()) return false;
-		if (!decl.generic_list.empty()) return true;// If it's generic, return it because it is the only function with the specified name and argument amount in the list (this might be a canditate)
-		for (int i = 0; i < decl.arg_list.size(); i++)
-		{
-			auto argtype_call = func_call_expr.arg_list[i].expr->sem_type;
-			if (argtype_call != decl.arg_list[i]->type) return false;
-		}
-		return true;
-		});
-
-	if (!def)
-	{
-		trigger_e6_21(ident->name, func_call_expr.arg_list);
-		func_call_expr.sem_type = error_type;
-		RETURN(error_type);
-	}
-
 	// It's a generic function, we instantiate the function first.
 	std::vector<Type> deduced_types;
 	int garg_idx = 0; // The first given generic argument of the func call expr
@@ -322,22 +345,22 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 		if (it != def->decl->arg_list.end())
 		{
 			int arg_idx = std::distance(def->decl->arg_list.begin(), it);
-			auto& deduced_type = func_call_expr.arg_list[arg_idx].expr->sem_type;
+			auto& deduced_type = params[arg_idx];
 			// -> 3.
 			deduced_types.push_back(deduced_type);
 		}
 
 		// Generic Type was not found in arg list
 		// See if it was given
-		else if (garg_idx < ident->generic_params.size())
+		else if (garg_idx < gparams.size())
 		{
-			auto& type_spec = ident->generic_params[garg_idx];
+			auto& type_spec = gparams[garg_idx];
 			auto [sem_type, succ] = create_type(*type_spec, scopes, ns);
 			if (!succ)
 			{
 				Messages::inst().trigger_4_e1(type_spec->get_ident_token());
-				func_call_expr.sem_type = error_type;
-				RETURN(error_type);
+				expr.sem_type = error_type;
+				return { {},false };
 			}
 			type_spec->semantic_type = sem_type;
 			deduced_types.push_back(sem_type);
@@ -350,19 +373,23 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 			if (!succ)
 			{
 				Messages::inst().trigger_4_e1(type_spec->get_ident_token());
-				func_call_expr.sem_type = error_type;
-				RETURN(error_type);
+				expr.sem_type = error_type;
+				return { {},false };
 			}
 			deduced_types.push_back(sem_type);
 		}
 
 		else
 		{
-			Messages::inst().trigger_6_e20(garg.name, func_call_expr.as_str());
-			RETURN(error_type);
+			Messages::inst().trigger_6_e20(garg.name, expr.as_str());
+			return { {},false };
 		}
 	}
+	return { deduced_types,true };
+}
 
+FuncDefStmt* TypeChecker::paste_new_function(FuncDefStmt* def, const std::vector<Type>& deduced_types, const Token& name, const std::vector<Type>& params, Expr& expr)
+{
 	if (!deduced_types.empty())
 	{
 		std::vector<uptr<TypeSpec>> ast_deduced_types;
@@ -382,42 +409,129 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 		if (!succ)
 		{
 			Messages::inst().trigger_4_e1(non_generic_def->decl->ret_type->get_ident_token());
-			func_call_expr.sem_type = error_type;
-			RETURN(error_type);
+			expr.sem_type = error_type;
+			return nullptr;
 		}
 
 		// Make sure the args of the func call expr has the same types as the args of the selected generic function
-		if (func_call_expr.arg_list.size() != non_generic_def->decl->arg_list.size())
+		if (params.size() != non_generic_def->decl->arg_list.size())
 		{
-			trigger_e6_21(ident->name, func_call_expr.arg_list);
+			trigger_e6_21(name, params);
+			expr.sem_type = error_type;
+			return nullptr;
+		}
+
+		for (int i = 0; i < params.size(); i++)
+		{
+			auto& t1 = params[i];
+			auto& t2 = non_generic_def->decl->arg_list[i]->type;
+			if (t1 != t2)
+			{
+				trigger_e6_21(name, params);
+				expr.sem_type = error_type;
+				return nullptr;
+			}
+		}
+
+
+		expr.sem_type = t;
+		return non_generic_def;
+	}
+
+	else
+	{
+		expr.sem_type = def->decl->ret_type->semantic_type;
+		return def;
+	}
+}
+
+void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr* ident)
+{
+	// First look up the name in the variables, maybe it is a function pointer.
+	auto decl = scopes.get_variable(ident->name.text);
+	if (decl && ident->generic_params.empty())
+	{
+		if (!decl->type.is_fptr_type())
+		{
+			// Function call needs to be either a function or a function pointer
+			Messages::inst().trigger_6_e30(ident->name);
 			func_call_expr.sem_type = error_type;
 			RETURN(error_type);
 		}
 
-		for (int i = 0; i < func_call_expr.arg_list.size(); i++)
+		auto fptr = decl->type.get_fptr();
+		std::vector<Type> params;
+		std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(params), [&](const FuncCallArg& p)
+			{
+				return p.expr->sem_type;
+			});
+		if (fptr->args.size() != func_call_expr.arg_list.size())
 		{
-			auto& t1 = func_call_expr.arg_list[i].expr->sem_type;
-			auto& t2 = non_generic_def->decl->arg_list[i]->type;
+			trigger_e6_21(ident->name, params);
+			func_call_expr.sem_type = error_type;
+			RETURN(error_type);
+		}
+
+		for (int i = 0; i < params.size(); i++)
+		{
+			auto& t1 = params[i];
+			auto& t2 = *fptr->args[i];
 			if (t1 != t2)
 			{
-				trigger_e6_21(ident->name, func_call_expr.arg_list);
+				trigger_e6_21(ident->name, params);
 				func_call_expr.sem_type = error_type;
 				RETURN(error_type);
 			}
 		}
 
-
-		func_call_expr.sem_type = t;
-		func_call_expr.def = non_generic_def;
-		RETURN(t);
-	}
-
-	else
-	{
-		func_call_expr.sem_type = def->decl->ret_type->semantic_type;
-		func_call_expr.def = def;
+		func_call_expr.sem_type = *decl->type.get_fptr()->return_type;
+		ident->sem_type = decl->type;
 		RETURN(func_call_expr.sem_type);
 	}
+
+	auto def = scopes.get_func(ident->name.text, [&](const FuncDeclStmt& decl) {
+		if (decl.arg_list.size() != func_call_expr.arg_list.size()) return false;
+		if (!decl.generic_list.empty()) return true;// If it's generic, return it because it is the only function with the specified name and argument amount in the list (this might be a canditate)
+		for (int i = 0; i < decl.arg_list.size(); i++)
+		{
+			auto argtype_call = func_call_expr.arg_list[i].expr->sem_type;
+			if (argtype_call != decl.arg_list[i]->type) return false;
+		}
+		return true;
+		});
+
+	std::vector<Type> params;
+	std::transform(def->decl->arg_list.begin(), def->decl->arg_list.end(), std::back_inserter(params), [&](const uptr<DeclStmt>& param) {
+		return param->type;
+		});
+	
+	if (!def)
+	{
+		trigger_e6_21(ident->name, params);
+		func_call_expr.sem_type = error_type;
+		RETURN(error_type);
+	}
+
+	auto [deduced_types, succ] = deduce_template_args(def, params, ident->generic_params, *ident);
+
+	if (!succ)
+	{
+		func_call_expr.sem_type = error_type;
+		RETURN(error_type);
+	}
+
+	auto non_generic_def = paste_new_function(def, deduced_types, ident->name, params, func_call_expr);
+	if (non_generic_def)
+	{
+		func_call_expr.def = non_generic_def;
+		ident->sem_type = create_fptr_type(params, non_generic_def->decl->ret_type->semantic_type);
+		RETURN(func_call_expr.sem_type);
+	}
+	else
+	{
+		RETURN(error_type);
+	}
+
 }
 
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
@@ -437,6 +551,10 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 	else
 	{
 		// TODO: Func Ptr call
+		std::vector<Type> params;
+		std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(params), [&](const FuncCallArg& fca) {
+			return fca.expr->sem_type;
+			});
 		auto t = get(func_call_expr.from);
 		if (!t.is_fptr_type())
 		{
@@ -445,6 +563,24 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 			RETURN(error_type);
 		}
 		auto fptr = t.get_fptr();
+		if (fptr->args.size() != func_call_expr.arg_list.size())
+		{
+			trigger_e6_21(func_call_expr.from->first_token(), params);
+			func_call_expr.sem_type = error_type;
+			RETURN(error_type);
+		}
+
+		for (int i = 0; i < params.size(); i++)
+		{
+			auto& t1 = params[i];
+			auto& t2 = *fptr->args[i];
+			if (t1 != t2)
+			{
+				trigger_e6_21(ident->name, params);
+				func_call_expr.sem_type = error_type;
+				RETURN(error_type);
+			}
+		}
 		assert(fptr);
 		func_call_expr.sem_type = *fptr->return_type;
 		RETURN(func_call_expr.sem_type);
@@ -466,7 +602,7 @@ void TypeChecker::visit(FuncDefStmt& func_def_stmt)
 	for (auto& p : func_def_stmt.body)
 	{
 		p->accept(*this);
-		if (ret_was_there = p->is_return_stmt()) break;
+		if ((ret_was_there = p->is_return_stmt())) break;
 	}
 	auto pred = func_def_stmt.decl->ret_type->semantic_type.to_pred(scopes);
 	if (pred.has_value() && (pred.value() != PredefinedType::Void) && !ret_was_there)
@@ -979,6 +1115,10 @@ bool TypeChecker::handle_bin_op_union(BinOpExpr& bin_op)
 		|| bin_op.op.type == Token::Specifier::DoubleQM)
 	{
 		auto t = get(bin_op.lh);
+		if (t.is_error_type())
+		{
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
 		if (!t.is_base_type())
 		{
 			Messages::inst().trigger_6_e13(bin_op.op, t.as_str());
@@ -1076,6 +1216,10 @@ bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 		|| bin_op.op.type == Token::Specifier::MemAccess)
 	{
 		auto tlh = get(bin_op.lh);
+		if (tlh.is_error_type())
+		{
+			RETURN_VAL_BIN_OP(error_type, true);
+		}
 		auto cpy_tlh = tlh;
 		if (bin_op.op.type == Token::Specifier::MemAccess)
 		{

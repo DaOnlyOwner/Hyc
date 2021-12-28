@@ -259,6 +259,11 @@ bool Type::is_array_type() const
 	return !not_specified && stored_types.back().first == TypeKind::Array;
 }
 
+bool Type::is_error_type() const
+{
+	return *this == error_type;
+}
+
 
 std::pair<ConversionType, ConversionType> Type::type_cast_to_more_general(PredefinedType t1, PredefinedType t2)
 {

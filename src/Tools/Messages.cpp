@@ -212,7 +212,7 @@ void Messages::trigger_6_e20(const Token& from, const std::string& expr)
 
 void Messages::trigger_6_e21(const Token& from, const std::string& args)
 {
-	semantic_error(from, fmt::format("No function '{}' defined with argument types '{}'", from.text, args));
+	semantic_error(from, fmt::format("No function '{}' or function pointer defined with argument types '{}'", from.text, args));
 }
 
 void Messages::trigger_6_e22(const Token& from, const std::string& expr, const std::string& t)
@@ -263,6 +263,11 @@ void Messages::trigger_6_e30(const Token& from)
 void Messages::trigger_6_e31(const Token& from, const std::string& expr)
 {
 	semantic_error(from, fmt::format("The call expression '{}' is not a function pointer", expr));
+}
+
+void Messages::trigger_6_e32(const Token& from, const std::string& ident)
+{
+	semantic_error(from, fmt::format("Function pointer identifier '{}' references unknown function", ident));
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)

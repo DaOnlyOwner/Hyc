@@ -53,6 +53,7 @@ Scopes::Scopes()
 
 	top_level.table.add(&declTrue);
 	top_level.table.add(&declFalse);
+	top_level.table.add(error_type.get_base_type());
 }
 
 bool Scopes::add(DeclStmt* decl)

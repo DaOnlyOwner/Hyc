@@ -13,6 +13,18 @@ std::pair<Type, bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& n
 	return { std::move(type),tc.get_succ()};
 }
 
+Type create_fptr_type(const std::vector<Type>& params, const Type& ret)
+{
+	auto ret_t = make_value<Type>(Type(ret));
+	std::vector<ValuePtr<Type>> args;
+	std::transform(params.begin(), params.end(), std::back_inserter(args), [&](const Type& t) {
+		return make_value<Type>(Type(t));
+		});
+
+	Type fptr_type{ mv(ret_t), mv(args) };
+	return fptr_type;
+}
+
 void TypeCreator::visit(PointerTypeSpec& pt_spec)
 {
 	if (pt_spec.inner != nullptr)
@@ -74,6 +86,14 @@ void TypeCreator::visit(FptrTypeSpec& fptr)
 		ValuePtr<Type> arg_t(new Type(arg));
 		value_ptrs.push_back(arg_t);
 	}
+
+	if (fptr.inner)
+	{
+		auto& inner = get(fptr.inner);
+		inner.promote_fptr(mv(ret_vp), mv(value_ptrs));
+		RETURN(inner);
+	}
+
 	RETURN(Type(std::move(ret_vp), std::move(value_ptrs)));
 	//auto& ret = get(fptr.ret_type);
 	//std::vector<

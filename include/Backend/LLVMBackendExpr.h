@@ -39,6 +39,7 @@ private:
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
 	virtual void visit(IdentExpr& ident) override;
+	virtual void visit(FptrIdentExpr& fptr) override;
 	virtual void visit(FuncCallExpr& func_call_expr) override;
 	virtual void visit(ImplicitCastExpr& ice) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;

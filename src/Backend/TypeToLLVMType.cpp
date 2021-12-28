@@ -3,12 +3,13 @@
 #include "Messages.h"
 #include "AtomicType.h"
 #include "Scopes.h"
-#include "llvm/IR/DerivedTypes.h"
+
 
 llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& ctxt)
 {
 	llvm::Type* out = nullptr;
 	//static_assert(std::is_base_of_v<llvm::Type, llvm::IntegerType>, "LOLWTF");
+	assert(!from.must_be_inferred());
 	for (auto& [kind, var] : from.stored_types)
 	{
 		switch (kind)
@@ -84,6 +85,7 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 			}
 			auto ret_type = map_type(*val.return_type, scopes, ctxt);
 			out = llvm::FunctionType::get(ret_type, params, false);
+			out = out->getPointerTo();
 		}
 		break;
 		default:
@@ -92,4 +94,16 @@ llvm::Type* map_type(const Type& from, const Scopes& scopes, llvm::LLVMContext& 
 		}
 	}
 	return out;
+}
+
+llvm::FunctionType* get_function_type(const FunctionPointerType& fptr, const Scopes& scopes, llvm::LLVMContext& ctxt)
+{
+	std::vector<llvm::Type*> arg_types;
+	for (auto& p : fptr.args)
+	{
+		arg_types.push_back(map_type(*p, scopes, ctxt));
+	}
+
+	auto ret_t = map_type(*fptr.return_type, scopes, ctxt);
+	return llvm::FunctionType::get(ret_t, arg_types, false);
 }

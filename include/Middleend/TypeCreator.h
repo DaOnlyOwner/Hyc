@@ -22,6 +22,6 @@ private:
 	virtual void visit(FptrTypeSpec& fptr) override;
 };
 std::pair<Type,bool> create_type(TypeSpec& ts, Scopes& scopes, NamespaceStmt& ns, bool instantiate_generic=true);
-
+Type create_fptr_type(const std::vector<Type>& args, const Type& ret_t);
 
 

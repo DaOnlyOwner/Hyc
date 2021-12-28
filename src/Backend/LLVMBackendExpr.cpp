@@ -377,16 +377,54 @@ void LLVMBackendExpr::visit(IdentExpr& ident)
 	}
 }
 
+void LLVMBackendExpr::visit(FptrIdentExpr& fptr)
+{
+	// TODO: check that it is only on the rhs
+	auto [should_load] = get_params();
+	auto def = fptr.def;
+	auto mangled = mangle(*def->decl);
+	auto func = be.mod.getFunction(mangled);
+	RETURN((llvm::Value*)func);
+}
+
 void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 {
-	auto [_] = get_params();
-	auto mangled = mangle(*func_call_expr.def->decl);
-	auto func = be.mod.getFunction(mangled);
+	auto* ident = dynamic_cast<IdentExpr*>(func_call_expr.from.get());
+	auto [should_load] = get_params();
 	std::vector<llvm::Value*> args;
 	std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(args), [&](const FuncCallArg& arg) {
-		return get_with_params(*arg.expr,true);
+		return get_with_params(*arg.expr, true);
 		});
-	RETURN(be.builder.CreateCall(func, args));
+	if (ident)
+	{
+		auto llvm_maybe_fptr = scopes.get_value(ident->name.text);
+		if (llvm_maybe_fptr)
+		{
+			auto fptr_sem = scopes.get_variable(ident->name.text);
+			auto ft = get_function_type(*fptr_sem->type.get_fptr(),scopes,be.context);
+
+			auto& t = func_call_expr.from->sem_type;
+			auto mapped = map_type(t, scopes, be.context);
+		
+			llvm::Value* loaded = be.builder.CreateLoad(mapped,llvm_maybe_fptr, false);
+			assert(loaded);
+			
+			RETURN(be.builder.CreateCall(ft,loaded,args));
+		}
+		auto mangled = mangle(*func_call_expr.def->decl);
+		auto func = be.mod.getFunction(mangled);
+		RETURN(be.builder.CreateCall(func, args));
+	}
+
+	else
+	{
+		auto expr = get_with_params(*func_call_expr.from,true);
+		expr->dump();
+		auto ft = get_function_type(*func_call_expr.from->sem_type.get_fptr(), scopes, be.context);
+		RETURN(be.builder.CreateCall(ft,expr,args));
+	}
+
+
 }
 
 void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
