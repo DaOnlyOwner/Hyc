@@ -106,9 +106,15 @@ void LLVMBackendStmt::visit(FuncDeclStmt& func_decl)
 	for (auto& arg : currfn->args())
 	{
 		auto& p = func_decl.arg_list[idx];
+		idx++;
+		if (p->is_sret)
+		{
+			scopes.add(arg.getName().str(), &arg);
+			continue;
+		}
+		// TODO: Memcpy when struct
 		auto alloc = get(p);
 		be.builder.CreateStore(&arg, alloc);
-		idx++;
 	}
 }
 

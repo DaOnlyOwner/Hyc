@@ -22,25 +22,43 @@ TODO:
   called when object leaves the scope
   overloading: void operator%(foo* a)
 - operators:
-  cannot overload operators.
+  cannot overload operators RIGHT NOW, might come in the future.
+- name return values:
+int* val foo()
+   ^-- can only be pointers.
+{
+   *val = 3; <-- use it like a normal argument
+   return; <-- functions like these have implicit type void.
+}
+a := foo(); <-- transforms into this:
+int a;
+foo(&a);
+stuff like this:
+foo(&a) = 3; 
+can be lowered to:
+foo(&a);
+a = 3;
+
+ 
+
+
 - casts
   3 as int;
 - const 
 - moving and copying:
-  moving and copying are done explicitly!
-- const can only be defined in front of a type, no const ptrs etc!
-- no array type -> int[3] has type int*!
+  moving and copying are done explicitly RIGHT NOW, planning to implement it in the future.
+- const can only be defined in front of a type.
 - lambda expressions:
 type declaration: [a,b](int,int)->void 
 e.g. 
 lambda0 := [a,b](int arg0,int arg2)->int(return type optional){if (a == 0) return b;}
-lambda0..fn(3,4);
+lambda0.,fn(3,4);
 when seen desugars into:
 struct "_int,int"
 {
    int c0;
    int c1;
-   fptr(int,int;int) fn;
+   fptr(int;int,int) fn;
 }
 
 int "_int,intf0"("_int,int"* in, int arg0, int arg1) <- if "_int,intf0" with the respective arguments already exists, bump to "_int,intf1"
@@ -52,7 +70,7 @@ and at the calling site:
 lambda0.a = a;
 lambda0.b = b;
 lambda0.fn = "_int,intf0"
-lambda0.fn(3,4);
+lambda0,.fn(3,4);
 one can save lambdas:
 struct A
 {

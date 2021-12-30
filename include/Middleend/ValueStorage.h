@@ -39,6 +39,11 @@ public:
 		stack_data = std::make_tuple(d...);
 	}
 
+	void pass_params(TStackData&&... d)
+	{
+		stack_data = std::make_tuple(std::move(d)...);
+	}
+
 	template<typename TNode>
 	T& get_with_params(TNode& node, const TStackData&... d)
 	{
@@ -46,7 +51,15 @@ public:
 		return get(node);
 	}
 
-	std::tuple<TStackData...> get_params()
+	template<typename TNode>
+	T& get_with_params(TNode& node, TStackData&&... d)
+	{
+		pass_params(std::move(d)...);
+		return get(node);
+	}
+
+
+	std::tuple<TStackData...>& get_params()
 	{
 		return stack_data;
 	}

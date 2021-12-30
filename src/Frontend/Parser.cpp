@@ -238,6 +238,8 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::BracketL, func_call_array_sub);
 	ADD_OP(Token::Specifier::Dot, member);
 	ADD_OP(Token::Specifier::MemAccess, member);
+	ADD_OP(Token::Specifier::DotComma, member);
+	ADD_OP(Token::Specifier::MemAccComma, member);
 	ADD_OP(Token::Specifier::Minus, unary);
 	ADD_OP(Token::Specifier::Plus, unary);
 	ADD_OP(Token::Specifier::ExclMark, unary);

@@ -24,6 +24,8 @@
 #include <random>
 #include <limits>
 #include <filesystem>
+#include "PromoteToSret.h"
+#include "ElideReturnCopy.h"
 
 using subprocess::CompletedProcess;
 using subprocess::RunBuilder;
@@ -152,6 +154,8 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	Tree<TypeDefStmt*> type_hierachy;
 	llvm_collect_types(be, type_hierachy, ns);
 	llvm_collect_member(be, type_hierachy, scopes, ns);
+	llvm_promote_to_sret(scopes, ns);
+	llvm_elide_return_copy(scopes, ns);
 	llvm_collect_funcs(ns, be.mod, be.context,scopes);
 	if (Error::Error) return 1;
 	// End prep passes

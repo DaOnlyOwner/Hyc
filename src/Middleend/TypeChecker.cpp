@@ -576,7 +576,7 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 			auto& t2 = *fptr->args[i];
 			if (t1 != t2)
 			{
-				trigger_e6_21(ident->name, params);
+				trigger_e6_21(func_call_expr.from->first_token(), params);
 				func_call_expr.sem_type = error_type;
 				RETURN(error_type);
 			}
@@ -988,9 +988,8 @@ bool TypeChecker::handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_
 				// Cast the rhs to the lhs.
 				uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(bin_op.rh), tlh);
 				bin_op.rh = std::move(ice);
-				RETURN_VAL_BIN_OP(tlh, true);
 			}
-			RETURN_VAL_BIN_OP(trh, true);
+			RETURN_VAL_BIN_OP(scopes.get_type("void"), true);
 		}
 		break;
 		case Token::Specifier::KwAs:
@@ -1077,7 +1076,7 @@ bool TypeChecker::handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op)
 			Messages::inst().trigger_6_e16(bin_op.op, tlh.as_str(), trh.as_str());
 			RETURN_VAL_BIN_OP(error_type, true);
 		}
-		RETURN_VAL_BIN_OP(trh, true);
+		RETURN_VAL_BIN_OP(scopes.get_type("void"), true);
 	}
 	return is_copy_move;
 }
@@ -1213,7 +1212,9 @@ bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 {
 	// . -> operators
 	if (bin_op.op.type == Token::Specifier::Dot
-		|| bin_op.op.type == Token::Specifier::MemAccess)
+		|| bin_op.op.type == Token::Specifier::MemAccess
+		|| bin_op.op.type == Token::Specifier::DotComma
+		|| bin_op.op.type == Token::Specifier::MemAccComma)
 	{
 		auto tlh = get(bin_op.lh);
 		if (tlh.is_error_type())
@@ -1221,7 +1222,7 @@ bool TypeChecker::handle_bin_op_member_acc(BinOpExpr& bin_op)
 			RETURN_VAL_BIN_OP(error_type, true);
 		}
 		auto cpy_tlh = tlh;
-		if (bin_op.op.type == Token::Specifier::MemAccess)
+		if (bin_op.op.type == Token::Specifier::MemAccess || bin_op.op.type == Token::Specifier::MemAccComma)
 		{
 			if (!cpy_tlh.is_pointer_type())
 			{

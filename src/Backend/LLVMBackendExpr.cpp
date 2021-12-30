@@ -280,7 +280,36 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 {
 	if (bin_op.op.type == Token::Specifier::Equal)
 	{
-		auto lhs = get_with_params(*bin_op.lh, false);
+		llvm::Value* lhs = nullptr;
+		if (!(bin_op.rh->sem_type.is_predefined(scopes)
+			|| bin_op.rh->sem_type.is_pointer_type()))
+		{
+			// Hakish solution for when *ret = rhs was automatically generated.
+			auto pre = dynamic_cast<PrefixOpExpr*>(bin_op.lh.get());
+			if (pre)
+			{
+				auto ident = dynamic_cast<IdentExpr*>(pre->lh.get());
+				if (ident)
+				{
+					if (ident->decl->is_sret)
+					{
+						lhs = get_with_params(*ident, false);
+					}
+					else lhs = get_with_params(*bin_op.lh, false);
+				}
+				else lhs = get_with_params(*bin_op.lh,false);
+			}
+			else lhs = get_with_params(*bin_op.lh, false);
+			auto rhs = get_with_params(*bin_op.rh, false);
+			auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
+			auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
+			auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
+			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
+			llvm::MaybeAlign align(lhs_align);
+			assert(lhs_align == rhs_align);
+			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));
+		}
+		lhs = get_with_params(*bin_op.lh, false);
 		auto rhs = get_with_params(*bin_op.rh, true);
 		RETURN_WITH_TRUE(be.builder.CreateStore(rhs, lhs));
 	}
@@ -366,6 +395,7 @@ void LLVMBackendExpr::visit(IdentExpr& ident)
 	auto [should_load] = get_params();
 	auto current_func_name = get_curr_fn()->getName().str();
 	auto val = scopes.get_value(ident.name.text);
+	auto decl = scopes.get_variable(ident.name.text);
 	if (!should_load)
 	{
 		RETURN(val);
@@ -395,6 +425,7 @@ void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 	std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(args), [&](const FuncCallArg& arg) {
 		return get_with_params(*arg.expr, true);
 		});
+
 	if (ident)
 	{
 		auto llvm_maybe_fptr = scopes.get_value(ident->name.text);
@@ -409,22 +440,19 @@ void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 			llvm::Value* loaded = be.builder.CreateLoad(mapped,llvm_maybe_fptr, false);
 			assert(loaded);
 			
-			RETURN(be.builder.CreateCall(ft,loaded,args));
+			RETURN(handle_sret_func_call(be.builder.CreateCall(ft,loaded,args),func_call_expr));
 		}
 		auto mangled = mangle(*func_call_expr.def->decl);
 		auto func = be.mod.getFunction(mangled);
-		RETURN(be.builder.CreateCall(func, args));
+		RETURN(handle_sret_func_call(be.builder.CreateCall(func, args),func_call_expr));
 	}
 
 	else
 	{
 		auto expr = get_with_params(*func_call_expr.from,true);
-		expr->dump();
 		auto ft = get_function_type(*func_call_expr.from->sem_type.get_fptr(), scopes, be.context);
-		RETURN(be.builder.CreateCall(ft,expr,args));
+		RETURN(handle_sret_func_call(be.builder.CreateCall(ft,expr,args),func_call_expr));
 	}
-
-
 }
 
 void LLVMBackendExpr::visit(ImplicitCastExpr& ice)
@@ -540,6 +568,26 @@ bool LLVMBackendExpr::handle_ptr(const BinOpExpr& bin_op)
 		}
 	}
 	return false;
+}
+
+// The middleend leaves the function call (if first parameter is sret) in an invalid state and we need to fix it
+// The invalid state is determined by having void as the return argument when it is acutally non void
+// Fix: After the created call, create a load instruction with the passed in sret parameter.  
+llvm::Value* LLVMBackendExpr::handle_sret_func_call(llvm::CallInst* callInst, FuncCallExpr& call)
+{
+	if (call.def->decl->is_sret)
+	{
+		auto sret_type = callInst->args().begin()->get()->getType();
+		auto attr = llvm::Attribute::get(be.context, llvm::Attribute::AttrKind::StructRet, sret_type);
+		callInst->addParamAttr(0, attr);
+		auto pf = dynamic_cast<PrefixOpExpr*>(call.arg_list[0].expr.get())->lh.get();
+		assert(pf);
+		auto ident = dynamic_cast<IdentExpr*>(pf);
+		assert(ident);
+		auto sret_val = scopes.get_value(ident->name.text);
+		return be.builder.CreateLoad(sret_val);
+	}
+	return callInst;
 }
 
 void LLVMBackendExpr::visit(ArraySubscriptExpr& subs)

@@ -63,6 +63,13 @@ struct Type
 	void promote_base(TypeDefStmt* bt);
 	void promote_array(uint64_t amount);
 	void promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
+
+	Type with_pointer();
+	Type with_base(TypeDefStmt* td);
+	Type with_array(uint64_t amount);
+	Type with_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args);
+	Type with_pop();
+
 	void reverse();
 	void pop();
 	bool is_pointer_type() const;

@@ -95,6 +95,7 @@ struct Expr : Node
 	virtual	uptr<Expr> clone() const = 0;
 	virtual std::string as_str() const = 0;
 	virtual const Token& first_token() const = 0;
+	virtual bool is_sret_func_call() const { return false; }
 };
 
 #define IMPL_FT virtual const Token& first_token() const override
@@ -295,7 +296,12 @@ struct PrefixOpExpr : Expr
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr)
-	{ return uptr<Expr>(new PrefixOpExpr(op, lh->clone())); }
+	{
+		auto a = new PrefixOpExpr(op, lh->clone()); 
+		a->lh->sem_type = lh->sem_type;
+		a->sem_type = sem_type;
+		return uptr<Expr>(a);
+	}
 	IMPL_ASSTR
 	{
 		return fmt::format("{}{}",op.text,lh->as_str());
@@ -417,6 +423,8 @@ struct IdentExpr : Expr
 	Token name;
 	std::vector<uptr<TypeSpec>> generic_params;
 
+	bool is_sret = false;
+
 	// Annotation
 	DeclStmt* decl=nullptr;
 	IMPL_FT
@@ -426,7 +434,9 @@ struct IdentExpr : Expr
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) {
 		CPY_VEC(generic_params, gp_copy, uptr<TypeSpec>);
-		return uptr<Expr>(new IdentExpr(name, mv(gp_copy)));
+		auto ie = (new IdentExpr(name, mv(gp_copy)));
+		ie->decl = decl;
+		return uptr<Expr>(ie);
 	}
 	IMPL_ASSTR
 	{
@@ -460,6 +470,9 @@ struct FuncCallExpr : Expr
 
 	// Semantic annotations
 	FuncDefStmt* def=nullptr;
+
+	virtual bool is_sret_func_call() const override;
+
 	IMPL_FT
 	{
 		return from->first_token();
@@ -620,6 +633,7 @@ struct DeclStmt : TypedStmt
 
 	Token name;
 	uptr<TypeSpec> type_spec;
+	bool is_sret = false;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec?type_spec->clone():nullptr, name)); }
 };
@@ -629,6 +643,7 @@ enum class CollectionType
 	Union,Struct
 };
 
+// Used in union definitions.
 struct UnionDeclStmt : Stmt
 {
 	UnionDeclStmt(uptr<DeclStmt>&& decl_stmt, const std::optional<EvalIntegerResult>& eir)
@@ -744,6 +759,7 @@ struct FuncDeclStmt : Stmt
 	Token name;
 	std::vector<uptr<DeclStmt>> arg_list;
 	std::vector<GenericInfo> generic_list;
+	bool is_sret = false;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 	std::vector<GenericInfo> generic_list_cpy;

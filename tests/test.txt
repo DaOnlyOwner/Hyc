@@ -1,9 +1,17 @@
-int add(int i, int j)
-{return i + j;}
+struct A
+{
+   int[10000000] a;
+}
 
 int main()
 {
-   fptr(int;int,int)[1] a;
-   a[0] = add(;int,int);
-   return a[0](3,3);
+   A a = test();
+   return a.a[0];
+}
+
+A test()
+{
+   A a;
+   a.a[0] = 1;
+   return a;
 }

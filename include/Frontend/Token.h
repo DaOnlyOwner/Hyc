@@ -94,7 +94,9 @@ struct Token
 		ArrayEnd,
 		Quad,
 		DoubleQM,
-		DoubleEM
+		DoubleEM,
+		DotComma,
+		MemAccComma
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -326,6 +328,10 @@ struct Token
 			return "??";
 		case Specifier::DoubleEM:
 			return "!!";
+		case Specifier::DotComma:
+			return ".,";
+		case Specifier::MemAccComma:
+			return "->,";
 		}
 		return "Unknown";
 

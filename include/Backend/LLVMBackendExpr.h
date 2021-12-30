@@ -28,6 +28,8 @@ private:
 	bool handle_assign(const BinOpExpr& bin_op);
 	bool handle_ptr(const BinOpExpr& bin_op);
 
+	llvm::Value* handle_sret_func_call(llvm::CallInst* callInst, FuncCallExpr& call);
+
 	llvm::Function* get_curr_fn()
 	{
 		return be.builder.GetInsertBlock()->getParent();

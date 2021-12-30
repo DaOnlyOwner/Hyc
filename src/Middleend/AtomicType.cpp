@@ -122,6 +122,41 @@ void Type::promote_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args
 	stored_types.push_back(std::make_pair(TypeKind::FunctionPointer, TypeVariant(FunctionPointerType{ std::move(ret),std::move(args) })));
 }
 
+Type Type::with_pointer()
+{
+	Type t(*this);
+	t.promote_pointer();
+	return t;
+}
+
+Type Type::with_base(TypeDefStmt* td)
+{
+	Type t = *this;
+	t.promote_base(td);
+	return t;
+}
+
+Type Type::with_array(uint64_t amount)
+{
+	Type t = *this;
+	t.promote_array(amount);
+	return t;
+}
+
+Type Type::with_fptr(ValuePtr<Type>&& ret, std::vector<ValuePtr<Type>>&& args)
+{
+	Type t = *this;
+	t.promote_fptr(std::move(ret), std::move(args));
+	return t;
+}
+
+Type Type::with_pop()
+{
+	auto t = *this;
+	t.pop();
+	return t;
+}
+
 std::string Type::as_str() const
 {
 	std::string out = "";

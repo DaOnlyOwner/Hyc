@@ -20,6 +20,13 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 		arg.setName(func_def_stmt.decl->arg_list[idx]->name.text);
 		idx++;
 	}
+	if (func_def_stmt.decl->is_sret)
+	{
+		llvm::AttrBuilder ab;
+		ab.addStructRetAttr(map_type(func_def_stmt.decl->arg_list[0]->type.with_pop(), scopes, context));
+		ab.addAttribute(llvm::Attribute::get(context, llvm::Attribute::AttrKind::NoAlias));
+		func->args().begin()->addAttrs(ab);
+	}
 }
 
 void llvm_collect_funcs(NamespaceStmt& ns,llvm::Module& mod, llvm::LLVMContext& ctxt, Scopes& sc)

@@ -41,3 +41,5 @@ void IAstVisitor::visit(struct FuncDefStmt& func_def_stmt)
 	func_def_stmt.decl->accept(*this);
 	for (auto& p : func_def_stmt.body) p->accept(*this);
 }
+
+bool FuncCallExpr::is_sret_func_call() const { assert(def); return def->decl->is_sret; }

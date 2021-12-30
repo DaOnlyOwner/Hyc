@@ -163,6 +163,8 @@ caret		"^"
 or		"|"
 dot   "."
 mem_acc "->"
+dot_comma ".,"
+mem_acc_comma "->,"
 double_qm	"??"
 double_em	"!!"
 double_amp	"&&"
@@ -199,6 +201,8 @@ or_eql		"|="
 {kw_operator}	{PUSH(KwOperator);}
 {kw_auto}	{PUSH(KwAuto);}
 {double_colon}	{ PUSH(DoubleColon);}
+{dot_comma}	{ PUSH(DotComma);}
+{mem_acc_comma} { PUSH(MemAccComma);}
 {double_plus}	{ PUSH(DoublePlus);}
 {double_minus}	{ PUSH(DoubleMinus);}
 {ex_mark}	{ PUSH(ExclMark);}

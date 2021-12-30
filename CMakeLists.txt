@@ -29,7 +29,6 @@ set(TARGET_INC_DIRS ${CMAKE_SOURCE_DIR}/include/Frontend ${CMAKE_SOURCE_DIR}/inc
 ${CMAKE_SOURCE_DIR}/include/Backend ${CMAKE_SOURCE_DIR}/include/Tools ${CMAKE_SOURCE_DIR}/lib/Re-flex/include)
 
 find_package(LLVM REQUIRED CONFIG)
-find_package(lld REQUIRED CONFIG)
 llvm_map_components_to_libnames(LLVM_LIBS 
 support
 analysis
