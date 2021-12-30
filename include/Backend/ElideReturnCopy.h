@@ -20,9 +20,10 @@ private:
 	virtual void visit(PrefixOpExpr& pre) override;
 	virtual void visit(FuncCallExpr& fce) override;
 	virtual void visit(PostfixOpExpr& post) override;
+	virtual void visit(ArraySubscriptExpr& expr) override;
+
 	virtual void visit(ExprStmt& expr_stmt) override;
 	virtual void visit(ReturnStmt& rt) override;
-
 	virtual void visit(IfStmt& stmt) override;
 	virtual void visit(WhileStmt& stmt) override;
 	virtual void visit(ScopeStmt& stmt) override;

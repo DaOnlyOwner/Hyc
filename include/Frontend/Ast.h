@@ -88,6 +88,7 @@ struct EvalIntegerResult
 	bool is_signed;
 };
 
+// TODO: Also copy the semantic types and all the other stop in the clone method.
 struct Expr : Node
 {
 	// Semantic annotations:
@@ -96,6 +97,7 @@ struct Expr : Node
 	virtual std::string as_str() const = 0;
 	virtual const Token& first_token() const = 0;
 	virtual bool is_sret_func_call() const { return false; }
+	virtual bool is_func_call() const { return false; }
 };
 
 #define IMPL_FT virtual const Token& first_token() const override
@@ -423,8 +425,6 @@ struct IdentExpr : Expr
 	Token name;
 	std::vector<uptr<TypeSpec>> generic_params;
 
-	bool is_sret = false;
-
 	// Annotation
 	DeclStmt* decl=nullptr;
 	IMPL_FT
@@ -472,6 +472,7 @@ struct FuncCallExpr : Expr
 	FuncDefStmt* def=nullptr;
 
 	virtual bool is_sret_func_call() const override;
+	virtual bool is_func_call() const override { return true; }
 
 	IMPL_FT
 	{
@@ -635,7 +636,12 @@ struct DeclStmt : TypedStmt
 	uptr<TypeSpec> type_spec;
 	bool is_sret = false;
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclStmt(type_spec?type_spec->clone():nullptr, name)); }
+	IMPL_CLONE(Stmt) {
+		auto a = (new DeclStmt(type_spec ? type_spec->clone() : nullptr, name));
+		a->type = type;
+		a->is_sret = is_sret;
+		return uptr<Stmt>(a);
+	}
 };
 
 enum class CollectionType
@@ -751,12 +757,13 @@ struct IfStmt : Stmt
 
 struct FuncDeclStmt : Stmt
 {
-	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
-		: ret_type(mv(ret_type)), name(name), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
-	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, std::vector<uptr<DeclStmt>>&& arg_list)
-		:ret_type(mv(ret_type)),name(name),arg_list(mv(arg_list)),generic_list{}{}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
+		: ret_type(mv(ret_type)), name(name), named_return(mv(named_return)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<uptr<DeclStmt>>&& arg_list)
+		:ret_type(mv(ret_type)),name(name),named_return(mv(named_return)), arg_list(mv(arg_list)),generic_list{}{}
 	uptr<TypeSpec> ret_type;
 	Token name;
+	uptr<DeclStmt> named_return;
 	std::vector<uptr<DeclStmt>> arg_list;
 	std::vector<GenericInfo> generic_list;
 	bool is_sret = false;
@@ -765,8 +772,8 @@ struct FuncDeclStmt : Stmt
 	std::vector<GenericInfo> generic_list_cpy;
 	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type?p.default_type->clone():nullptr });
 	std::vector<uptr<DeclStmt>> arg_list_cpy;
-	for (auto& p : arg_list) arg_list_cpy.push_back(uptr<DeclStmt>(new DeclStmt(p->type_spec->clone(), Token(p->name))));
-	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), Token(name), mv(generic_list_cpy), mv(arg_list_cpy)));
+	for (auto& p : arg_list) arg_list_cpy.push_back(uptr<DeclStmt>(new DeclStmt(p->type_spec->clone(), p->name)));
+	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), name, dynamic_uptr_cast_no_deleter<DeclStmt>(named_return->clone()), mv(generic_list_cpy), mv(arg_list_cpy)));
 	}
 };
 

@@ -24,8 +24,8 @@ TODO:
 - operators:
   cannot overload operators RIGHT NOW, might come in the future.
 - name return values:
-int* val foo()
-   ^-- can only be pointers.
+int val foo()
+ ^---- type is implicitly passed as a pointer.  
 {
    *val = 3; <-- use it like a normal argument
    return; <-- functions like these have implicit type void.

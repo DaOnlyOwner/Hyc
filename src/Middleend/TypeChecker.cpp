@@ -500,18 +500,22 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 		return true;
 		});
 
-	std::vector<Type> params;
-	std::transform(def->decl->arg_list.begin(), def->decl->arg_list.end(), std::back_inserter(params), [&](const uptr<DeclStmt>& param) {
-		return param->type;
-		});
 	
 	if (!def)
 	{
+		std::vector<Type> params;
+		std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(params), [&](const FuncCallArg& fca) {
+			return fca.expr->sem_type;
+			});
 		trigger_e6_21(ident->name, params);
 		func_call_expr.sem_type = error_type;
 		RETURN(error_type);
 	}
 
+	std::vector<Type> params;
+	std::transform(def->decl->arg_list.begin(), def->decl->arg_list.end(), std::back_inserter(params), [&](const uptr<DeclStmt>& param) {
+		return param->type;
+		});
 	auto [deduced_types, succ] = deduce_template_args(def, params, ident->generic_params, *ident);
 
 	if (!succ)
@@ -589,6 +593,12 @@ void TypeChecker::visit(FuncCallExpr& func_call_expr)
 
 void TypeChecker::visit(FuncDeclStmt& func_decl)
 {
+	if (func_decl.named_return)
+	{
+		auto passed_t = func_decl.ret_type->semantic_type.with_pointer();
+		func_decl.named_return->type = passed_t; 
+		scopes.add(func_decl.named_return.get());
+	}
 	for (auto& p : func_decl.arg_list) p->accept(*this);
 }
 
@@ -644,9 +654,9 @@ void TypeChecker::visit(ReturnStmt& ret_stmt)
 	}
 
 	auto& t_func = current_function->decl->ret_type->semantic_type;
-	if (type != t_func)
+	if (type != t_func && (current_function->decl->named_return && pred_expr_.has_value() && (pred_expr_.value() != PredefinedType::Void)))
 	{
-		Messages::inst().trigger_6_e25(ret_stmt.return_kw, type.as_str(),t_func.as_str());
+		Messages::inst().trigger_6_e25(ret_stmt.returned_expr ? ret_stmt.returned_expr->first_token() : ret_stmt.return_kw, type.as_str(), t_func.as_str());
 	}
 }
 
@@ -663,6 +673,7 @@ void TypeChecker::visit(DeclStmt& decl_stmt)
 		assert(succ);
 		decl_stmt.type = t;
 	}
+	// Type needs to be inferred.
 	bool succAdd = scopes.add(&decl_stmt);
 	if (!succAdd)
 	{

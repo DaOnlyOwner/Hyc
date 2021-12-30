@@ -3,16 +3,20 @@
 void ElideReturnCopy::visit(BinOpExpr& bin)
 {
 	// Only called from ExprStmt.
+	get_with_params(*bin.lh, nullptr);
 	if (bin.op.type == Token::Specifier::Equal)
 	{
-		get_with_params(*bin.lh, nullptr);
-		if (bin.rh->is_sret_func_call())
+		if (bin.rh->is_func_call() )
 		{
 			auto fcall = dynamic_cast<FuncCallExpr*>(bin.rh.get());
-			get_with_params(*bin.rh, std::move(bin.lh));
-			RETURN(std::move(bin.rh));
+			if (fcall->def->decl->is_sret || fcall->def->decl->named_return)
+			{
+				get_with_params(*bin.rh, std::move(bin.lh));
+				RETURN(std::move(bin.rh));
+			}
 		}
 	}
+	get_with_params(*bin.rh, nullptr);
 	RETURN(nullptr);
 }
 
@@ -25,7 +29,11 @@ void ElideReturnCopy::visit(FuncCallExpr& fce)
 {
 	auto [arg] = std::move(get_params());
 	get_with_params(*fce.from, nullptr);
-	if (fce.def->decl->is_sret)
+	for (auto& p : fce.arg_list)
+	{
+		get_with_params(*p.expr, nullptr);
+	}
+	if (fce.def->decl->is_sret || fce.def->decl->named_return)
 	{
 		// Use the allocated value as parameter
 		if (arg)
@@ -64,6 +72,11 @@ void ElideReturnCopy::visit(ExprStmt& expr_stmt)
 	{
 		expr_stmt.expr = std::move(new_expr);
 	}
+}
+
+void ElideReturnCopy::visit(ArraySubscriptExpr& expr)
+{
+	get_with_params(*expr.from, nullptr);
 }
 
 void ElideReturnCopy::visit(ReturnStmt& rt)

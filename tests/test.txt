@@ -1,17 +1,16 @@
 struct A
 {
-   int[10000000] a;
+   int[1000] a;
 }
 
 int main()
 {
-   A a = test();
-   return a.a[0];
+   int b = test().a[0] ;
+   return b;
 }
 
-A test()
+A val test()
 {
-   A a;
-   a.a[0] = 1;
-   return a;
+   val->a[0] = 1;
+   return;
 }

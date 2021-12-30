@@ -217,7 +217,8 @@ bool LLVMBackendExpr::handle_pred(bool should_load, const BinOpExpr& bin_op)
 
 bool LLVMBackendExpr::handle_member_acc(bool should_load, const BinOpExpr& bin_op)
 {
-	if (bin_op.op.type == Token::Specifier::MemAccess || bin_op.op.type == Token::Specifier::Dot)
+	if (bin_op.op.type == Token::Specifier::MemAccess || bin_op.op.type == Token::Specifier::Dot
+		|| bin_op.op.type == Token::Specifier::MemAccComma || bin_op.op.type == Token::Specifier::DotComma)
 	{
 		auto lhs = get_with_params(*bin_op.lh,false);
 		auto rh_expr = dynamic_cast<IdentExpr*>(bin_op.rh.get());
@@ -238,6 +239,11 @@ bool LLVMBackendExpr::handle_member_acc(bool should_load, const BinOpExpr& bin_o
 		{
 			size_t idx = scopes.get_decl_idx_for(bin_op.lh->sem_type.get_base_type(), rh_expr->name.text);
 			assert(idx != std::numeric_limits<size_t>::max());
+			if (bin_op.op.type == Token::Specifier::MemAccess || bin_op.op.type == Token::Specifier::MemAccComma)
+			{
+				auto mapped = map_type(bin_op.lh->sem_type,scopes,be.context);
+				lhs = be.builder.CreateLoad(mapped, lhs);
+			}
 			addr = be.builder.CreateStructGEP(lhs, idx);
 		}
 		if (should_load)
@@ -307,6 +313,10 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
 			llvm::MaybeAlign align(lhs_align);
 			assert(lhs_align == rhs_align);
+			lhs->dump();
+			rhs->dump();
+			lhs->getType()->dump();
+			rhs->getType()->dump();
 			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));
 		}
 		lhs = get_with_params(*bin_op.lh, false);
@@ -585,8 +595,21 @@ llvm::Value* LLVMBackendExpr::handle_sret_func_call(llvm::CallInst* callInst, Fu
 		auto ident = dynamic_cast<IdentExpr*>(pf);
 		assert(ident);
 		auto sret_val = scopes.get_value(ident->name.text);
-		return be.builder.CreateLoad(sret_val);
+		return sret_val;
+		//return be.builder.CreateLoad(sret_val);
 	}
+
+	else if (call.def->decl->named_return)
+	{
+		auto pf = dynamic_cast<PrefixOpExpr*>(call.arg_list[0].expr.get())->lh.get();
+		assert(pf);
+		auto ident = dynamic_cast<IdentExpr*>(pf);
+		assert(ident);
+		auto sret_val = scopes.get_value(ident->name.text);
+		return sret_val;
+		//return be.builder.CreateLoad(sret_val);
+	}
+
 	return callInst;
 }
 

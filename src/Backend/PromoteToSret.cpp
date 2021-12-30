@@ -1,8 +1,18 @@
 #include "PromoteToSret.h"
+#include "UptrCast.h"
 
 void PromoteToSret::visit(FuncDefStmt& func_def)
 {
-	if (!(func_def.decl->ret_type->semantic_type.is_predefined(scopes)
+
+	if (func_def.decl->named_return)
+	{
+		func_def.decl->ret_type->semantic_type = scopes.get_type("void");
+		auto cloned = dynamic_uptr_cast_no_deleter<DeclStmt>(func_def.decl->named_return->clone());
+		assert(cloned);
+		func_def.decl->arg_list.insert(func_def.decl->arg_list.begin(), std::move(cloned));
+	}
+
+	else if (!(func_def.decl->ret_type->semantic_type.is_predefined(scopes)
 		|| func_def.decl->ret_type->semantic_type.is_pointer_type()))
 	{
 		func_def.decl->is_sret = true;

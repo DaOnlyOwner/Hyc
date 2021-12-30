@@ -13,3 +13,17 @@ std::unique_ptr<To, Deleter> dynamic_unique_cast(std::unique_ptr<From, Deleter>&
     return std::unique_ptr<To, Deleter>(nullptr); // or throw std::bad_cast() if you prefer
 }
 
+template<typename To, typename From>
+std::unique_ptr<To> dynamic_uptr_cast_no_deleter(std::unique_ptr<From>&& p)
+{
+    if (To* cast = dynamic_cast<To*>(p.get()))
+    {
+        std::unique_ptr<To> result(cast);
+        p.release();
+        return result;
+    }
+    return nullptr;
+}
+
+
+

@@ -647,12 +647,21 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 
 	Token name;
 	std::vector<GenericInfo> generic_list;
+	uptr<DeclStmt> named_return = nullptr;
 
-	name = tkns.match_token(Token::Specifier::Ident); // ident
+	if (tkns.lookahead(1).type == Token::Specifier::Ident && tkns.lookahead(2).type == Token::Specifier::Ident)
+	{
+		auto nr = tkns.eat(); // Ident
+		name = tkns.eat(); // Ident
+		auto cloned_type = type->clone();
+		cloned_type->push_inner(std::make_unique<PointerTypeSpec>(nullptr));
+		named_return = std::make_unique<DeclStmt>(mv(cloned_type), nr);
+	}
+	else name = tkns.match_token(Token::Specifier::Ident); // ident
 
 	if (tkns.lookahead(1).type == Token::Specifier::Less) // <
 	{
-		tkns.eat();
+		tkns.eat(); // <
 		generic_list = parse_comma_separated_ident_list();
 		tkns.match_token(Token::Specifier::Greater);
 	}
@@ -673,7 +682,7 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 
 	tkns.match_token(Token::Specifier::RParenR); // ')'
 
-	return std::make_unique<FuncDeclStmt>(mv(type), name, mv(generic_list), mv(param_list));
+	return std::make_unique<FuncDeclStmt>(mv(type), name, mv(named_return), mv(generic_list), mv(param_list));
 }
 
 std::unique_ptr<Stmt> Parser::parse_function_decl_stmt()
