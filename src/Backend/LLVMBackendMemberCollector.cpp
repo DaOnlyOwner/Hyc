@@ -7,13 +7,6 @@
 void LLVMBackendMemberCollector::visit(DeclStmt& decl)
 {
 	auto t = map_type(decl.type, scopes, be.context);
-	if (decl.type.is_base_type() && !decl.type.is_predefined(scopes))
-	{
-		if (!type_hier.add(decl.type.get_base_type(), embedded_in))
-		{
-			Messages::inst().trigger_9_e1(decl.name, embedded_in->name.text);
-		}
-	}
 	RETURN(t);
 }
 
@@ -29,7 +22,6 @@ void LLVMBackendMemberCollector::visit(FuncDefStmt& def)
 void LLVMBackendMemberCollector::visit(TypeDefStmt& stmt)
 {
 	std::vector<llvm::Type*> elements;
-	embedded_in = &stmt;
 	for (auto& p : stmt.stmts)
 	{
 		auto t = get(p);
@@ -78,8 +70,8 @@ void LLVMBackendMemberCollector::visit(TypeDefStmt& stmt)
 	}
 }
 
-void llvm_collect_member(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, Scopes& sc, NamespaceStmt& ns)
+void llvm_collect_member(LLVMBackendInfo& be, Scopes& sc, NamespaceStmt& ns)
 {
-	LLVMBackendMemberCollector mc(be, type_hier, sc);
+	LLVMBackendMemberCollector mc(be, sc);
 	ns.accept(mc);
 }

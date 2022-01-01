@@ -8,17 +8,15 @@
 class LLVMBackendMemberCollector : public IAstVisitor, ValueStorage<llvm::Type*>
 {
 public:
-	LLVMBackendMemberCollector(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, Scopes& sc)
-		:be(be),type_hier(type_hier),scopes(sc),ValueStorage(this){}
+	LLVMBackendMemberCollector(LLVMBackendInfo& be, Scopes& sc)
+		:be(be),scopes(sc),ValueStorage(this){}
 private:
 	virtual void visit(TypeDefStmt& stmt) override;
 	virtual void visit(DeclStmt& decl) override;
 	virtual void visit(UnionDeclStmt& udecl) override;
 	virtual void visit(FuncDefStmt& def) override;
 	LLVMBackendInfo& be;
-	Tree<TypeDefStmt*>& type_hier;
 	Scopes& scopes;
-	TypeDefStmt* embedded_in = nullptr;
 };
 
-void llvm_collect_member(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, Scopes& sc, NamespaceStmt& ns);
+void llvm_collect_member(LLVMBackendInfo& be, Scopes& sc, NamespaceStmt& ns);

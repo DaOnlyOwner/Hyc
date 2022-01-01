@@ -70,6 +70,7 @@ struct IAstVisitor
 	virtual void visit(struct MatchStmt& match);
 	virtual void visit(struct ScopeStmt& sc);
 	virtual void visit(struct FptrIdentExpr& fptr){};
+	virtual void visit(struct DelOpExpr& del) {};
 };
 
 struct Node
@@ -330,6 +331,24 @@ struct PostfixOpExpr : Expr
 	{
 		return op;
 	}
+};
+
+struct DelOpExpr : Expr
+{
+	DelOpExpr(uptr<Expr>&& expr)
+		:expr(mv(expr)) {}
+	uptr<Expr> expr;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr) { return uptr<Expr>(new DelOpExpr(expr->clone())); }
+	IMPL_ASSTR
+	{
+		return fmt::format("del {}",expr->as_str());
+	}
+		IMPL_FT
+	{
+		return expr->first_token();
+	}
+
 };
 
 

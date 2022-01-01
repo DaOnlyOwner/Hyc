@@ -18,6 +18,12 @@
 #include <fstream>
 #include "ArrayDeclChecker.h"
 #include "TaggedValueChecker.h"
+#include "LLVMBackendFuncDeclCollector.h"
+#include "LLVMBackendMemberCollector.h"
+#include "LLVMBackendTypeCollector.h"
+#include "PromoteToSret.h"
+#include "ElideReturnCopy.h"
+#include "CircularEmbedChecker.h"
 
 namespace
 {
@@ -52,11 +58,13 @@ namespace
 int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo& ci)
 {
 	Scopes sc;
+	Tree<TypeDefStmt*> type_hierachy;
+
 	auto parsed = parse(filename);
 	// Just used for debug
 	if (!parsed) return 1;
 	desugar(*parsed);
-	collect_types(*parsed, sc);
+	collect_types(*parsed, sc, type_hierachy);
 	bool error = check_default_type_arg(*parsed, sc);
 	if (error) { return 1; }
 	create_func_args_type(sc, *parsed);
@@ -66,6 +74,7 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	check_tagged_values(*parsed, 0);
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
+	check_circular_embed(*parsed, type_hierachy, sc);
 	if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitAST)
 	{
 		TerminalOutput to;
@@ -89,5 +98,14 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 		return 1;
 	}
 	LLVMBackend backend(*parsed, sc);
+	auto& be = backend.init();
+	// Preparation passes
+	llvm_collect_types(be, *parsed);
+	llvm_collect_member(be, sc, *parsed);
+	llvm_promote_to_sret(sc, *parsed);
+	llvm_elide_return_copy(sc, *parsed);
+	llvm_collect_funcs(*parsed, be.mod, be.context, sc);
+	if (Error::Error) return 1;
 	return backend.emit(ci,filename);
+	// End prep passes
 }

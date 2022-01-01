@@ -15,6 +15,7 @@ public:
 	const Lexer& get_lexer() const { return tkns; }
 
 	std::unique_ptr<NamespaceStmt> parse_compilation_unit();
+	std::unique_ptr<Stmt> parse_operator_def_stmt();
 	std::unique_ptr<Stmt> parse_function_def_stmt();
 	std::unique_ptr<Stmt> parse_function_decl_stmt();
 	std::unique_ptr<Stmt> parse_continue_stmt();

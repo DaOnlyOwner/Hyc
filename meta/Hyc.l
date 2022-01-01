@@ -107,6 +107,7 @@ kw_match	"match"
 kw_case		"case"
 kw_operator	"operator"
 kw_auto		"auto"
+kw_del		"del"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -200,6 +201,7 @@ or_eql		"|="
 {kw_case}	{PUSH(KwCase);}
 {kw_operator}	{PUSH(KwOperator);}
 {kw_auto}	{PUSH(KwAuto);}
+{kw_del}	{PUSH(KwDel);}
 {double_colon}	{ PUSH(DoubleColon);}
 {dot_comma}	{ PUSH(DotComma);}
 {mem_acc_comma} { PUSH(MemAccComma);}

@@ -108,6 +108,7 @@ namespace
 		return { true,holder };
 	}
 
+	// TODO: Add del operator
 	DEF_INTEGER_LIT(uint_lit, UInt);
 	DEF_INTEGER_LIT(uhalf_lit, UHalf);
 	DEF_INTEGER_LIT(ushort_lit, UShort);
@@ -312,6 +313,33 @@ std::unique_ptr<NamespaceStmt> Parser::parse_compilation_unit()
 		nms->stmts.push_back(parse_allowed_top_level_stmt());
 	}
 	return mv(nms);
+}
+
+std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
+{
+	tkns.match_token(Token::Specifier::KwOperator);
+	auto type = parse_type_spec();
+	auto op = tkns.match_one_of<Token::Specifier::KwDel>();
+	
+	std::vector<uptr<DeclStmt>> param_list;
+
+	tkns.match_token(Token::Specifier::RParenL);
+
+	while (!(tkns.lookahead(1).type == Token::Specifier::RParenR || tkns.lookahead(1).type == Token::Specifier::Eof))
+	{
+		auto arg_type = parse_type_spec(); // Type
+		auto& arg_name = tkns.match_token(Token::Specifier::Ident); // name
+
+		param_list.push_back(std::make_unique<DeclStmt>(std::move(arg_type), arg_name));
+
+		if (tkns.lookahead(1).type == Token::Specifier::Comma) tkns.eat();
+	}
+	tkns.match_token(Token::Specifier::RParenR);
+
+	auto decl = std::make_unique<FuncDeclStmt>(std::move(type), op, nullptr, std::move(param_list));
+
+	auto body = parse_function_body();
+	return std::make_unique<FuncDefStmt>(std::move(decl), std::move(body));
 }
 
 // (type ident ((:= | :) expr)?) | (type? ident (:= | :) expr)  ; 
@@ -605,14 +633,14 @@ std::unique_ptr<Stmt> Parser::parse_allowed_namespace_stmt()
 
 std::unique_ptr<Stmt> Parser::parse_allowed_top_level_stmt()
 {
-	if (tkns.lookahead(3).type == Token::Specifier::Semicolon)
-		return parse_decl_stmt();
-	else if (tkns.lookahead(1).type == Token::Specifier::KwStruct)
+	//if (tkns.lookahead(3).type == Token::Specifier::Semicolon)
+		//return parse_decl_stmt();
+	if (tkns.lookahead(1).type == Token::Specifier::KwStruct)
 		return parse_struct_def();
-	else if (tkns.lookahead(1).type == Token::Specifier::KwNamespace)
-		return parse_namespace_stmt();
 	else if (tkns.lookahead(1).type == Token::Specifier::KwUnion)
 		return parse_union_def();
+	else if (tkns.lookahead(1).type == Token::Specifier::KwOperator)
+		return parse_operator_def_stmt();
 	else return parse_function_def_stmt();
 }
 

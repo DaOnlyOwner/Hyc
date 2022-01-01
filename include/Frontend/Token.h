@@ -88,6 +88,7 @@ struct Token
 		KwCase,
 		KwOperator,
 		KwAuto,
+		KwDel,
 		GenFCallOpen,
 		GenFCallClose,
 		ArrayStart,
@@ -121,6 +122,16 @@ struct Token
 	size_t lineNoEnd;
 	size_t colNoEnd;
 
+	bool is_overloadable_op()
+	{
+		switch (type)
+		{
+		case Specifier::KwDel:
+			return true;
+		default:
+			return false;
+		}
+	}
 
 	static Specifier SplitCompound(Specifier compound)
 	{
@@ -332,10 +343,15 @@ struct Token
 			return ".,";
 		case Specifier::MemAccComma:
 			return "->,";
+		case Specifier::KwDel:
+			return "del";
 		}
 		return "Unknown";
 
 	}
+
+
+
 
 };
 

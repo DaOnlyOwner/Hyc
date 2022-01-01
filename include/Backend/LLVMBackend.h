@@ -33,6 +33,8 @@ public:
 	LLVMBackend(NamespaceStmt& ns, Scopes& scopes)
 		:ns(ns), scopes(scopes),be(),stmt_gen(be,scopes){}
 
+	LLVMBackendInfo& init();
+
 	int emit(const CompilerInfo& ci, const std::string& filename);
 
 private:

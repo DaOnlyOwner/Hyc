@@ -6,14 +6,13 @@
 class LLVMBackendTypeCollector : public IAstVisitor
 {
 public:
-	LLVMBackendTypeCollector(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier)
+	LLVMBackendTypeCollector(LLVMBackendInfo& be)
 		:be(be),type_hier(type_hier){}
 private:
 	LLVMBackendInfo& be;
-	Tree<TypeDefStmt*>& type_hier;
 
 	virtual void visit(TypeDefStmt& stmt) override;
 	virtual void visit(FuncDefStmt& def) override;
 };
 
-void llvm_collect_types(LLVMBackendInfo& be, Tree<TypeDefStmt*>& type_hier, NamespaceStmt& ns);
+void llvm_collect_types(LLVMBackendInfo& be, NamespaceStmt& ns);

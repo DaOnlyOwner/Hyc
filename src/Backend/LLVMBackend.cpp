@@ -1,5 +1,4 @@
 #include "LLVMBackend.h"
-#include "LLVMBackendFuncDeclCollector.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -16,16 +15,12 @@
 #include "fmt/color.h"
 #include <system_error>
 #include "llvm/Support/raw_ostream.h"
-#include "LLVMBackendMemberCollector.h"
-#include "LLVMBackendTypeCollector.h"
 #include "Tree.h"
 #define NOMINMAX
 #include "subprocess.hpp"
 #include <random>
 #include <limits>
 #include <filesystem>
-#include "PromoteToSret.h"
-#include "ElideReturnCopy.h"
 
 using subprocess::CompletedProcess;
 using subprocess::RunBuilder;
@@ -115,6 +110,13 @@ namespace
 	}
 }
 
+LLVMBackendInfo& LLVMBackend::init()
+{
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmPrinter();
+	return be;
+}
+
 int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 {
 	std::unordered_map<LLVMBackend::CompilerInfo::OptLevel, llvm::PassBuilder::OptimizationLevel> to_llvm =
@@ -128,8 +130,7 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 
 	//llvm::InitializeAllTargets();
 	//llvm::InitializeAllAsmPrinters();
-	llvm::InitializeNativeTarget();
-	llvm::InitializeNativeTargetAsmPrinter();
+
 
 
 	std::string target_triple;
@@ -149,17 +150,6 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 		fmt::print(fmt::fg(fmt::color::orange_red),"Error when selecting target: {}\n", error.c_str());
 		return 1;
 	}
-
-	// Preparation passes
-	Tree<TypeDefStmt*> type_hierachy;
-	llvm_collect_types(be, type_hierachy, ns);
-	llvm_collect_member(be, type_hierachy, scopes, ns);
-	llvm_promote_to_sret(scopes, ns);
-	llvm_elide_return_copy(scopes, ns);
-	llvm_collect_funcs(ns, be.mod, be.context,scopes);
-	if (Error::Error) return 1;
-	// End prep passes
-
 
 	llvm::LoopAnalysisManager lam;
 	llvm::FunctionAnalysisManager fam;
