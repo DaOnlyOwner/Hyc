@@ -160,14 +160,14 @@ foo = bar; // <-- desugares into =(&foo,&bar)
 ```
 You can delete operators explicitly:
 ```cpp
-void operator=(C* a, C* b) = delete;
+operator void =(C* a, C* b) = delete;
 ```
 If every member in a struct defines a copy operator, the compiler will automatically generate a copy operator for the struct itself.
 ## Move operator
 An additional operator to disambiguate between copy and move operations.
 Move operators are defined for basic types (int, float, pointers etc.) and behave the same way as copy operators, but can be overloaded for all other types:
 ```cpp
-void operator#(C* a, C* b){}
+operator void #(C* a, C* b){}
 ```
 Also if every member in a struct defines a move operator, the compiler will define a move operator for the struct itself
 Move operators can be explicitly deleted, just like copy operators.
@@ -178,8 +178,8 @@ When every member of a struct defines a destructor, a destructor will be generat
 Can not be explicitly deleted.
 Definition:
 ```cpp
-void del(C* c){}
-  // ^-- func must be called del!
+operator void del(C* c){}
+            // ^-- func must be called del!
 ```
 
 ## Out of order definitions:
