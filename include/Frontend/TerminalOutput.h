@@ -11,6 +11,7 @@ private:
 	virtual void visit(DecimalLiteralExpr& lit) override;
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;
+	virtual void visit(DelOpExpr& del) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
 	virtual void visit(DeclCpyStmt& decl_cpy) override;

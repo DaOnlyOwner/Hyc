@@ -1,6 +1,8 @@
 #include "SymbolTable.h"
 #include "TypeCreator.h"
 #include <limits>
+#include <algorithm>
+
 
 bool SymbolTable::add(TypeDefStmt* cs)
 {
@@ -46,6 +48,11 @@ bool SymbolTable::add(FuncDefStmt* fn)
 	return false;
 }
 
+bool SymbolTable::add_op(FuncDefStmt* op)
+{
+	return operators.insert({ op->decl->name.text,op }).second;
+}
+
 bool SymbolTable::add(TypeDefStmt* for_coll, DeclStmt* decl, size_t idx)
 {
 	auto it = decl_in_collection.find(for_coll);
@@ -81,7 +88,7 @@ bool SymbolTable::add(TypeDefStmt* td, UnionDeclStmt* udecl)
 
 bool SymbolTable::add(DeclStmt* decl)
 {
-	return variables.insert({ decl->name.text,decl}).second;
+	return variables.insert({ decl->name.text,{var_idx++,decl} }).second;
 }
 
 bool SymbolTable::add(const std::string& name, llvm::Value* val)
@@ -126,8 +133,21 @@ size_t SymbolTable::get_decl_idx_for(TypeDefStmt* cs, const std::string& name)
 DeclStmt* SymbolTable::get_variable(const std::string& name)
 {
 	auto it = variables.find(name);
-	if (it != variables.end()) return it->second;
+	if (it != variables.end()) return it->second.second;
 	return nullptr;
+}
+
+std::vector<std::pair<size_t,DeclStmt*>> SymbolTable::get_all_variables_reversed()
+{
+	std::vector<std::pair<size_t, DeclStmt*>> out;
+	std::transform(variables.begin(), variables.end(), std::back_inserter(out), [](const auto& var) {
+		return var.second;
+		});
+
+	std::sort(out.begin(), out.end(), [](const auto& a1, const auto& a2) {
+		return a1.first <= a2.first;
+		});
+	return out;
 }
 
 llvm::Value* SymbolTable::get_value(const std::string& name)

@@ -112,8 +112,8 @@ void LLVMBackendStmt::visit(FuncDeclStmt& func_decl)
 			scopes.add(arg.getName().str(), &arg);
 			continue;
 		}
-		// TODO: Memcpy when struct
 		auto alloc = get(p);
+		// TODO: Memcpy when struct
 		be.builder.CreateStore(&arg, alloc);
 	}
 }
@@ -179,18 +179,22 @@ void LLVMBackendStmt::visit(MatchStmt& ms)
 void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 {
 	if (!func_def.decl->generic_list.empty()) return;
-	auto func = be.mod.getFunction(mangle(*func_def.decl));
+	auto func = be.mod.getFunction(mangle(func_def));
 	auto entry_bb = llvm::BasicBlock::Create(be.context, "entry", func);
 	be.builder.SetInsertPoint(entry_bb);
 	//enter_function(func);
-	func_def.decl->accept(*this);
 	scopes.descend();
+	func_def.decl->accept(*this);
 	for (auto& p : func_def.body) p->accept(*this);
 	scopes.ascend();
 	auto curr_fn = get_curr_fn();
 	if (!curr_fn->back().back().isTerminator())
 	{
-		be.builder.CreateUnreachable();
+		if (func_def.decl->ret_type->semantic_type.is_void(scopes))
+		{
+			be.builder.CreateRetVoid();
+		}
+		else be.builder.CreateUnreachable();
 	}
 }
 

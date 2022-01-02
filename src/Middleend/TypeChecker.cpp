@@ -5,6 +5,7 @@
 #include "GenericInstantiation.h"
 #include "MemberCollector.h"
 #include "ExpandScopes.h"
+#include "Mangling.h"
 #include "TaggedValueChecker.h"
 
 #define RETURN_VAL_BIN_OP(p,val) bin_op.sem_type = p; RETURN_VAL(p,val);  
@@ -242,6 +243,19 @@ void TypeChecker::visit(PostfixOpExpr& post_op)
 		RETURN(t);
 	}
 	assert(false);
+}
+
+void TypeChecker::visit(DelOpExpr& del)
+{
+	auto t = get(del.expr);
+	del.sem_type = scopes.get_type("void");
+	if (t.is_user_defined(scopes))
+	{
+		auto op = scopes.get_op(mangle(del));
+		assert(op);
+		del.operation = op;
+	}
+	RETURN(del.sem_type);
 }
 
 void TypeChecker::visit(FptrIdentExpr& fptr)

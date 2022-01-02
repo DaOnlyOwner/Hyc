@@ -77,9 +77,11 @@ struct Type
 	bool is_fptr_type() const;
 	bool is_array_type() const;
 	bool is_error_type() const;
+	bool is_void(Scopes& sc) const;
 	bool must_be_inferred() const;
 	std::pair<bool, Type> get_pointed_at() const;
 	bool is_predefined(const class Scopes& sc) const;
+	bool is_user_defined(const class Scopes& sc) const;
 	std::optional<PredefinedType> to_pred(const class Scopes& sc) const;
 	std::unique_ptr<TypeSpec> to_ast() const;
 
@@ -93,11 +95,13 @@ struct Type
 	std::string as_str() const;
 	std::string as_str_for_mangling() const;
 
+
 	static std::pair<ConversionType, ConversionType> type_cast_to_more_general(PredefinedType t1, PredefinedType t2);
 	static bool is_integer(PredefinedType pt);
 	static bool is_unsigned_integer(PredefinedType pt);
 	static bool is_signed_integer(PredefinedType pt);
 	static bool is_decimal(PredefinedType pt);
+
 };
 
 struct ArrayType

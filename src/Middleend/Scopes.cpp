@@ -63,14 +63,20 @@ bool Scopes::add(DeclStmt* decl)
 
 DeclStmt* Scopes::get_variable(const std::string& name)
 {
-	auto tl = top_level.table.get_variable(name);
-	if (tl) return tl;
+	//auto tl = top_level.table.get_variable(name);
+	//if (tl) return tl;
 	for (entry* tbl = current_entry; tbl != nullptr; tbl = tbl->father)
 	{
 		auto* elem = tbl->table.get_variable(name);
 		if (elem != nullptr) return elem;
 	}
 	return nullptr;
+}
+
+std::vector<std::pair<size_t, DeclStmt*>> Scopes::get_all_variables_reversed()
+{
+	assert(current_entry != nullptr);
+	return current_entry->table.get_all_variables_reversed();
 }
 
 llvm::Value* Scopes::get_value(const std::string& name)

@@ -73,12 +73,12 @@ void ExpandScopes::visit(ForStmt& for_stmt)
 
 void ExpandScopes::visit(TypeDefStmt& coll_def)
 {
-	scopes.expand();
+	/*scopes.expand();
 	for (auto& stmt : coll_def.stmts)
 	{
 		stmt->accept(*this);
 	}
-	scopes.ascend();
+	scopes.ascend();*/
 }
 
 void ExpandScopes::visit(MatchStmt& match)

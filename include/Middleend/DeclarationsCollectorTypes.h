@@ -1,6 +1,7 @@
 #pragma once
 #include "Ast.h"
 #include "Scopes.h"
+#include "Tree.h"
 
 class DeclarationsCollectorTypes : public IAstVisitor
 {

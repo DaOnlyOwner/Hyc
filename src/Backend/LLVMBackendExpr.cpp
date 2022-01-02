@@ -256,6 +256,16 @@ bool LLVMBackendExpr::handle_member_acc(bool should_load, const BinOpExpr& bin_o
 	return false;
 }
 
+void LLVMBackendExpr::visit(DelOpExpr& del)
+{
+	if (del.operation)
+	{
+		auto fn = be.mod.getFunction(del.operation->decl->name.text);
+		llvm::Value* arg[1] = { get_with_params(del.expr, false) };
+		be.builder.CreateCall(fn, arg);
+	}
+}
+
 bool LLVMBackendExpr::handle_union(const BinOpExpr& bin_op)
 {
 	if (bin_op.op.type == Token::Specifier::DoubleQM || bin_op.op.type == Token::Specifier::DoubleEM)
@@ -313,10 +323,6 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
 			llvm::MaybeAlign align(lhs_align);
 			assert(lhs_align == rhs_align);
-			lhs->dump();
-			rhs->dump();
-			lhs->getType()->dump();
-			rhs->getType()->dump();
 			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));
 		}
 		lhs = get_with_params(*bin_op.lh, false);
@@ -422,7 +428,7 @@ void LLVMBackendExpr::visit(FptrIdentExpr& fptr)
 	// TODO: check that it is only on the rhs
 	auto [should_load] = get_params();
 	auto def = fptr.def;
-	auto mangled = mangle(*def->decl);
+	auto mangled = mangle(*def);
 	auto func = be.mod.getFunction(mangled);
 	RETURN((llvm::Value*)func);
 }
@@ -452,7 +458,7 @@ void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 			
 			RETURN(handle_sret_func_call(be.builder.CreateCall(ft,loaded,args),func_call_expr));
 		}
-		auto mangled = mangle(*func_call_expr.def->decl);
+		auto mangled = mangle(*func_call_expr.def);
 		auto func = be.mod.getFunction(mangled);
 		RETURN(handle_sret_func_call(be.builder.CreateCall(func, args),func_call_expr));
 	}

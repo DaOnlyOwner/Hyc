@@ -145,6 +145,15 @@ void TerminalOutput::visit(BinOpExpr& bin_op)
 	indent--;
 }
 
+void TerminalOutput::visit(DelOpExpr& del)
+{
+	make_indent();
+	out += fmt::format("DelOpExpr: sem_type='{}'\n",del.sem_type.as_str());
+	indent++;
+	del.expr->accept(*this);
+	indent--;
+}
+
 void TerminalOutput::visit(PrefixOpExpr& pre_op)
 {
 	make_indent();
@@ -233,7 +242,7 @@ void TerminalOutput::visit(FuncCallExpr& func_op)
 void TerminalOutput::visit(FuncDefStmt& func_def_stmt)
 {
 	make_indent();
-	out += "FuncDefStmt\n";
+	out += fmt::format("FuncDefStmt: is_operator='{}'\n",func_def_stmt.is_operator);
 	indent++;
 	func_def_stmt.decl->accept(*this);
 	for (auto& stmt : func_def_stmt.body)

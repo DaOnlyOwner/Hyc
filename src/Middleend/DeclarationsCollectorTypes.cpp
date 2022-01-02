@@ -1,6 +1,5 @@
 #include "DeclarationsCollectorTypes.h"
 #include "Messages.h"
-#include "Tree.h"
 
 namespace
 {
@@ -31,7 +30,7 @@ void DeclarationsCollectorTypes::visit(FuncDefStmt& def)
 {
 }
 
-void collect_types(NamespaceStmt& ns, Tree<TypeDefStmt*>& tree, Scopes& sc)
+void collect_types(NamespaceStmt& ns, Scopes& sc, Tree<TypeDefStmt*>& tree)
 {
 	DeclarationsCollectorTypes dc(sc,tree);
 	ns.accept(dc); 

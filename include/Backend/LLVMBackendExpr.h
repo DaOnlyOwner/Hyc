@@ -46,4 +46,5 @@ private:
 	virtual void visit(ImplicitCastExpr& ice) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;
 	virtual void visit(TernaryExpr& tern) override;
+	virtual void visit(DelOpExpr& del) override;
 };

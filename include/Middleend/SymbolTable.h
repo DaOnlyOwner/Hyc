@@ -11,7 +11,7 @@
 #include "Ast.h"
 #include <unordered_map>
 #include "llvm/IR/Value.h"
-
+#include <map>
 
 class SymbolTable
 {
@@ -27,6 +27,7 @@ public:
 	bool add(TypeDefStmt* cs);
 
 	bool add(FuncDefStmt* fn);
+	bool add_op(FuncDefStmt* op);
 	bool add(TypeDefStmt* td, DeclStmt* decl, size_t idx);
 	bool add(TypeDefStmt* td, UnionDeclStmt* udecl);
 	bool add(DeclStmt* decl);
@@ -40,6 +41,8 @@ public:
 	size_t get_decl_idx_for(TypeDefStmt* cs, const std::string& name);
 
 	DeclStmt* get_variable(const std::string& name);
+	std::vector<std::pair<size_t, DeclStmt*>> get_all_variables_reversed();
+
 	llvm::Value* get_value(const std::string& name);
 
 	template<typename Pred>
@@ -53,19 +56,27 @@ public:
 		return nullptr;
 	}
 
+	FuncDefStmt* get_op(const std::string& name)
+	{
+		auto it = operators.find(name);
+		if (it == operators.end()) return nullptr;
+		else return it->second;
+	}
+
 private:
 	struct member
 	{
 		DeclStmt* stmt;
 		size_t idx;
 	};
-
+	size_t var_idx = 0;
 	std::unordered_map<std::string, TypeDefStmt*> collections;
 	std::unordered_map<TypeDefStmt*, std::unordered_map<std::string, member>> decl_in_collection;
 	// name maps to overloads
 	std::unordered_map<std::string, std::vector<FuncDefStmt*>> functions;
+	std::unordered_map<std::string, FuncDefStmt*> operators;
 
-	std::unordered_map<std::string, DeclStmt*> variables;
+	std::unordered_map<std::string, std::pair<size_t,DeclStmt*>> variables;
 	std::unordered_map<std::string, llvm::Value*> llvm_variables;
 
 	std::unordered_map<TypeDefStmt*, std::unordered_map<std::string, UnionDeclStmt*>> union_decl_in_collection;

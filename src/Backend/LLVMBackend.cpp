@@ -183,7 +183,8 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 #endif
 	if (ci.opt_lvl != CompilerInfo::OptLevel::O0)
 	{
-		llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(to_llvm[ci.opt_lvl]);
+		auto opt_lvl = to_llvm[ci.opt_lvl];
+		llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(opt_lvl);
 		mpm.run(be.mod, mam);
 	}
 

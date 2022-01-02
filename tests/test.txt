@@ -1,16 +1,25 @@
 struct A
 {
-   int[1000] a;
+   int a; 
+   int b;
+   B c;
 }
+
+struct B
+{
+   int a;
+}
+
+// test
+
+$ test
+test 
+test 
+$
 
 int main()
 {
-   int b = test().a[0] ;
-   return b;
-}
-
-A val test()
-{
-   val->a[0] = 1;
-   return;
+   A a;
+   A b;
+   return 0;
 }

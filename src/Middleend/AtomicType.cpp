@@ -61,6 +61,11 @@ bool Type::is_predefined(const Scopes& sc) const
 	return is_base_type() && sc.is_type_predefined(get_base_type());
 }
 
+bool Type::is_user_defined(const Scopes& sc) const
+{
+	return !is_predefined(sc) && is_base_type();
+}
+
 std::optional<PredefinedType> Type::to_pred(const Scopes& sc) const
 {
 	if (!is_predefined(sc)) return {};
@@ -233,35 +238,31 @@ std::unique_ptr<TypeSpec> Type::to_ast() const
 {
 	std::unique_ptr<TypeSpec> to_build;
 
-	if (is_base_type())
-	{
-		auto coll = std::get<TypeDefStmt*>(stored_types[0].second);
-		to_build = std::make_unique<BaseTypeSpec>(Token(coll->name));
-	}
+	assert(!must_be_inferred());
 
-	else if (is_fptr_type())
-	{
-		auto& fptr = std::get<FunctionPointerType>(stored_types[0].second);
-		std::vector<uptr<TypeSpec>> args;
-		for (auto& arg : fptr.args)
-		{
-			args.push_back(arg->to_ast());
-		}
-		auto ret_type = fptr.return_type->to_ast();
-		to_build = std::make_unique<FptrTypeSpec>(std::move(args), std::move(ret_type), nullptr);
-	}
+	//assert(is_fptr_type() || is_base_type());
 
-	else if (must_be_inferred())
-	{
-		return nullptr;
-	}
-
-	assert(is_fptr_type() || is_base_type());
-
-	for (int i = 1; i < stored_types.size(); i++)
+	for (int i = 0; i < stored_types.size(); i++)
 	{
 		auto& st = stored_types[i];
-		if (st.first == TypeKind::Pointer)
+		if (st.first == TypeKind::Base)
+		{
+			auto coll = std::get<TypeDefStmt*>(st.second);
+			to_build = std::make_unique<BaseTypeSpec>(Token(coll->name));
+		}
+
+		else if (st.first == TypeKind::FunctionPointer)
+		{
+			auto& fptr = std::get<FunctionPointerType>(st.second);
+			std::vector<uptr<TypeSpec>> args;
+			for (auto& arg : fptr.args)
+			{
+				args.push_back(arg->to_ast());
+			}
+			auto ret_type = fptr.return_type->to_ast();
+			to_build = std::make_unique<FptrTypeSpec>(std::move(args), std::move(ret_type), nullptr);
+		}
+		else if (st.first == TypeKind::Pointer)
 		{
 			to_build->push_inner(std::make_unique<PointerTypeSpec>(nullptr));
 		}
@@ -297,6 +298,11 @@ bool Type::is_array_type() const
 bool Type::is_error_type() const
 {
 	return *this == error_type;
+}
+
+bool Type::is_void(Scopes& sc) const
+{
+	return is_base_type() && (get_base_type() == sc.get_type("void"));
 }
 
 

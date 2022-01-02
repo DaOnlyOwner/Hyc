@@ -74,6 +74,12 @@ void Messages::trigger_5_e1(const Token& from, const std::string& proto)
 	semantic_error(from, fmt::format("The function '{}' is already defined.", proto));
 }
 
+void Messages::trigger_5_e2(const Token& from, const std::string& proto)
+{
+	semantic_error(from, fmt::format("The operator '{}' is already defined.", proto));
+}
+
+
 void Messages::trigger_code_paster_e1(const Token& from)
 {
 	semantic_error(from, fmt::format("type '{}': A generic type parameter cannot be generic itself", from.text));

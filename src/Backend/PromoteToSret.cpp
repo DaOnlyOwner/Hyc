@@ -3,7 +3,6 @@
 
 void PromoteToSret::visit(FuncDefStmt& func_def)
 {
-
 	if (func_def.decl->named_return)
 	{
 		func_def.decl->ret_type->semantic_type = scopes.get_type("void");

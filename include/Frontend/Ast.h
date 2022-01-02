@@ -338,6 +338,7 @@ struct DelOpExpr : Expr
 	DelOpExpr(uptr<Expr>&& expr)
 		:expr(mv(expr)) {}
 	uptr<Expr> expr;
+	FuncDefStmt* operation = nullptr;
 	IMPL_VISITOR;
 	IMPL_CLONE(Expr) { return uptr<Expr>(new DelOpExpr(expr->clone())); }
 	IMPL_ASSTR
@@ -587,6 +588,7 @@ struct ImplicitCastExpr : Expr
 struct Stmt : Node {
 	virtual uptr<Stmt> clone() const = 0;
 	virtual bool is_return_stmt() const { return false; }
+	virtual bool is_terminator() const { return false; }
 };
 
 struct TypedStmt : Stmt
@@ -786,6 +788,8 @@ struct FuncDeclStmt : Stmt
 	std::vector<uptr<DeclStmt>> arg_list;
 	std::vector<GenericInfo> generic_list;
 	bool is_sret = false;
+	bool is_gen = false;
+	bool is_generated() { return is_gen; }
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 	std::vector<GenericInfo> generic_list_cpy;
@@ -798,10 +802,11 @@ struct FuncDeclStmt : Stmt
 
 struct FuncDefStmt : Stmt
 {
-	FuncDefStmt(uptr<FuncDeclStmt>&& func_decl, std::vector<uptr<Stmt>>&& body)
-		: decl(mv(func_decl)), body(mv(body)) {}
+	FuncDefStmt(uptr<FuncDeclStmt>&& func_decl, std::vector<uptr<Stmt>>&& body, bool is_operator=false)
+		: decl(mv(func_decl)), body(mv(body)),is_operator(is_operator) {}
 	uptr<FuncDeclStmt> decl;
 	std::vector<uptr<Stmt>> body;
+	bool is_operator;
 
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
@@ -863,6 +868,7 @@ struct ReturnStmt : Stmt
 		return uptr<Stmt>(new ReturnStmt(returned_expr->clone(),Token(return_kw)));
 	}
 	virtual bool is_return_stmt() const override { return true; }
+	virtual bool is_terminator() const override { return true; }
 };
 
 

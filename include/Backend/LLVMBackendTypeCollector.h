@@ -7,7 +7,7 @@ class LLVMBackendTypeCollector : public IAstVisitor
 {
 public:
 	LLVMBackendTypeCollector(LLVMBackendInfo& be)
-		:be(be),type_hier(type_hier){}
+		:be(be){}
 private:
 	LLVMBackendInfo& be;
 

@@ -24,6 +24,9 @@
 #include "PromoteToSret.h"
 #include "ElideReturnCopy.h"
 #include "CircularEmbedChecker.h"
+#include "GenerateOperators.h"
+#include "OperatorGenerationFuncs.h"
+#include "AddDestructorCalls.h"
 
 namespace
 {
@@ -60,6 +63,11 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	Scopes sc;
 	Tree<TypeDefStmt*> type_hierachy;
 
+	std::function<gen_func_t> gen_destr_struct = op_gen_funcs::gen_destructor_struct;
+	std::function<gen_func_t> gen_destr_union = op_gen_funcs::gen_destructor_union;
+	std::function<gen_arglist_t> gen_destr_arg = op_gen_funcs::gen_destructor_arglist;
+
+
 	auto parsed = parse(filename);
 	// Just used for debug
 	if (!parsed) return 1;
@@ -72,11 +80,13 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	collect_funcs(*parsed, sc);
 	collect_members(*parsed, sc);
 	check_tagged_values(*parsed, 0);
+	gen_op(sc, *parsed, gen_destr_struct, gen_destr_union, gen_destr_arg,"del");
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
 	check_circular_embed(*parsed, type_hierachy, sc);
 	if (ci.emit_info == LLVMBackend::CompilerInfo::EmitInfo::EmitAST)
 	{
+		add_destructor_call(sc, *parsed);
 		TerminalOutput to;
 		parsed->accept(to);
 		if(ci.emit_to_stdout)
@@ -104,8 +114,9 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	llvm_collect_member(be, sc, *parsed);
 	llvm_promote_to_sret(sc, *parsed);
 	llvm_elide_return_copy(sc, *parsed);
+	add_destructor_call(sc, *parsed);
 	llvm_collect_funcs(*parsed, be.mod, be.context, sc);
+	// End prep passes
 	if (Error::Error) return 1;
 	return backend.emit(ci,filename);
-	// End prep passes
 }

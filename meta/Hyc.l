@@ -184,6 +184,8 @@ or_eql		"|="
 
 %%
 \s+
+"//"[^\n]*
+[$][^$]*[$]
 {kw_return}	{ push(Token::Specifier::KwReturn);}
 {kw_for}	{ push(Token::Specifier::KwFor);}
 {kw_while}	{ push(Token::Specifier::KwWhile);}

@@ -339,7 +339,7 @@ std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
 	auto decl = std::make_unique<FuncDeclStmt>(std::move(type), op, nullptr, std::move(param_list));
 
 	auto body = parse_function_body();
-	return std::make_unique<FuncDefStmt>(std::move(decl), std::move(body));
+	return std::make_unique<FuncDefStmt>(std::move(decl), std::move(body),true);
 }
 
 // (type ident ((:= | :) expr)?) | (type? ident (:= | :) expr)  ; 

@@ -13,7 +13,9 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 		});
 	auto res_t = map_type(func_def_stmt.decl->ret_type->semantic_type,scopes,context);
 	auto ft = llvm::FunctionType::get(res_t, args, false);
-	auto func = llvm::Function::Create(ft,llvm::Function::ExternalLinkage, mangle(*func_def_stmt.decl),mod);
+	auto func = llvm::Function::Create(ft,
+		func_def_stmt.decl->name.text == "main" ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage,
+		mangle(func_def_stmt), mod);
 	int idx = 0;
 	for (auto& arg : func->args())
 	{

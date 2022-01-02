@@ -27,10 +27,17 @@ void DeclarationsCollectorFunctions::visit(NamespaceStmt& ns)
 
 void DeclarationsCollectorFunctions::visit(FuncDefStmt& func_def_stmt)
 {
-	bool succ = scopes.add(&func_def_stmt);
+	bool succ;
+	if (func_def_stmt.is_operator)
+		succ = scopes.add_op(&func_def_stmt);
+	else 
+		succ = scopes.add(&func_def_stmt);
 	if (!succ) {
 		auto proto = get_function_proto(func_def_stmt);
-		Messages::inst().trigger_5_e1(func_def_stmt.decl->name, proto);
+		if(func_def_stmt.is_operator)
+			Messages::inst().trigger_5_e2(func_def_stmt.decl->name, proto);
+		else
+			Messages::inst().trigger_5_e1(func_def_stmt.decl->name, proto);
 	}
 }
 

@@ -5,6 +5,7 @@
 #include "Primitive.h"
 #include <unordered_map>
 #include <cstdint>
+#include <map>
 
 /*
 	r
@@ -28,6 +29,7 @@ public:
 	//Variable* add(Variable* v) { return get_current_entry().table.add(v); }
 	//Type* add(Type* mt) { return get_current_entry().table.add(mt); }
 	bool add(FuncDefStmt* fn) { return top_level.table.add(fn); }
+	bool add_op(FuncDefStmt* op) { return top_level.table.add_op(op); }
 	bool add(TypeDefStmt* td) {	return top_level.table.add(td); }
 	bool add(TypeDefStmt* td, DeclStmt* decl, int idx) { return top_level.table.add(td, decl,idx); }
 	bool add(TypeDefStmt* td, UnionDeclStmt* decl) { return top_level.table.add(td, decl); }
@@ -47,12 +49,20 @@ public:
 	size_t get_decl_idx_for(TypeDefStmt* cs, const std::string& name) { return top_level.table.get_decl_idx_for(cs, name); }
 	UnionDeclStmt* get_union_decl_for(TypeDefStmt* td, const std::string& name) { return top_level.table.get_union_decl_for(td, name); }
 	DeclStmt* get_variable(const std::string& name);
+	std::vector<std::pair<size_t,DeclStmt*>> get_all_variables_reversed();
+
+
 	llvm::Value* get_value(const std::string& name);
 	
 	template<typename Pred>
 	FuncDefStmt* get_func(const std::string& name, Pred pred)
 	{
 		return top_level.table.get_func(name, pred);
+	}
+
+	FuncDefStmt* get_op(const std::string& name)
+	{
+		return top_level.table.get_op(name);
 	}
 
 	void ascend();

@@ -16,6 +16,7 @@ private:
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
+	virtual void visit(DelOpExpr& del) override;
 	virtual void visit(FptrIdentExpr& fptr) override;
 	virtual void visit(IdentExpr& ident) override;
 	virtual void visit(NamespaceStmt& namespace_stmt) override;

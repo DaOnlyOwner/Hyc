@@ -1,14 +1,28 @@
 #include "GenerateOperators.h"
+#include "Mangling.h"
 
 void GenerateOps::visit(TypeDefStmt& td)
 {
 	Type type_to_generate_for = Type(&td);
-	auto decl = std::make_unique<FuncDeclStmt>(scopes.get_type("void")/*The return type of every generated function is void*/,
-		nullptr, gen_arg_list(type_to_generate_for));
+	type_to_generate_for.promote_pointer();
+	auto ts = std::make_unique<BaseTypeSpec>(Token(Token::Specifier::Ident, "void"));
+	ts->semantic_type = scopes.get_type("void");
+	auto decl = std::make_unique<FuncDeclStmt>(std::move(ts),
+		Token(Token::Specifier::Ident,op_name),nullptr, gen_arg_list(type_to_generate_for));
+	decl->is_gen = true;
+	auto mangled = mangle(*decl);
+	decl->name.text = mangled;
 	auto body = std::vector<uptr<Stmt>>();
 	body.reserve(td.stmts.size());
-	auto fds = std::make_unique<FuncDefStmt>(std::move(decl), std::move(body));
-	
+	auto fds = std::make_unique<FuncDefStmt>(std::move(decl), std::move(body),true);
+	current_def = &td;
+	if (scopes.get_op(fds->decl->name.text))
+	{
+		// Already defined, we don't have to generate it again.
+		generated_op = true;
+		return;
+	}
+
 	if (td.get_ct() == CollectionType::Struct)
 	{
 		for (auto& p : td.stmts)
@@ -31,20 +45,20 @@ void GenerateOps::visit(TypeDefStmt& td)
 	else
 	{
 		// copy and move op.
-		if (decl->arg_list.size() == 2)
+		if (fds->decl->arg_list.size() == 2)
 		{
-			auto& arg1 = decl->arg_list[0];
-			auto& arg2 = decl->arg_list[1];
+			auto& arg1 = fds->decl->arg_list[0];
+			auto& arg2 = fds->decl->arg_list[1];
 			auto ie = std::make_unique<IdentExpr>(arg1->name);
 			auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
 			auto mcs = std::vector<MatchCase>();
-			auto ms = std::make_unique<MatchStmt>(mcs, std::move(pe));
+			auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
 			for (auto& p1 : td.stmts)
 			{
 				auto ie_inner = std::make_unique<IdentExpr>(arg2->name);
 				auto pe_inner = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie_inner));
 				auto mcs_inner = std::vector<MatchCase>();
-				auto ms_inner = std::make_unique<MatchStmt>(mcs_inner, std::move(pe_inner));
+				auto ms_inner = std::make_unique<MatchStmt>(std::move(mcs_inner), std::move(pe_inner));
 				
 				// Do the unions explicitly without traversing the AST. 
 				// TODO: This is basically just a hacked solution
@@ -54,7 +68,7 @@ void GenerateOps::visit(TypeDefStmt& td)
 				{
 					auto rhs = dynamic_cast<UnionDeclStmt*>(p2.get());
 					assert(rhs);
-					auto stmt_opt = gen_func_union({ &lhs->decl_stmt->type,&rhs->decl_stmt->type },scopes,ns);
+					auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get(),rhs->decl_stmt.get() }, scopes, ns);
 					if (!stmt_opt.has_value())
 					{
 						generated_op = false;
@@ -79,18 +93,18 @@ void GenerateOps::visit(TypeDefStmt& td)
 		}
 
 		// Destructor
-		else if (decl->arg_list.size() == 1)
+		else if (fds->decl->arg_list.size() == 1)
 		{
-			auto& arg1 = decl->arg_list[0];
-			auto& arg2 = decl->arg_list[1];
+			auto& arg1 = fds->decl->arg_list[0];
+			auto& arg2 = fds->decl->arg_list[1];
 			auto ie = std::make_unique<IdentExpr>(arg1->name);
 			auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
 			auto mcs = std::vector<MatchCase>();
-			auto ms = std::make_unique<MatchStmt>(mcs, std::move(pe));
+			auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
 			for (auto& p1 : td.stmts)
 			{
 				auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
-				auto stmt_opt = gen_func_union({ lhs->decl_stmt.get()}, scopes, ns);
+				auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get()}, scopes, ns);
 				if (!stmt_opt.has_value())
 				{
 					generated_op = false;
@@ -108,7 +122,7 @@ void GenerateOps::visit(TypeDefStmt& td)
 			fds->body.push_back(std::move(ms));
 		}
 	}
-	assert(scopes.add(fds.get()));
+	assert(scopes.add_op(fds.get()));
 	generated_op = true;
 	ns.stmts.push_back(std::move(fds));
 }
@@ -124,5 +138,16 @@ void GenerateOps::visit(NamespaceStmt& ns)
 
 void GenerateOps::visit(DeclStmt& decl)
 {
-	RETURN(gen_func_struct({ &decl },scopes,ns));
+	RETURN(gen_func_struct(current_def,{ &decl },scopes,ns));
+}
+
+void gen_op(Scopes& sc,
+	NamespaceStmt& ns,
+	std::function<gen_func_t>& gen_func_struct,
+	std::function<gen_func_t>& gen_func_union,
+	std::function<gen_arglist_t>& gen_arg_list,
+	const std::string& name)
+{
+	GenerateOps gops(sc, ns, gen_func_struct, gen_func_union, gen_arg_list,name);
+	ns.accept(gops);
 }

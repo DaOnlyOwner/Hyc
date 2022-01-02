@@ -29,6 +29,7 @@ public:
 	void trigger_4_e3(const Token& from, const std::string& bt, int s1, int s2);
 	void trigger_4_e4(const Token& from, int i, const std::string& name);
 	void trigger_5_e1(const Token& from, const std::string& proto);
+	void trigger_5_e2(const Token& from, const std::string& proto);
 	void trigger_code_paster_e1(const Token& from);
 
 	void trigger_6_e1(const Token& from, const std::string& expr);
