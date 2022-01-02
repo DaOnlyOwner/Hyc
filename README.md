@@ -148,7 +148,7 @@ For each generic type parameter g:
 Define copy operators and move operators.
 Copy operators look like this:
 ```cpp
-void operator=(C* a, C*b) {}
+operator void =(C* a, C*b) {}
             // ^-- parameters need to be pointers to work.
             // Operators cannot be generic
 ```
