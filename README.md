@@ -175,7 +175,7 @@ Move operators can be explicitly deleted, just like copy operators.
 ## Destructors
 A special function, that is automatically called for a variable when it gets out of scope. Just like in C++.
 When every member of a struct defines a destructor, a destructor will be generated for the struct itself.
-Can be explicitly deleted.
+Can not be explicitly deleted.
 Definition:
 ```cpp
 void del(C* c){}
