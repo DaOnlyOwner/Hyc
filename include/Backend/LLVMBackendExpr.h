@@ -25,8 +25,11 @@ private:
 	bool handle_pred(bool should_load, const BinOpExpr& bin_op);
 	bool handle_member_acc(bool should_load, const BinOpExpr& bin_op);
 	bool handle_union(const BinOpExpr& bin_op);
+	llvm::Value* hack_ret_auto_gen(const BinOpExpr& bin_op, llvm::Value*& lhs);
 	bool handle_assign(const BinOpExpr& bin_op);
 	bool handle_ptr(const BinOpExpr& bin_op);
+
+	llvm::Value* create_call_bin_op(const BinOpExpr& bin_op, llvm::Value* lhs, llvm::Value* rhs);
 
 	llvm::Value* handle_sret_func_call(llvm::CallInst* callInst, FuncCallExpr& call);
 

@@ -67,6 +67,13 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	std::function<gen_func_t> gen_destr_union = op_gen_funcs::gen_destructor_union;
 	std::function<gen_arglist_t> gen_destr_arg = op_gen_funcs::gen_destructor_arglist;
 
+	std::function<gen_func_t> gen_copy_struct = op_gen_funcs::gen_copy_struct;
+	std::function<gen_func_t> gen_move_struct = op_gen_funcs::gen_move_struct;
+
+	std::function<gen_func_t> gen_copy_move_union = op_gen_funcs::gen_copy_move_union;
+	std::function<gen_arglist_t> gen_copy_move_arg = op_gen_funcs::gen_copy_move_arglist;
+
+
 
 	auto parsed = parse(filename);
 	// Just used for debug
@@ -81,6 +88,9 @@ int Pipeline::build(const std::string& filename, const LLVMBackend::CompilerInfo
 	collect_members(*parsed, sc);
 	check_tagged_values(*parsed, 0);
 	gen_op(sc, *parsed, gen_destr_struct, gen_destr_union, gen_destr_arg,"del");
+	gen_op(sc, *parsed, gen_copy_struct, gen_copy_move_union, gen_copy_move_arg, "=");
+	gen_op(sc, *parsed, gen_move_struct, gen_copy_move_union, gen_copy_move_arg, "#");
+
 	check_type_repeat(*parsed, sc);
 	check_lvalues(sc, *parsed);
 	check_circular_embed(*parsed, type_hierachy, sc);

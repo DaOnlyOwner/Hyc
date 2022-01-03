@@ -10,16 +10,15 @@ struct B
    int a;
 }
 
-// test
+operator void =(B* lhs, B* rhs)
+{
 
-$ test
-test 
-test 
-$
+}
 
 int main()
 {
    A a;
    A b;
+   a = b;
    return 0;
 }

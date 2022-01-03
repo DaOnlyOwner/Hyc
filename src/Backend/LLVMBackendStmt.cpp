@@ -179,7 +179,8 @@ void LLVMBackendStmt::visit(MatchStmt& ms)
 void LLVMBackendStmt::visit(FuncDefStmt& func_def)
 {
 	if (!func_def.decl->generic_list.empty()) return;
-	auto func = be.mod.getFunction(mangle(func_def));
+	auto name = mangle(func_def);
+	auto func = be.mod.getFunction(name);
 	auto entry_bb = llvm::BasicBlock::Create(be.context, "entry", func);
 	be.builder.SetInsertPoint(entry_bb);
 	//enter_function(func);

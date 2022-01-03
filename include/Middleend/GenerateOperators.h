@@ -6,7 +6,7 @@
 #include <functional>
 #include <optional>
 
-using gen_func_t = std::optional<uptr<Stmt>>(TypeDefStmt* t, const std::vector<DeclStmt*>&, Scopes&, NamespaceStmt&);
+using gen_func_t = std::optional<uptr<Stmt>>(TypeDefStmt* t, DeclStmt*, Scopes&, NamespaceStmt&);
 using gen_arglist_t = std::vector<uptr<DeclStmt>>(const Type& t);
 
 class GenerateOps : public IAstVisitor,public ValueStorage<std::optional<uptr<Stmt>>>

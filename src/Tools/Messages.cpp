@@ -102,7 +102,7 @@ void Messages::trigger_6_e3(const Token& from, const std::string& t)
 
 void Messages::trigger_6_e4(const Token& from,const std::string& t1, const std::string& t2)
 {
-	semantic_error(from, fmt::format("The operator '{}' is not specified for types '{}' and '{}'", from.text, t1, t2));
+	semantic_error(from, fmt::format("The operator '{}' is not defined for types '{}' and '{}'", from.text, t1, t2));
 }
 
 // TODO: Null pointers syntax (nullptr).
@@ -188,6 +188,7 @@ void Messages::trigger_6_e15(const Token& from, const std::string& expr)
 	semantic_error(from, fmt::format("Can only infer type when the left hand side is an identifier, here is '{}'",
 		expr));
 }
+
 
 void Messages::trigger_6_e16(const Token& from, const std::string& t1, const std::string& t2)
 {

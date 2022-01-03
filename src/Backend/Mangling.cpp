@@ -3,9 +3,9 @@
 #include "fmt/core.h"
 #include <algorithm>
 
-std::string mangle(const FuncDefStmt& def)
+std::string mangle(const FuncDefStmt& def, bool mangle_op)
 {
-	if (def.is_operator)
+	if (def.is_operator && !mangle_op)
 	{
 		return def.decl->name.text;
 	}
@@ -38,4 +38,11 @@ std::string mangle(const DelOpExpr& doe)
 	auto& arg = doe.expr->sem_type.with_pointer();
 	out += fmt::format("_{}", arg.as_str_for_mangling());
 	return out;
+}
+
+std::string mangle(const BinOpExpr& bin)
+{
+	std::string out = bin.op.text;
+	return fmt::format("{}_{}_{}", out, bin.lh->sem_type.with_pointer().as_str_for_mangling(),
+		bin.rh->sem_type.with_pointer().as_str_for_mangling());
 }

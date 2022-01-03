@@ -292,30 +292,50 @@ bool LLVMBackendExpr::handle_union(const BinOpExpr& bin_op)
 	return false;
 }
 
-bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
+llvm::Value* LLVMBackendExpr::hack_ret_auto_gen(const BinOpExpr& bin_op, llvm::Value*& lhs)
 {
-	if (bin_op.op.type == Token::Specifier::Equal)
+	auto pre = dynamic_cast<PrefixOpExpr*>(bin_op.lh.get());
+	if (pre)
 	{
-		llvm::Value* lhs = nullptr;
-		if (!(bin_op.rh->sem_type.is_predefined(scopes)
-			|| bin_op.rh->sem_type.is_pointer_type()))
+		auto ident = dynamic_cast<IdentExpr*>(pre->lh.get());
+		if (ident)
 		{
-			// Hakish solution for when *ret = rhs was automatically generated.
-			auto pre = dynamic_cast<PrefixOpExpr*>(bin_op.lh.get());
-			if (pre)
+			if (ident->decl->is_sret)
 			{
-				auto ident = dynamic_cast<IdentExpr*>(pre->lh.get());
-				if (ident)
-				{
-					if (ident->decl->is_sret)
-					{
-						lhs = get_with_params(*ident, false);
-					}
-					else lhs = get_with_params(*bin_op.lh, false);
-				}
-				else lhs = get_with_params(*bin_op.lh,false);
+				lhs = get_with_params(*ident, false);
 			}
 			else lhs = get_with_params(*bin_op.lh, false);
+		}
+		else lhs = get_with_params(*bin_op.lh, false);
+	}
+	else lhs = get_with_params(*bin_op.lh, false);
+	return lhs;
+}
+
+bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
+{
+	if (bin_op.op.type == Token::Specifier::Equal
+		|| bin_op.op.type == Token::Specifier::Hashtag)
+	{
+		llvm::Value* lhs = nullptr;
+		if (bin_op.rh->sem_type.is_user_defined(scopes)
+			|| bin_op.lh->sem_type.is_user_defined(scopes))
+		{
+			// Hakish solution for when *ret = rhs was automatically generated.
+			lhs = hack_ret_auto_gen(bin_op, lhs);
+			auto rhs = get_with_params(*bin_op.rh, false);
+			/*auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
+			auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
+			auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
+			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
+			llvm::MaybeAlign align(lhs_align);
+			assert(lhs_align == rhs_align);
+			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));*/
+			RETURN_WITH_TRUE(create_call_bin_op(bin_op,lhs,rhs));
+		}
+		else if (bin_op.rh->sem_type.is_array_type())
+		{
+			lhs = hack_ret_auto_gen(bin_op, lhs);
 			auto rhs = get_with_params(*bin_op.rh, false);
 			auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
 			auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
@@ -323,7 +343,7 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
 			llvm::MaybeAlign align(lhs_align);
 			assert(lhs_align == rhs_align);
-			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));
+			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align, size));
 		}
 		lhs = get_with_params(*bin_op.lh, false);
 		auto rhs = get_with_params(*bin_op.rh, true);
@@ -584,6 +604,12 @@ bool LLVMBackendExpr::handle_ptr(const BinOpExpr& bin_op)
 		}
 	}
 	return false;
+}
+
+llvm::Value* LLVMBackendExpr::create_call_bin_op(const BinOpExpr& bin_op, llvm::Value* lhs, llvm::Value* rhs)
+{
+	auto fn = be.mod.getFunction(mangle(bin_op));
+	return be.builder.CreateCall(fn, { lhs,rhs });
 }
 
 // The middleend leaves the function call (if first parameter is sret) in an invalid state and we need to fix it

@@ -38,62 +38,81 @@ void GenerateOps::visit(TypeDefStmt& td)
 			{
 				fds->body.push_back(std::move(gen_stmt));
 			}
+
 		}
 	}
 
 	// Union
 	else
 	{
-		// copy and move op.
-		if (fds->decl->arg_list.size() == 2)
+		// Automatically generating move and copy constructors for unions is problematic
+		// Consider this:
+		/*
+		union A
 		{
-			auto& arg1 = fds->decl->arg_list[0];
-			auto& arg2 = fds->decl->arg_list[1];
-			auto ie = std::make_unique<IdentExpr>(arg1->name);
-			auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
-			auto mcs = std::vector<MatchCase>();
-			auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
-			for (auto& p1 : td.stmts)
-			{
-				auto ie_inner = std::make_unique<IdentExpr>(arg2->name);
-				auto pe_inner = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie_inner));
-				auto mcs_inner = std::vector<MatchCase>();
-				auto ms_inner = std::make_unique<MatchStmt>(std::move(mcs_inner), std::move(pe_inner));
-				
-				// Do the unions explicitly without traversing the AST. 
-				// TODO: This is basically just a hacked solution
-				auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
-				assert(lhs);
-				for (auto& p2 : td.stmts)
-				{
-					auto rhs = dynamic_cast<UnionDeclStmt*>(p2.get());
-					assert(rhs);
-					auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get(),rhs->decl_stmt.get() }, scopes, ns);
-					if (!stmt_opt.has_value())
-					{
-						generated_op = false;
-						return;
-					}
-					auto& stmt = stmt_opt.value();
-					std::vector<uptr<Stmt>> body;
-					if (!stmt)
-					{
-						body.push_back(std::move(stmt));
-					}
-					auto match_case = MatchCase(rhs->decl_stmt->name, Token(Token::Specifier::Ident,"rhs"), std::move(body));
-					ms_inner->match_cases.push_back(std::move(match_case));
-				}
-
-				std::vector<uptr<Stmt>> body;
-				body.push_back(std::move(ms_inner));
-				auto match_case = MatchCase(lhs->decl_stmt->name, Token(Token::Specifier::Ident, "lhs"), std::move(body));
-				ms->match_cases.push_back(std::move(match_case));
-			}
-			fds->body.push_back(std::move(ms));
+		   B b;
+		   float f;
 		}
 
+		A foo;
+		A bar;
+		foo.b = [...]
+		bar.f = 0;
+		bar = foo;
+		This calls somewhere =(float* a, B* b);
+		What is the semantic of this call?
+		*/
+		// 
+		//// copy and move op.
+		//if (fds->decl->arg_list.size() == 2)
+		//{
+		//	auto& arg1 = fds->decl->arg_list[0];
+		//	auto& arg2 = fds->decl->arg_list[1];
+		//	auto ie = std::make_unique<IdentExpr>(arg1->name);
+		//	auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
+		//	auto mcs = std::vector<MatchCase>();
+		//	auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
+		//	for (auto& p1 : td.stmts)
+		//	{
+		//		auto ie_inner = std::make_unique<IdentExpr>(arg2->name);
+		//		auto pe_inner = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie_inner));
+		//		auto mcs_inner = std::vector<MatchCase>();
+		//		auto ms_inner = std::make_unique<MatchStmt>(std::move(mcs_inner), std::move(pe_inner));
+		//		
+		//		// Do the unions explicitly without traversing the AST. 
+		//		// TODO: This is basically just a hacked solution
+		//		auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
+		//		assert(lhs);
+		//		for (auto& p2 : td.stmts)
+		//		{
+		//			auto rhs = dynamic_cast<UnionDeclStmt*>(p2.get());
+		//			assert(rhs);
+		//			auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get(),rhs->decl_stmt.get() }, scopes, ns);
+		//			if (!stmt_opt.has_value())
+		//			{
+		//				generated_op = false;
+		//				return;
+		//			}
+		//			auto& stmt = stmt_opt.value();
+		//			std::vector<uptr<Stmt>> body;
+		//			if (!stmt)
+		//			{
+		//				body.push_back(std::move(stmt));
+		//			}
+		//			auto match_case = MatchCase(rhs->decl_stmt->name, Token(Token::Specifier::Ident,"rhs"), std::move(body));
+		//			ms_inner->match_cases.push_back(std::move(match_case));
+		//		}
+
+		//		std::vector<uptr<Stmt>> body;
+		//		body.push_back(std::move(ms_inner));
+		//		auto match_case = MatchCase(lhs->decl_stmt->name, Token(Token::Specifier::Ident, "lhs"), std::move(body));
+		//		ms->match_cases.push_back(std::move(match_case));
+		//	}
+		//	fds->body.push_back(std::move(ms));
+		//}
+
 		// Destructor
-		else if (fds->decl->arg_list.size() == 1)
+		if (fds->decl->arg_list.size() == 1)
 		{
 			auto& arg1 = fds->decl->arg_list[0];
 			auto& arg2 = fds->decl->arg_list[1];
@@ -104,7 +123,7 @@ void GenerateOps::visit(TypeDefStmt& td)
 			for (auto& p1 : td.stmts)
 			{
 				auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
-				auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get()}, scopes, ns);
+				auto stmt_opt = gen_func_union(&td,lhs->decl_stmt.get(), scopes, ns);
 				if (!stmt_opt.has_value())
 				{
 					generated_op = false;
@@ -138,7 +157,7 @@ void GenerateOps::visit(NamespaceStmt& ns)
 
 void GenerateOps::visit(DeclStmt& decl)
 {
-	RETURN(gen_func_struct(current_def,{ &decl },scopes,ns));
+	RETURN(gen_func_struct(current_def,&decl,scopes,ns));
 }
 
 void gen_op(Scopes& sc,

@@ -1,6 +1,7 @@
 #include "CreateFuncArgsType.h"
 #include "TypeCreator.h"
 #include "Messages.h"
+#include "Mangling.h"
 
 void CreateFuncArgsType::visit(NamespaceStmt& ns)
 {
@@ -36,6 +37,13 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 		}
 		arg->type_spec->semantic_type = std::move(a);
 		arg->type = arg->type_spec->semantic_type;
+	}
+
+	if (def.is_operator)
+	{
+		auto& decl = *def.decl;
+		// Make new name
+		decl.name.text = mangle(decl);
 	}
 }
 

@@ -139,7 +139,7 @@ void ElideReturnCopy::visit(FuncDefStmt& stmt)
 void ElideReturnCopy::handle_descend(std::vector<uptr<Stmt>>& stmts)
 {
 	size_t amount = stmts.size();
-	for (int i = 0; i < amount; i++)
+	for (size_t i = 0; i < amount; i++)
 	{
 		auto& p = stmts[i];
 		p->accept(*this);

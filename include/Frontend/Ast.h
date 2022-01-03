@@ -267,7 +267,7 @@ struct BinOpExpr : Expr
 	uptr<Expr> lh, rh;
 
 	// Semantic annotations
-	FuncDeclStmt* sem_bin_op = nullptr;
+	FuncDefStmt* sem_bin_op = nullptr;
 
 	IMPL_VISITOR;
 

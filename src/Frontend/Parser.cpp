@@ -281,6 +281,7 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::AmpersandEqual, assignment_etc);
 	ADD_OP(Token::Specifier::CaretEqual, assignment_etc);
 	ADD_OP(Token::Specifier::OrEqual, assignment_etc);
+	// TODO: Add compound operators for move #/, #+ etc.
 	//ADD_OP(Token::Specifier::KwThrow, throw_);
 	ADD_OP(Token::Specifier::Ident, ident);
 	ADD_OP(Token::Specifier::Int, int_lit);
@@ -319,7 +320,11 @@ std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
 {
 	tkns.match_token(Token::Specifier::KwOperator);
 	auto type = parse_type_spec();
-	auto op = tkns.match_one_of<Token::Specifier::KwDel>();
+	auto op = tkns.match_one_of<
+		Token::Specifier::KwDel,
+		Token::Specifier::Equal,
+		Token::Specifier::Hashtag
+	>();
 	
 	std::vector<uptr<DeclStmt>> param_list;
 
@@ -337,7 +342,6 @@ std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
 	tkns.match_token(Token::Specifier::RParenR);
 
 	auto decl = std::make_unique<FuncDeclStmt>(std::move(type), op, nullptr, std::move(param_list));
-
 	auto body = parse_function_body();
 	return std::make_unique<FuncDefStmt>(std::move(decl), std::move(body),true);
 }

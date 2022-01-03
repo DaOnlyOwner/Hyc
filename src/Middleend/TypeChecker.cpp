@@ -128,8 +128,6 @@ void TypeChecker::visit(IntegerLiteralExpr& lit)
 	RETURN(t);
 }
 
-// TODO: Handle =: *a = 3; <-- here *a needs to be an lvalue.
-// Don't allow things like i+1 = 2;
 // Everything on the lhs needs to be an lvalue.
 void TypeChecker::visit(BinOpExpr& bin_op)
 {
@@ -150,7 +148,7 @@ void TypeChecker::visit(BinOpExpr& bin_op)
 		handled = handled || handle_bin_op_pointer_types(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_inferred(tlh, trh, bin_op);
 		handled = handled || handle_bin_op_array(tlh, trh, bin_op);
-		handled = handled || handle_bin_op_copy(tlh, trh, bin_op);
+		handled = handled || handle_bin_op_userdefined(tlh, trh, bin_op);
 		if (!handled)
 		{
 			// Error: Operator not defined for types. 
@@ -1091,9 +1089,24 @@ bool TypeChecker::handle_bin_op_pointer_types(Type& tlh, Type& trh, BinOpExpr& b
 	return false;
 }
 
+bool TypeChecker::handle_bin_op_userdefined(Type& tlh, Type& trh, BinOpExpr& bin_op)
+{
+	auto def = scopes.get_op(mangle(bin_op));
+	if (!def)
+	{
+		RETURN_VAL_BIN_OP(error_type, false);
+	}
+	else
+	{
+		bin_op.sem_bin_op = def;
+		RETURN_VAL_BIN_OP(def->decl->ret_type->semantic_type,true);
+	}
+}
+
 bool TypeChecker::handle_bin_op_copy(Type& tlh, Type& trh, BinOpExpr& bin_op)
 {
-	bool is_copy_move = (bin_op.op.type == Token::Specifier::Equal);
+	bool is_copy_move = (bin_op.op.type == Token::Specifier::Equal
+		|| bin_op.op.type == Token::Specifier::Hashtag);
 	if (is_copy_move)
 	{
 		if (tlh != trh)
