@@ -18,6 +18,7 @@ public:
 		return get_with_params(expr, should_load);
 	}
 
+	llvm::Value* create_assign_instr(const BinOpExpr& bin_op);
 private:
 	Scopes& scopes;
 	LLVMBackendInfo& be;
@@ -30,6 +31,7 @@ private:
 	bool handle_ptr(const BinOpExpr& bin_op);
 
 	llvm::Value* create_call_bin_op(const BinOpExpr& bin_op, llvm::Value* lhs, llvm::Value* rhs);
+	llvm::CallInst* create_call_inst(FuncCallExpr& call, const std::variant<llvm::FunctionCallee, std::pair<llvm::FunctionType*, llvm::Value*>>& callee);
 
 	llvm::Value* handle_sret_func_call(llvm::CallInst* callInst, FuncCallExpr& call);
 

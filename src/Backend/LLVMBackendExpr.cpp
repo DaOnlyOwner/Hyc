@@ -4,6 +4,7 @@
 #include "Messages.h"
 #include "TypeToLLVMType.h"
 #include "llvm/IR/DerivedTypes.h"
+#include <variant>
 
 bool LLVMBackendExpr::handle_pred(bool should_load, const BinOpExpr& bin_op)
 {
@@ -317,39 +318,44 @@ bool LLVMBackendExpr::handle_assign(const BinOpExpr& bin_op)
 	if (bin_op.op.type == Token::Specifier::Equal
 		|| bin_op.op.type == Token::Specifier::Hashtag)
 	{
-		llvm::Value* lhs = nullptr;
-		if (bin_op.rh->sem_type.is_user_defined(scopes)
-			|| bin_op.lh->sem_type.is_user_defined(scopes))
-		{
-			// Hakish solution for when *ret = rhs was automatically generated.
-			lhs = hack_ret_auto_gen(bin_op, lhs);
-			auto rhs = get_with_params(*bin_op.rh, false);
-			/*auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
-			auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
-			auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
-			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
-			llvm::MaybeAlign align(lhs_align);
-			assert(lhs_align == rhs_align);
-			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));*/
-			RETURN_WITH_TRUE(create_call_bin_op(bin_op,lhs,rhs));
-		}
-		else if (bin_op.rh->sem_type.is_array_type())
-		{
-			lhs = hack_ret_auto_gen(bin_op, lhs);
-			auto rhs = get_with_params(*bin_op.rh, false);
-			auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
-			auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
-			auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
-			auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
-			llvm::MaybeAlign align(lhs_align);
-			assert(lhs_align == rhs_align);
-			RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align, size));
-		}
-		lhs = get_with_params(*bin_op.lh, false);
-		auto rhs = get_with_params(*bin_op.rh, true);
-		RETURN_WITH_TRUE(be.builder.CreateStore(rhs, lhs));
+		RETURN_WITH_TRUE(create_assign_instr(bin_op));
 	}
 	return false;
+}
+
+llvm::Value* LLVMBackendExpr::create_assign_instr(const BinOpExpr& bin_op)
+{
+	llvm::Value* lhs = nullptr;
+	if (bin_op.rh->sem_type.is_user_defined(scopes)
+		|| bin_op.lh->sem_type.is_user_defined(scopes))
+	{
+		// Hakish solution for when *ret = rhs was automatically generated.
+		lhs = hack_ret_auto_gen(bin_op, lhs);
+		auto rhs = get_with_params(*bin_op.rh, false);
+		/*auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
+		auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
+		auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
+		auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
+		llvm::MaybeAlign align(lhs_align);
+		assert(lhs_align == rhs_align);
+		RETURN_WITH_TRUE(be.builder.CreateMemCpy(lhs, align, rhs, align,size));*/
+		return create_call_bin_op(bin_op, lhs, rhs);
+	}
+	else if (bin_op.rh->sem_type.is_array_type())
+	{
+		lhs = hack_ret_auto_gen(bin_op, lhs);
+		auto rhs = get_with_params(*bin_op.rh, false);
+		auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
+		auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
+		auto mapped = map_type(bin_op.rh->sem_type, scopes, be.context);
+		auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
+		llvm::MaybeAlign align(lhs_align);
+		assert(lhs_align == rhs_align);
+		return be.builder.CreateMemCpy(lhs, align, rhs, align, size);
+	}
+	lhs = get_with_params(*bin_op.lh, false);
+	auto rhs = get_with_params(*bin_op.rh, true);
+	return be.builder.CreateStore(rhs, lhs);
 }
 
 void LLVMBackendExpr::visit(DecimalLiteralExpr& lit)
@@ -457,10 +463,6 @@ void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 {
 	auto* ident = dynamic_cast<IdentExpr*>(func_call_expr.from.get());
 	auto [should_load] = get_params();
-	std::vector<llvm::Value*> args;
-	std::transform(func_call_expr.arg_list.begin(), func_call_expr.arg_list.end(), std::back_inserter(args), [&](const FuncCallArg& arg) {
-		return get_with_params(*arg.expr, true);
-		});
 
 	if (ident)
 	{
@@ -475,19 +477,23 @@ void LLVMBackendExpr::visit(FuncCallExpr& func_call_expr)
 		
 			llvm::Value* loaded = be.builder.CreateLoad(mapped,llvm_maybe_fptr, false);
 			assert(loaded);
-			
-			RETURN(handle_sret_func_call(be.builder.CreateCall(ft,loaded,args),func_call_expr));
+			std::pair<llvm::FunctionType*, llvm::Value*> pair = {ft,loaded};
+			std::variant<llvm::FunctionCallee, std::pair<llvm::FunctionType*, llvm::Value*>> v{ pair };
+			RETURN(handle_sret_func_call(create_call_inst(func_call_expr, v), func_call_expr));
 		}
 		auto mangled = mangle(*func_call_expr.def);
 		auto func = be.mod.getFunction(mangled);
-		RETURN(handle_sret_func_call(be.builder.CreateCall(func, args),func_call_expr));
+		std::variant<llvm::FunctionCallee, std::pair<llvm::FunctionType*, llvm::Value*>> v{ func };
+		RETURN(handle_sret_func_call(create_call_inst(func_call_expr,v), func_call_expr));
 	}
 
 	else
 	{
 		auto expr = get_with_params(*func_call_expr.from,true);
 		auto ft = get_function_type(*func_call_expr.from->sem_type.get_fptr(), scopes, be.context);
-		RETURN(handle_sret_func_call(be.builder.CreateCall(ft,expr,args),func_call_expr));
+		std::pair<llvm::FunctionType*, llvm::Value*> pair = {ft,expr};
+		std::variant<llvm::FunctionCallee, std::pair<llvm::FunctionType*, llvm::Value*>> v{ pair };
+		RETURN(handle_sret_func_call(create_call_inst(func_call_expr, v), func_call_expr));
 	}
 }
 
@@ -610,6 +616,77 @@ llvm::Value* LLVMBackendExpr::create_call_bin_op(const BinOpExpr& bin_op, llvm::
 {
 	auto fn = be.mod.getFunction(mangle(bin_op));
 	return be.builder.CreateCall(fn, { lhs,rhs });
+}
+
+
+llvm::CallInst* LLVMBackendExpr::create_call_inst(FuncCallExpr& call, const std::variant<llvm::FunctionCallee,std::pair<llvm::FunctionType*,llvm::Value*>>& callee)
+{
+	auto def = call.def;
+
+	std::vector<llvm::Value*> args;
+	std::vector<std::pair<Type,llvm::Value*>> allocs_to_destroy;
+	args.reserve(def->decl->arg_list.size());
+	for (int i = 0; i < call.arg_list.size(); i++)
+	{
+		auto& decl = def->decl->arg_list[i].decl;
+		auto& passed = call.arg_list[i].expr;
+		args.push_back(
+			get_with_params(passed, decl->is_passed_as_ptr ? false : true)
+		);
+	}
+
+	for (int i = 0; i < call.arg_list.size(); i++)
+	{
+		auto& decl = def->decl->arg_list[i].decl;
+		if (decl->is_passed_as_ptr)
+		{
+			auto base_type = decl->type.with_pop();
+			auto alloc = llvm_create_alloca(be, scopes, base_type, decl->name.text);
+			auto lhs = alloc;
+			auto rhs = args[i];
+			assert(base_type.is_user_defined(scopes) || base_type.is_array_type());
+			if (base_type.is_array_type())
+			{
+				auto lhs_align = be.mod.getDataLayout().getABITypeAlignment(lhs->getType());
+				auto rhs_align = be.mod.getDataLayout().getABITypeAlignment(rhs->getType());
+				auto mapped = map_type(base_type, scopes, be.context);
+				auto size = be.mod.getDataLayout().getTypeStoreSizeInBits(mapped) / 8;
+				llvm::MaybeAlign align(lhs_align);
+				assert(lhs_align == rhs_align);
+				be.builder.CreateMemCpy(lhs, align, rhs, align, size);
+				args[i] = lhs;
+			}
+			else if (base_type.is_user_defined(scopes))
+			{
+				std::string op = def->decl->arg_list[i].moved ? "#" : "=";
+				auto func_name = mangle(op, decl->type, decl->type);
+				auto fn = be.mod.getFunction(func_name);
+				be.builder.CreateCall(fn, { lhs,rhs });
+				allocs_to_destroy.push_back({ decl->type,alloc });
+				args[i] = lhs;
+			}
+		}
+	}
+	llvm::CallInst* ci;
+	if (std::holds_alternative<llvm::FunctionCallee>(callee))
+	{
+		auto& fcallee = std::get<llvm::FunctionCallee>(callee);
+		ci = be.builder.CreateCall(fcallee, args);
+	}
+	else
+	{
+		auto& [ft, val] = std::get<std::pair<llvm::FunctionType*, llvm::Value*>>(callee);
+		ci = be.builder.CreateCall(ft, val, args);
+	}
+
+	for (auto& alloc : allocs_to_destroy)
+	{
+		auto name = fmt::format("del_{}", alloc.first.as_str_for_mangling());
+		auto fn = be.mod.getFunction(name);
+		be.builder.CreateCall(fn, { alloc.second });
+	}
+
+	return(ci);
 }
 
 // The middleend leaves the function call (if first parameter is sret) in an invalid state and we need to fix it

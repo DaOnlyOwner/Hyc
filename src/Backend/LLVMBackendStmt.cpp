@@ -105,16 +105,21 @@ void LLVMBackendStmt::visit(FuncDeclStmt& func_decl)
 	int idx = 0;
 	for (auto& arg : currfn->args())
 	{
-		auto& p = func_decl.arg_list[idx];
+		auto& [moved,p] = func_decl.arg_list[idx];
+		auto& sarg = func_decl.arg_list[idx];
+		
 		idx++;
-		if (p->is_sret)
+		if (p->is_sret || p->is_passed_as_ptr)
 		{
 			scopes.add(arg.getName().str(), &arg);
 			continue;
 		}
+		
 		auto alloc = get(p);
-		// TODO: Memcpy when struct
-		be.builder.CreateStore(&arg, alloc);
+		llvm::Value* lhs = alloc;
+		llvm::Value* rhs = &arg;
+
+		be.builder.CreateStore(rhs, lhs);
 	}
 }
 
@@ -219,10 +224,6 @@ void LLVMBackendStmt::visit(ReturnStmt& return_stmt)
 
 llvm::AllocaInst* LLVMBackendStmt::create_alloca(const Type& t, const std::string& name)
 {
-	auto mapped = map_type(t,scopes,be.context);
-	auto f = be.builder.GetInsertBlock()->getParent();
-	auto entry_b = &f->getEntryBlock();
-	llvm::IRBuilder<> tmp(entry_b, entry_b->begin());
-	return tmp.CreateAlloca(mapped,0,name);
+	return llvm_create_alloca(be, scopes, t, name);
 }
 

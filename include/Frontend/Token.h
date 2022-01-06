@@ -89,6 +89,7 @@ struct Token
 		KwOperator,
 		KwAuto,
 		KwDel,
+		KwMoved,
 		GenFCallOpen,
 		GenFCallClose,
 		ArrayStart,
@@ -97,7 +98,10 @@ struct Token
 		DoubleQM,
 		DoubleEM,
 		DotComma,
-		MemAccComma
+		MemAccComma,
+		MemCpy,
+		MemMove,
+		MemSet
 	};
 
 	Token(Specifier ttype, const std::string& text, const std::string& file, const std::string& lineText, size_t lineNo, size_t colNo, size_t lineNoEnd, size_t colNoEnd)
@@ -344,7 +348,15 @@ struct Token
 		case Specifier::MemAccComma:
 			return "->,";
 		case Specifier::KwDel:
-			return "del";
+			return "del (keyword)";
+		case Specifier::KwMoved:
+			return "moved (keyword)";
+		case Specifier::MemCpy:
+			return "-->";
+		case Specifier::MemMove:
+			return "--+";
+		case Specifier::MemSet:
+			return "--*";
 		}
 		return "Unknown";
 

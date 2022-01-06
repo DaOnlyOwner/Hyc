@@ -9,10 +9,10 @@ namespace
 		std::string type_args = "";
 		if (func_def_stmt.decl->arg_list.size() > 0)
 		{
-			type_args += fmt::format("{}", func_def_stmt.decl->arg_list[0]->type_spec->as_str());
+			type_args += fmt::format("{}", func_def_stmt.decl->arg_list[0].decl->type_spec->as_str());
 			for (int i = 1; i < func_def_stmt.decl->arg_list.size(); i++)
 			{
-				type_args += fmt::format(", {}", func_def_stmt.decl->arg_list[i]->type_spec->as_str());
+				type_args += fmt::format(", {}", func_def_stmt.decl->arg_list[i].decl->type_spec->as_str());
 			}
 		}
 

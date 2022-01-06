@@ -30,3 +30,12 @@ inline llvm::Value* create_casted_union_field(Scopes& scopes,UnionDeclStmt* udec
 	auto untyped_field = be.builder.CreateStructGEP(lhs, UNION_FIELD);
 	return be.builder.CreateBitCast(untyped_field, llvm_t);
 }
+
+inline llvm::AllocaInst* llvm_create_alloca(LLVMBackendInfo& be, Scopes& scopes, const Type& t, const std::string& name)
+{
+	auto mapped = map_type(t, scopes, be.context);
+	auto f = be.builder.GetInsertBlock()->getParent();
+	auto entry_b = &f->getEntryBlock();
+	llvm::IRBuilder<> tmp(entry_b, entry_b->begin());
+	return tmp.CreateAlloca(mapped, 0, name);
+}

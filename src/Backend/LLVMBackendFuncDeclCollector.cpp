@@ -8,8 +8,8 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 {
 	if (!func_def_stmt.decl->generic_list.empty()) return;
 	std::vector<llvm::Type*> args;
-	std::transform(func_def_stmt.decl->arg_list.begin(), func_def_stmt.decl->arg_list.end(), std::back_inserter(args), [&](const uptr<DeclStmt>& ds) {
-		return map_type(ds->type,scopes,context);
+	std::transform(func_def_stmt.decl->arg_list.begin(), func_def_stmt.decl->arg_list.end(), std::back_inserter(args), [&](const FuncArg& ds) {
+		return map_type(ds.decl->type,scopes,context);
 		});
 	auto res_t = map_type(func_def_stmt.decl->ret_type->semantic_type,scopes,context);
 	auto ft = llvm::FunctionType::get(res_t, args, false);
@@ -19,13 +19,13 @@ void LLVMBackendFuncDeclCollector::visit(FuncDefStmt& func_def_stmt)
 	int idx = 0;
 	for (auto& arg : func->args())
 	{
-		arg.setName(func_def_stmt.decl->arg_list[idx]->name.text);
+		arg.setName(func_def_stmt.decl->arg_list[idx].decl->name.text);
 		idx++;
 	}
 	if (func_def_stmt.decl->is_sret)
 	{
 		llvm::AttrBuilder ab;
-		ab.addStructRetAttr(map_type(func_def_stmt.decl->arg_list[0]->type.with_pop(), scopes, context));
+		ab.addStructRetAttr(map_type(func_def_stmt.decl->arg_list[0].decl->type.with_pop(), scopes, context));
 		ab.addAttribute(llvm::Attribute::get(context, llvm::Attribute::AttrKind::NoAlias));
 		func->args().begin()->addAttrs(ab);
 	}

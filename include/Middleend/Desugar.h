@@ -13,6 +13,8 @@ private:
 	virtual void visit(PrefixOpExpr& pre) override;
 	virtual void visit(PostfixOpExpr& post) override;
 	virtual void visit(FuncCallExpr& call) override;
+	virtual void visit(ArraySubscriptExpr& subs) override;
+	virtual void visit(MemOpExpr& expr) override;
 };
 
 class DesugarForStmt : public IAstVisitor, ValueStorage<uptr<ScopeStmt>>

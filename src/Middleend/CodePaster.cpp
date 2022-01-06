@@ -25,7 +25,7 @@ void CodePaster::visit(FuncDefStmt& stmt)
 	new_def->decl->generic_list.clear();
 	new_def->decl->name.text = get_str(stmt.decl->name.text, to_paste);
 	must_replace = &stmt.decl->generic_list;
-	for (auto& p : new_def->decl->arg_list) p->accept(*this);
+	for (auto& p : new_def->decl->arg_list) p.decl->accept(*this);
 	auto new_type_spec = mv(get(new_def->decl->ret_type));
 	new_def->decl->ret_type = mv(new_type_spec);
 	for (auto& p : new_def->body) p->accept(*this);

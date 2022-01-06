@@ -171,6 +171,8 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	be.mod.setTargetTriple(target_triple);
 
 	ns.accept(stmt_gen);
+
+
 #ifndef NDEBUG
 	auto& outstream = llvm::outs();
 	bool b = llvm::verifyModule(be.mod,&outstream);
@@ -185,6 +187,11 @@ int LLVMBackend::emit(const CompilerInfo& ci, const std::string& filename)
 	{
 		auto opt_lvl = to_llvm[ci.opt_lvl];
 		llvm::ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(opt_lvl);
+		mpm.run(be.mod, mam);
+	}
+	else
+	{
+		auto mpm = pb.buildO0DefaultPipeline(llvm::PassBuilder::OptimizationLevel::O0);
 		mpm.run(be.mod, mam);
 	}
 

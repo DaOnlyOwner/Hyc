@@ -55,6 +55,11 @@ void GenericInst::visit(MatchStmt& match)
 	}
 }
 
+void GenericInst::visit(ScopeStmt& scope)
+{
+	for(auto& )
+}
+
 void GenericInst::visit(FuncDefStmt& stmt)
 {
 	// The arguments of the function are already instantiated

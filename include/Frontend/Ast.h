@@ -71,6 +71,7 @@ struct IAstVisitor
 	virtual void visit(struct ScopeStmt& sc);
 	virtual void visit(struct FptrIdentExpr& fptr){};
 	virtual void visit(struct DelOpExpr& del) {};
+	virtual void visit(struct MemOpExpr& mem) {}
 };
 
 struct Node
@@ -526,7 +527,31 @@ struct FuncCallExpr : Expr
 		return fmt::format("{}({})", from->as_str(), args);
 	}
 };
+// TODO: Klammerung
+struct MemOpExpr : Expr
+{
+	MemOpExpr(uptr<Expr>&& from, uptr<Expr>&& to, uptr<Expr>&& size, const Token& mt)
+		:from(mv(from)),to(mv(to)),size(mv(size)),mem_type(mt) {}
+	uptr<Expr> from, to;
+	uptr<Expr> size;
+	Token mem_type;
 
+	IMPL_FT
+	{
+		return from->first_token();
+	}
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+		return uptr<Expr>(new MemOpExpr(from->clone(), to->clone(), size->clone(), mem_type));
+	}
+	IMPL_ASSTR
+	{
+		return fmt::format("{} {} {} : {}", from->as_str(), mem_type.text, to->as_str(), size->as_str());
+	}
+
+};
+ 
 struct ArraySubscriptExpr : Expr
 {
 	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)
@@ -656,11 +681,13 @@ struct DeclStmt : TypedStmt
 	Token name;
 	uptr<TypeSpec> type_spec;
 	bool is_sret = false;
+	bool is_passed_as_ptr = false;
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 		auto a = (new DeclStmt(type_spec ? type_spec->clone() : nullptr, name));
 		a->type = type;
 		a->is_sret = is_sret;
+		a->is_passed_as_ptr = is_passed_as_ptr;
 		return uptr<Stmt>(a);
 	}
 };
@@ -776,27 +803,39 @@ struct IfStmt : Stmt
 	}
 };
 
+struct FuncArg
+{
+	bool moved;
+	uptr<DeclStmt> decl;
+};
+
 struct FuncDeclStmt : Stmt
 {
-	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<GenericInfo>&& generic_list, std::vector<uptr<DeclStmt>>&& arg_list)
-		: ret_type(mv(ret_type)), name(name), named_return(mv(named_return)), arg_list(mv(arg_list)), generic_list(mv(generic_list)) {}
-	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<uptr<DeclStmt>>&& arg_list)
-		:ret_type(mv(ret_type)),name(name),named_return(mv(named_return)), arg_list(mv(arg_list)),generic_list{}{}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<GenericInfo>&& generic_list, std::vector<FuncArg>&& arg_list,
+		bool moved_return)
+		: ret_type(mv(ret_type)), name(name), named_return(mv(named_return)), arg_list(mv(arg_list)), generic_list(mv(generic_list)),moved_return(moved_return) {}
+	FuncDeclStmt(uptr<TypeSpec> ret_type, const Token& name, uptr<DeclStmt>&& named_return, std::vector<FuncArg>&& arg_list)
+		:ret_type(mv(ret_type)),name(name),named_return(mv(named_return)), arg_list(mv(arg_list)),generic_list{}, moved_return(false) {}
 	uptr<TypeSpec> ret_type;
 	Token name;
 	uptr<DeclStmt> named_return;
-	std::vector<uptr<DeclStmt>> arg_list;
+	std::vector<FuncArg> arg_list;
 	std::vector<GenericInfo> generic_list;
 	bool is_sret = false;
 	bool is_gen = false;
+	bool moved_return;
 	bool is_generated() { return is_gen; }
 	IMPL_VISITOR;
 	IMPL_CLONE(Stmt) {
 	std::vector<GenericInfo> generic_list_cpy;
 	for (auto& p : generic_list) generic_list_cpy.push_back({ p.name, p.default_type?p.default_type->clone():nullptr });
-	std::vector<uptr<DeclStmt>> arg_list_cpy;
-	for (auto& p : arg_list) arg_list_cpy.push_back(uptr<DeclStmt>(new DeclStmt(p->type_spec->clone(), p->name)));
-	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), name, dynamic_uptr_cast_no_deleter<DeclStmt>(named_return->clone()), mv(generic_list_cpy), mv(arg_list_cpy)));
+	std::vector<FuncArg> arg_list_cpy;
+	for (auto& p : arg_list) arg_list_cpy.push_back({ p.moved,uptr<DeclStmt>(new DeclStmt(p.decl->type_spec->clone(), p.decl->name)) });
+	return uptr<Stmt>(new FuncDeclStmt(ret_type->clone(), 
+		name,
+		dynamic_uptr_cast_no_deleter<DeclStmt>(named_return->clone()),
+		mv(generic_list_cpy),
+		mv(arg_list_cpy),moved_return));
 	}
 };
 
@@ -860,7 +899,7 @@ struct ExprStmt : Stmt
 struct ReturnStmt : Stmt
 {
 	ReturnStmt(uptr<Expr>&& returned_expr, const Token& return_kw)
-		: returned_expr(mv(returned_expr)),return_kw(return_kw){}
+		: returned_expr(mv(returned_expr)),return_kw(return_kw) {}
 	uptr<Expr> returned_expr;
 	Token return_kw;
 	IMPL_VISITOR;

@@ -69,9 +69,18 @@ void LValueChecker::visit(ArraySubscriptExpr& subs)
 
 void LValueChecker::visit(TernaryExpr& tern)
 {
+	bool fst = get(tern.fst);
 	bool snd = get(tern.snd);
 	bool trd = get(tern.trd);
-	RETURN(snd && trd);
+	RETURN(fst && snd && trd);
+}
+
+void LValueChecker::visit(MemOpExpr& mem_op)
+{
+	bool fst = get(mem_op.from);
+	bool snd = get(mem_op.to);
+	bool trd = get(mem_op.size);
+	RETURN(fst && snd && trd);
 }
 
 void check_lvalues(Scopes& sc, NamespaceStmt& ns)

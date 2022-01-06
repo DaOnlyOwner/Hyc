@@ -12,6 +12,7 @@ public:
 private:
 	Scopes& scopes;
 	std::unique_ptr<PrefixOpExpr> expr;
+	FuncDefStmt* current_func_def = nullptr;
 
 	virtual void visit(FuncDefStmt& func_def) override;
 	virtual void visit(TypeDefStmt& td) override {}

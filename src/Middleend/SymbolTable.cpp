@@ -34,8 +34,8 @@ bool SymbolTable::add(FuncDefStmt* fn)
 		bool same = true;
 		for (int i = 0; i < fn->decl->arg_list.size(); i++)
 		{
-			Type t1 = fn->decl->arg_list[i]->type_spec->semantic_type;
-			Type t2 = fn_->decl->arg_list[i]->type_spec->semantic_type;
+			Type t1 = fn->decl->arg_list[i].decl->type;
+			Type t2 = fn_->decl->arg_list[i].decl->type;
 			if (t1 != t2) same = false;
 		}
 		return same;

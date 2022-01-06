@@ -47,7 +47,7 @@ void ElideReturnCopy::visit(FuncCallExpr& fce)
 		else
 		{
 			auto decl = std::make_unique<DeclStmt>(nullptr, Token(Token::Specifier::Ident,fmt::format("ret{}", ret_idx)));
-			decl->type = fce.def->decl->arg_list[0]->type.with_pop();
+			decl->type = fce.def->decl->arg_list[0].decl->type.with_pop();
 			scopes.add(decl.get());
 			ret_idx++;
 			auto ie = std::make_unique<IdentExpr>(Token(Token::Specifier::Ident, decl->name.text));

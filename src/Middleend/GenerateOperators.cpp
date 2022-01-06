@@ -116,7 +116,7 @@ void GenerateOps::visit(TypeDefStmt& td)
 		{
 			auto& arg1 = fds->decl->arg_list[0];
 			auto& arg2 = fds->decl->arg_list[1];
-			auto ie = std::make_unique<IdentExpr>(arg1->name);
+			auto ie = std::make_unique<IdentExpr>(arg1.decl->name);
 			auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
 			auto mcs = std::vector<MatchCase>();
 			auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));

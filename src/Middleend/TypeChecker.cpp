@@ -272,7 +272,7 @@ void TypeChecker::visit(FptrIdentExpr& fptr)
 		for (int i = 0; i < decl.arg_list.size(); i++)
 		{
 			auto argtype_call = fptr.params[i]->semantic_type;
-			if (argtype_call != decl.arg_list[i]->type) return false;
+			if (argtype_call != decl.arg_list[i].decl->type) return false;
 		}
 		return true;
 		});
@@ -349,8 +349,8 @@ std::pair<std::vector<Type>,bool> TypeChecker::deduce_template_args(FuncDefStmt*
 		// 3. The type of the arg in the function call expr is the deduced type
 
 		// -> 1.
-		auto it = std::find_if(def->decl->arg_list.begin(), def->decl->arg_list.end(), [&](const uptr<DeclStmt>& arg) {
-			return arg->type_spec->as_str() == garg.name.text;
+		auto it = std::find_if(def->decl->arg_list.begin(), def->decl->arg_list.end(), [&](const FuncArg& arg) {
+			return arg.decl->type_spec->as_str() == garg.name.text;
 			});
 
 		// -> 2.
@@ -436,7 +436,7 @@ FuncDefStmt* TypeChecker::paste_new_function(FuncDefStmt* def, const std::vector
 		for (int i = 0; i < params.size(); i++)
 		{
 			auto& t1 = params[i];
-			auto& t2 = non_generic_def->decl->arg_list[i]->type;
+			auto& t2 = non_generic_def->decl->arg_list[i].decl->type;
 			if (t1 != t2)
 			{
 				trigger_e6_21(name, params);
@@ -507,7 +507,7 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 		for (int i = 0; i < decl.arg_list.size(); i++)
 		{
 			auto argtype_call = func_call_expr.arg_list[i].expr->sem_type;
-			if (argtype_call != decl.arg_list[i]->type) return false;
+			if (argtype_call != decl.arg_list[i].decl->type) return false;
 		}
 		return true;
 		});
@@ -525,8 +525,8 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 	}
 
 	std::vector<Type> params;
-	std::transform(def->decl->arg_list.begin(), def->decl->arg_list.end(), std::back_inserter(params), [&](const uptr<DeclStmt>& param) {
-		return param->type;
+	std::transform(def->decl->arg_list.begin(), def->decl->arg_list.end(), std::back_inserter(params), [&](const FuncArg& param) {
+		return param.decl->type;
 		});
 	auto [deduced_types, succ] = deduce_template_args(def, params, ident->generic_params, *ident);
 
@@ -550,6 +550,7 @@ void TypeChecker::handle_ident_call_expr(FuncCallExpr& func_call_expr, IdentExpr
 
 }
 
+// TODO: Implicit cast for predefined types
 void TypeChecker::visit(FuncCallExpr& func_call_expr)
 {
 	auto* ident = dynamic_cast<IdentExpr*>(func_call_expr.from.get());
@@ -611,7 +612,7 @@ void TypeChecker::visit(FuncDeclStmt& func_decl)
 		func_decl.named_return->type = passed_t; 
 		scopes.add(func_decl.named_return.get());
 	}
-	for (auto& p : func_decl.arg_list) p->accept(*this);
+	for (auto& p : func_decl.arg_list) p.decl->accept(*this);
 }
 
 void TypeChecker::visit(FuncDefStmt& func_def_stmt)
@@ -659,9 +660,11 @@ void TypeChecker::visit(ReturnStmt& ret_stmt)
 		{
 			Messages::inst().trigger_6_w2(ret_stmt.return_kw, ret_stmt.returned_expr->as_str());
 		}
-
-		uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(ret_stmt.returned_expr), current_function->decl->ret_type->semantic_type);
-		ret_stmt.returned_expr = std::move(ice);
+		if (pred_expr != pred_func)
+		{
+			uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(ret_stmt.returned_expr), current_function->decl->ret_type->semantic_type);
+			ret_stmt.returned_expr = std::move(ice);
+		}
 		return;
 	}
 
@@ -853,6 +856,35 @@ void TypeChecker::visit(ScopeStmt& sc)
 		if (p->is_return_stmt()) break;
 	}
 	scopes.ascend();
+}
+
+void TypeChecker::visit(MemOpExpr& mem)
+{
+	auto from_t = get(mem.from);
+	auto to_t = get(mem.to);
+	auto size_t = get(mem.size);
+	if (!from_t.is_pointer_type())
+	{
+		Messages::inst().trigger_6_e33(mem.from->first_token(), "source", from_t.as_str());
+	}
+	if (mem.mem_type.type == Token::Specifier::MemSet)
+	{
+		RETURN(to_t);
+	}
+	if (!to_t.is_pointer_type())
+	{
+		Messages::inst().trigger_6_e33(mem.to->first_token(), "destination", to_t.as_str());
+	}
+
+	auto spred = size_t.to_pred(scopes);
+	if (!spred.has_value() || spred.value() == PredefinedType::Void)
+	{
+		Messages::inst().trigger_6_e34(mem.size->first_token(), size_t.as_str());
+	}
+
+	auto [succ,casted] = maybe_make_implicit_cast(size_t, Type(scopes.get_type("uint")), std::move(mem.size));
+	assert(succ);
+	mem.size = std::move(casted);
 }
 
 bool TypeChecker::handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op)
@@ -1207,6 +1239,21 @@ void TypeChecker::check_type_is_bool(uptr<Expr>& expr)
 	{
 		Messages::inst().trigger_6_e22(expr->first_token(), expr->as_str(), if_t.as_str());
 	}
+}
+
+std::pair<bool, uptr<Expr>> TypeChecker::maybe_make_implicit_cast(const Type& from, const Type& to, uptr<Expr>&& child)
+{
+	if (from == to) return { true,std::move(child) };
+	auto pre_from_ = from.to_pred(scopes);
+	auto pre_to_ = to.to_pred(scopes);
+	if (pre_from_.has_value() && pre_to_.has_value())
+	{
+		auto pre_from = pre_from_.value();
+		auto pre_to = pre_to_.value();
+		uptr<ImplicitCastExpr> ice = std::make_unique<ImplicitCastExpr>(std::move(child), to);
+		return { true,std::move(ice) };
+	}
+	return {false,std::move(child)};
 }
 
 bool TypeChecker::handle_bin_op_inferred(Type& tlh, Type& trh, BinOpExpr& bin_op)

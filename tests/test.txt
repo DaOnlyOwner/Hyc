@@ -15,10 +15,17 @@ operator void =(B* lhs, B* rhs)
 
 }
 
+moved B test(moved B b, B c)
+{
+   B d;
+   return d;
+} 
+
 int main()
 {
-   A a;
-   A b;
-   a = b;
-   return 0;
+   B b;
+   B c;
+   B foo = test(b,c);
+   foo.a = 0;
+   return foo.a;
 }

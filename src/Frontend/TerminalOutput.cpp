@@ -45,7 +45,7 @@ void TerminalOutput::visit(FuncDeclStmt& func_decl)
 	for (int i = 0; i < func_decl.arg_list.size(); i++)
 	{
 		auto& arg = func_decl.arg_list[i];
-		args += fmt::format("{} {}, ", arg->type_spec->as_str(), arg->name.text);
+		args += fmt::format("{} {} {}, ", arg.moved ? "moved":"", arg.decl->type_spec->as_str(), arg.decl->name.text);
 	}
 	std::string generic_params = "";
 	for (auto& gi : func_decl.generic_list)

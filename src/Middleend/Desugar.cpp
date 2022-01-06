@@ -48,6 +48,18 @@ void DesugarAccess::visit(FuncCallExpr& expr)
 	for (auto& p : expr.arg_list) p.expr->accept(*this);
 }
 
+void DesugarAccess::visit(ArraySubscriptExpr& subs)
+{
+	subs.from->accept(*this);
+}
+
+void DesugarAccess::visit(MemOpExpr& expr)
+{
+	expr.from->accept(*this);
+	expr.to->accept(*this);
+	expr.size->accept(*this);
+}
+
 void DesugarForStmt::visit(NamespaceStmt& ns)
 {
 	update(ns.stmts);

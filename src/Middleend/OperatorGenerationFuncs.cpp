@@ -59,13 +59,13 @@ std::optional<std::unique_ptr<Stmt>> op_gen_funcs::gen_destructor_union(TypeDefS
 	return nullptr;
 }
 
-std::vector<std::unique_ptr<DeclStmt>> op_gen_funcs::gen_destructor_arglist(const Type& t)
+std::vector<FuncArg> op_gen_funcs::gen_destructor_arglist(const Type& t)
 {
 	auto decl = std::make_unique<DeclStmt>(t.to_ast(), Token(Token::Specifier::Ident, "a"));
 	decl->type = t;
-	std::vector<uptr<DeclStmt>> out;
+	std::vector<FuncArg> out;
 	out.reserve(1);
-	out.push_back(std::move(decl));
+	out.push_back({ false,std::move(decl) });
 	return out;
 }
 
@@ -115,16 +115,16 @@ std::optional<std::unique_ptr<Stmt>> op_gen_funcs::gen_copy_move_union(TypeDefSt
 	return {};
 }
 
-std::vector<std::unique_ptr<DeclStmt>> op_gen_funcs::gen_copy_move_arglist(const Type& t)
+std::vector<FuncArg> op_gen_funcs::gen_copy_move_arglist(const Type& t)
 {
 	auto decl_a = std::make_unique<DeclStmt>(t.to_ast(), Token(Token::Specifier::Ident, "a"));
 	decl_a->type = t;
 	auto decl_b = std::make_unique<DeclStmt>(t.to_ast(), Token(Token::Specifier::Ident, "b"));
 	decl_b->type = t;
-	std::vector<uptr<DeclStmt>> out;
+	std::vector<FuncArg> out;
 	out.reserve(2);
-	out.push_back(std::move(decl_a));
-	out.push_back(std::move(decl_b));
+	out.push_back({ false,std::move(decl_a) });
+	out.push_back({ false, std::move(decl_b) });
 	return out;
 }
 

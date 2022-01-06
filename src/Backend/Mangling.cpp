@@ -19,7 +19,7 @@ std::string mangle(const FuncDeclStmt& decl)
 
 	for (int i = 0; i < decl.arg_list.size(); i++)
 	{
-		auto& arg = decl.arg_list[i];
+		auto& arg = decl.arg_list[i].decl;
 		out += fmt::format("_{}", arg->type.as_str_for_mangling());
 	}
 
@@ -45,4 +45,9 @@ std::string mangle(const BinOpExpr& bin)
 	std::string out = bin.op.text;
 	return fmt::format("{}_{}_{}", out, bin.lh->sem_type.with_pointer().as_str_for_mangling(),
 		bin.rh->sem_type.with_pointer().as_str_for_mangling());
+}
+
+std::string mangle(const std::string& name, const Type& t1, const Type& t2)
+{
+	return fmt::format("{}_{}_{}", name, t1.as_str_for_mangling(), t2.as_str_for_mangling()); 
 }

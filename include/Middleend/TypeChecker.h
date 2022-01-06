@@ -35,6 +35,7 @@ private:
 	virtual void visit(TernaryExpr& tern) override;
 	virtual void visit(MatchStmt& match) override;
 	virtual void visit(ScopeStmt& sc) override;
+	virtual void visit(MemOpExpr& mem) override;
 
 	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_op);
@@ -52,6 +53,7 @@ private:
 	FuncDefStmt* paste_new_function(FuncDefStmt* def, const std::vector<Type>& deduced_types, const Token& name, const std::vector<Type>& params, Expr& expr);
 
 	void check_type_is_bool(uptr<Expr>& expr);
+	std::pair<bool,uptr<Expr>> maybe_make_implicit_cast(const Type& from, const Type& to, uptr<Expr>&& child);
 
 	Scopes& scopes;
 	NamespaceStmt& ns;

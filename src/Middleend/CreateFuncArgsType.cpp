@@ -30,13 +30,13 @@ void CreateFuncArgsType::visit(FuncDefStmt& def)
 		// Don't try to create a type for a generic parameter.
 		//if (std::find_if(def.decl->generic_list.begin(), def.decl->generic_list.end(), [&](GenericInfo& t) {return t.name.text == arg->type_spec->as_str(); }) != def.decl->generic_list.end())
 		//	continue;
-		auto [a, succ_a] = create_type(*arg->type_spec, scopes, ns);
+		auto [a, succ_a] = create_type(*arg.decl->type_spec, scopes, ns);
 		if (!succ_a)
 		{
-			Messages::inst().trigger_3_i2(arg->name, def.decl->name.text);
+			Messages::inst().trigger_3_i2(arg.decl->name, def.decl->name.text);
 		}
-		arg->type_spec->semantic_type = std::move(a);
-		arg->type = arg->type_spec->semantic_type;
+		arg.decl->type_spec->semantic_type = std::move(a);
+		arg.decl->type = arg.decl->type_spec->semantic_type;
 	}
 
 	if (def.is_operator)

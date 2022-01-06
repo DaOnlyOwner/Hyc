@@ -21,6 +21,7 @@ private:
 	virtual void visit(ImplicitCastExpr& ice) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;
 	virtual void visit(TernaryExpr& tern) override;
+	virtual void visit(MemOpExpr& mem_op) override;
 
 	Scopes& scopes;
 };

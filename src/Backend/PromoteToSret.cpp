@@ -3,12 +3,23 @@
 
 void PromoteToSret::visit(FuncDefStmt& func_def)
 {
+
+	current_func_def = &func_def;
+	for (auto& arg : func_def.decl->arg_list)
+	{
+		if (arg.decl->type.is_user_defined(scopes) || arg.decl->type.is_array_type())
+		{
+			arg.decl->is_passed_as_ptr = true;
+			arg.decl->type.promote_pointer();
+		}
+	}
+
 	if (func_def.decl->named_return)
 	{
 		func_def.decl->ret_type->semantic_type = scopes.get_type("void");
 		auto cloned = dynamic_uptr_cast_no_deleter<DeclStmt>(func_def.decl->named_return->clone());
 		assert(cloned);
-		func_def.decl->arg_list.insert(func_def.decl->arg_list.begin(), std::move(cloned));
+		func_def.decl->arg_list.insert(func_def.decl->arg_list.begin(), { false,std::move(cloned) });
 	}
 
 	else if (!(func_def.decl->ret_type->semantic_type.is_predefined(scopes)
@@ -26,7 +37,7 @@ void PromoteToSret::visit(FuncDefStmt& func_def)
 		ident->decl = decl.get();
 		expr = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"),std::move(ident));
 		expr->sem_type = decl->type.with_pop();
-		func_def.decl->arg_list.insert(func_def.decl->arg_list.begin(), std::move(decl));
+		func_def.decl->arg_list.insert(func_def.decl->arg_list.begin(), { false,std::move(decl) });
 		
 		make_new_stmt(func_def.body);
 	}
@@ -36,7 +47,13 @@ void PromoteToSret::visit(ReturnStmt& rs)
 {
 	// This is the place for a move 
 	auto clone = expr->clone();
-	auto bin = std::make_unique<BinOpExpr>(Token(Token::Specifier::Equal, "="), std::move(clone), std::move(rs.returned_expr));
+	std::string name;
+	if (current_func_def->decl->moved_return)
+	{
+		name = "#";
+	}
+	else name = "=";
+	auto bin = std::make_unique<BinOpExpr>(Token(Token::Specifier::Equal, name), std::move(clone), std::move(rs.returned_expr));
 	bin->sem_type = scopes.get_type("void");
 	auto stmt = std::make_unique<ExprStmt>(std::move(bin));
 	auto ret_void = std::make_unique<ReturnStmt>(nullptr, Token());

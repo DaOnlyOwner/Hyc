@@ -51,7 +51,17 @@ PrefixOperation<Expr> name{ (int)ExprPrecedence::Group0, [](PrefixExprFnArgs)\
 			return ast_as<Expr>(std::make_unique<DecimalLiteralExpr>(token,DecimalLiteralType::type,decimalVal));\
 		}}
 
+#define DEF_MEMOP(name)\
+InfixOperation<Expr> name{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArgs) {\
+		auto snd = parser.parse();\
+		parser.overall_parser->get_lexer().match_token(Token::Specifier::Colon);\
+		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);\
+		return std::make_unique<MemOpExpr>(mv(lh), mv(snd), mv(trd),token);\
+	} };
+
 #define ADD_OP(op,name) expr_parser.add_operation(op,name)
+
+
 
 namespace
 {
@@ -217,12 +227,16 @@ namespace
 	DEF_BIN_OP(land, Group14, false);
 	DEF_BIN_OP(lor, Group15, false);
 
+	DEF_MEMOP(mem_op);
+
 	InfixOperation<Expr> if_expr{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArgs) {
 		auto snd = parser.parse();
 		parser.overall_parser->get_lexer().match_token(Token::Specifier::Colon);
 		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);
 		return std::make_unique<TernaryExpr>(mv(lh), mv(snd), mv(trd));
 	} };
+
+
 
 	DEF_BIN_OP(assignment_etc, Group16, true);
 	DEF_PREFIX_OP(throw_, Group16);	
@@ -296,6 +310,9 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::Quad, quad_lit);
 	ADD_OP(Token::Specifier::DoubleQM, test_if_active);
 	ADD_OP(Token::Specifier::DoubleEM, make_active);
+	ADD_OP(Token::Specifier::MemCpy, mem_op);
+	ADD_OP(Token::Specifier::MemMove, mem_op);
+	ADD_OP(Token::Specifier::MemSet, mem_op);
 
 	file = filename;
 }
@@ -326,7 +343,7 @@ std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
 		Token::Specifier::Hashtag
 	>();
 	
-	std::vector<uptr<DeclStmt>> param_list;
+	std::vector<FuncArg> param_list;
 
 	tkns.match_token(Token::Specifier::RParenL);
 
@@ -335,7 +352,7 @@ std::unique_ptr<Stmt> Parser::parse_operator_def_stmt()
 		auto arg_type = parse_type_spec(); // Type
 		auto& arg_name = tkns.match_token(Token::Specifier::Ident); // name
 
-		param_list.push_back(std::make_unique<DeclStmt>(std::move(arg_type), arg_name));
+		param_list.push_back({ false,std::make_unique<DeclStmt>(std::move(arg_type), arg_name) });
 
 		if (tkns.lookahead(1).type == Token::Specifier::Comma) tkns.eat();
 	}
@@ -675,6 +692,12 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse_function_body()
 
 std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 {
+	bool ret_moved = false;
+	if (tkns.lookahead(1).type == Token::Specifier::KwMoved)
+	{
+		ret_moved = true;
+		tkns.eat();
+	}
 	auto type = parse_type_spec(); // Type
 
 	Token name;
@@ -698,23 +721,29 @@ std::unique_ptr<FuncDeclStmt> Parser::parse_function_decl_stmt_part()
 		tkns.match_token(Token::Specifier::Greater);
 	}
 
-	std::vector<uptr<DeclStmt>> param_list;
+	std::vector<FuncArg> param_list;
 
 	tkns.match_token(Token::Specifier::RParenL);
 
 	while (!(tkns.lookahead(1).type == Token::Specifier::RParenR || tkns.lookahead(1).type == Token::Specifier::Eof))
 	{
+		bool moved = false;
+		if (tkns.lookahead(1).type == Token::Specifier::KwMoved)
+		{
+			moved = true;
+			tkns.eat(); // moved
+		}
 		auto arg_type = parse_type_spec(); // Type
 		auto& arg_name = tkns.match_token(Token::Specifier::Ident); // name
 
-		param_list.push_back(std::make_unique<DeclStmt>(std::move(arg_type), arg_name));
+		param_list.push_back({ moved, std::make_unique<DeclStmt>(std::move(arg_type), arg_name) });
 
 		if (tkns.lookahead(1).type == Token::Specifier::Comma) tkns.eat();
 	}
 
 	tkns.match_token(Token::Specifier::RParenR); // ')'
 
-	return std::make_unique<FuncDeclStmt>(mv(type), name, mv(named_return), mv(generic_list), mv(param_list));
+	return std::make_unique<FuncDeclStmt>(mv(type), name, mv(named_return), mv(generic_list), mv(param_list),ret_moved);
 }
 
 std::unique_ptr<Stmt> Parser::parse_function_decl_stmt()

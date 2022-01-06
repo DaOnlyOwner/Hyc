@@ -13,7 +13,7 @@ void ArrayDeclChecker::visit(DeclStmt& decl)
 void ArrayDeclChecker::visit(FuncDefStmt& func_def)
 {
 	if (!func_def.decl->generic_list.empty()) return;
-	for (auto& p : func_def.decl->arg_list) p->type_spec->accept(*this);
+	for (auto& p : func_def.decl->arg_list) p.decl->type_spec->accept(*this);
 }
 
 void ArrayDeclChecker::visit(ArrayTypeSpec& array_type_spec)

@@ -108,6 +108,7 @@ kw_case		"case"
 kw_operator	"operator"
 kw_auto		"auto"
 kw_del		"del"
+kw_moved	"moved"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -204,6 +205,7 @@ or_eql		"|="
 {kw_operator}	{PUSH(KwOperator);}
 {kw_auto}	{PUSH(KwAuto);}
 {kw_del}	{PUSH(KwDel);}
+{kw_moved}	{PUSH(KwMoved);}
 {double_colon}	{ PUSH(DoubleColon);}
 {dot_comma}	{ PUSH(DotComma);}
 {mem_acc_comma} { PUSH(MemAccComma);}
