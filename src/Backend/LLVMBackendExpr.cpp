@@ -746,6 +746,34 @@ void LLVMBackendExpr::visit(ArraySubscriptExpr& subs)
 	RETURN(ep);
 }
 
+void LLVMBackendExpr::visit(MemOpExpr& mem)
+{
+	llvm::Value* from;
+	if(mem.mem_type.type == Token::Specifier::MemSet)
+	{
+	    from = get_with_params(mem.from,true);
+	}
+	else from = get_with_params(mem.from,false);
+    auto to = get_with_params(mem.to,false);
+	auto s = get_with_params(mem.size,true);
+	auto& dl = be.mod.getDataLayout();
+	auto from_align = dl.getABITypeAlign(from->getType());
+	auto to_align = dl.getABITypeAlign(to->getType());
+
+	switch(mem.mem_type.type)
+	{
+		case Token::Specifier::MemSet:
+			RETURN(be.builder.CreateMemSet(to,from,s,from_align));
+		case Token::Specifier::MemCpy:
+			RETURN(be.builder.CreateMemCpyInline(to,to_align,from,from_align,s));
+		case Token::Specifier::MemMove:
+			RETURN(be.builder.CreateMemMove(to,to_align,from,from_align,s));
+		default:
+			assert(false);
+			break;
+	}
+}
+
 void LLVMBackendExpr::visit(TernaryExpr& tern)
 {
 	NOT_IMPLEMENTED;

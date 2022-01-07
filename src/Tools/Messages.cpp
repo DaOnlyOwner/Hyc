@@ -277,6 +277,16 @@ void Messages::trigger_6_e32(const Token& from, const std::string& ident)
 	semantic_error(from, fmt::format("Function pointer identifier '{}' references unknown function", ident));
 }
 
+void Messages::trigger_6_e33(const Token& from, const std::string& msg, const std::string& t)
+{
+	semantic_error(from, fmt::format("{} argument is not a pointer in memory operation expression. Instead is of type: {}",msg,t)));
+}
+
+void Messages::trigger_6_e34(const Token& from, const std::string& s)
+{
+	semantic_error(from, fmt::format("Expression '{}' must be of type 'uint'",s));
+}
+
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)
 {
 	semantic_error(from, fmt::format("Variable with name '{}' is already defined in collection '{}'", from.text, coll_name));

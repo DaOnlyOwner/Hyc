@@ -101,6 +101,7 @@ public:
 
 	void trigger_6_e32(const Token& from, const std::string& ident);
 
+    void trigger_6_e33(const Token& from, const std::string& msg, const std::string& t);
 
 	void trigger_7_e1(const Token& from, const std::string& coll_name);
 	void trigger_8_e1(const Token& from, const std::string& expr);
