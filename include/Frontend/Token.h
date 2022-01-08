@@ -90,6 +90,9 @@ struct Token
 		KwAuto,
 		KwDel,
 		KwMoved,
+		KwSizeof,
+		KwAlignof,
+		KwOffsetof,
 		GenFCallOpen,
 		GenFCallClose,
 		ArrayStart,
@@ -171,6 +174,12 @@ struct Token
 	{
 		switch (ttype)
 		{
+		case Specifier::KwAlignof:
+			return "alignof";
+		case Specifier::KwOffsetof:
+			return "offsetof";
+		case Specifier::KwSizeof:
+			return "sizeof";
 		case Specifier::Int:
 			return "Integer";
 		case Specifier::UInt:

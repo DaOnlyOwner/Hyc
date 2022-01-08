@@ -52,4 +52,6 @@ private:
 	virtual void visit(ArraySubscriptExpr& subs) override;
 	virtual void visit(TernaryExpr& tern) override;
 	virtual void visit(DelOpExpr& del) override;
+	virtual void visit(MemOpExpr& mem) override;
+
 };

@@ -72,6 +72,8 @@ struct IAstVisitor
 	virtual void visit(struct FptrIdentExpr& fptr){};
 	virtual void visit(struct DelOpExpr& del) {};
 	virtual void visit(struct MemOpExpr& mem) {}
+	virtual void visit(struct OffsetofExpr& ooe){}
+	virtual void visit(struct SizeOrAlignmentInfoExpr& soaie);
 };
 
 struct Node
@@ -353,6 +355,49 @@ struct DelOpExpr : Expr
 
 };
 
+struct OffsetofExpr : Expr
+{
+	OffsetofExpr(const Token& offsetof_kw, uptr<TypeSpec>&& of, const Token& member)
+		:offsetof_kw(offsetof_kw),of(mv(of)),member(member){}
+	uptr<TypeSpec> of;
+	Type of_type;
+	Token offsetof_kw;
+	Token member;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr){auto expr = (new OffsetofExpr(offsetof_kw,of->clone(),member));
+			expr->of_type = of_type;
+			return uptr<Expr>(expr);
+		}
+	IMPL_ASSTR
+	{
+		return fmt::format("offsetof({},{})",of->as_str(),member.text);
+	}
+	IMPL_FT
+	{
+		return offsetof_kw;
+	}
+};
+
+
+struct SizeOrAlignmentInfoExpr : Expr
+{
+	SizeOrAlignmentInfoExpr(const Token& op, uptr<Expr>&& expr)
+		:op(op),expr(mv(expr)){}
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr){
+		return uptr<Expr>(new SizeOrAlignmentInfoExpr(op,expr->clone()));
+	}
+	IMPL_ASSTR
+	{
+		return fmt::format("{}({})",op.type == Token::Specifier::KwAlignof ? "alignof" : "sizeof",expr->as_str());
+	}
+	IMPL_FT
+	{
+		return op;
+	}
+	Token op;
+	uptr<Expr> expr;
+};
 
 enum class DecimalLiteralType
 {

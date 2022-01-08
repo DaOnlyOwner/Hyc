@@ -109,6 +109,9 @@ kw_operator	"operator"
 kw_auto		"auto"
 kw_del		"del"
 kw_moved	"moved"
+kw_sizeof	"sizeof"
+kw_offsetof	"offsetof"
+kw_alignof	"alignof"
 ubin		0b[0-1]+
 uoct		0[0-7]+
 uhex		0x[:xdigit:]+	
@@ -163,6 +166,9 @@ double_eql	"=="
 not_equal	"!="
 caret		"^"
 or		"|"
+mem_cpy		"-->"
+mem_set		"--*"
+mem_move	"--+"
 dot   "."
 mem_acc "->"
 dot_comma ".,"
@@ -197,6 +203,9 @@ or_eql		"|="
 {kw_continue}	{ push(Token::Specifier::KwContinue);}
 {kw_fptr}	{ push(Token::Specifier::KwFptr);}
 {kw_as}		{ push(Token::Specifier::KwAs);}
+{kw_sizeof}	{ push(Token::Specifier::KwSizeof);}
+{kw_alignof}	{ push(Token::Specifier::KwAlignof);}
+{kw_offsetof}	{ push(Token::Specifier::KwOffsetof);}
 {kw_throw}	{ PUSH(KwThrow);}
 {kw_union}  { PUSH(KwUnion);}
 {kw_namespace} {PUSH(KwNamespace);}
@@ -224,6 +233,9 @@ or_eql		"|="
 {thrway}		{ PUSH(ThreeWay);}
 {lessEql}		{ PUSH(LessEql);}
 {grEql}		{ PUSH(GreaterEql);}
+{mem_cpy}	{ PUSH(MemCpy);}
+{mem_move}	{ PUSH(MemMove);}
+{mem_set}	{ PUSH(MemSet);}
 {double_eql}	{ PUSH(DoubleEqual);}
 {not_equal}	{ PUSH(NotEqual);}
 {caret}		{ PUSH(Caret);}

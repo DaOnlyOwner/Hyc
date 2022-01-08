@@ -15,6 +15,8 @@ private:
 	virtual void visit(FuncCallExpr& call) override;
 	virtual void visit(ArraySubscriptExpr& subs) override;
 	virtual void visit(MemOpExpr& expr) override;
+	virtual void visit(SizeOrAlignmentInfoExpr& expr) override;
+	virtual void visit(OffsetofExpr& expr) override;
 };
 
 class DesugarForStmt : public IAstVisitor, ValueStorage<uptr<ScopeStmt>>

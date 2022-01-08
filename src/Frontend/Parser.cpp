@@ -61,8 +61,6 @@ InfixOperation<Expr> name{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArg
 
 #define ADD_OP(op,name) expr_parser.add_operation(op,name)
 
-
-
 namespace
 {
 
@@ -171,7 +169,11 @@ namespace
 			}
 			return static_cast<std::unique_ptr<Expr>>(std::make_unique<IdentExpr>(token,mv(generic_params)));
 	} };
-
+	PrefixOperation<Expr> paren{(int)ExprPrecedence::Group0,[](PrefixExprFnArgs){
+		auto expr = parser.parse();
+		parser.overall_parser->get_lexer().match_token(Token::Specifier::RParenR);
+		return std::move(expr);
+	}};
 	// Precedence  right_assoc?  Parsing function
 	DEF_BIN_OP(scope, Group1, false);
 	DEF_POSTFIX_OP(incr_decr, Group2, false);
@@ -212,6 +214,21 @@ namespace
 	DEF_BIN_OP(make_active, Group2, false);
 	DEF_BIN_OP(test_if_active, Group2, false);
 	DEF_PREFIX_OP(unary, Group3);
+	
+	PrefixOperation<Expr> offsetof_{(int)ExprPrecedence::Group2,[](PrefixExprFnArgs){
+		auto& l = parser.overall_parser->get_lexer();
+		l.match_token(Token::Specifier::RParenL);
+		auto& of = l.match_token(Token::Specifier::Ident);
+		l.match_token(Token::Specifier::Comma);
+		auto member = l.match_token(Token::Specifier::Ident);
+		l.match_token(Token::Specifier::RParenR);
+		return std::make_unique<OffsetofExpr>(token,of,member);
+	}};
+
+	PrefixOperation<Expr> align_sizeof{(int)ExprPrecedence::Group3,[](PrefixExprFnArgs){
+		auto expr = parser.parse_internal((int)ExprPrecedence::Group3);
+		return std::make_unique<SizeOrAlignmentInfoExpr>(token,mv(expr));
+	}};
 	// TODO: Cast
 	DEF_BIN_OP(cast, Group3, false);
 	DEF_BIN_OP(ind_addr_of, Group3, true);
@@ -227,7 +244,12 @@ namespace
 	DEF_BIN_OP(land, Group14, false);
 	DEF_BIN_OP(lor, Group15, false);
 
-	DEF_MEMOP(mem_op);
+	InfixOperation<Expr> mem_op{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArgs) {
+		auto snd = parser.parse();
+		parser.overall_parser->get_lexer().match_token(Token::Specifier::Colon);
+		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);
+		return std::make_unique<MemOpExpr>(mv(lh), mv(snd), mv(trd),token);
+	} };
 
 	InfixOperation<Expr> if_expr{ (int)ExprPrecedence::Group16, true, [](InfixExprFnArgs) {
 		auto snd = parser.parse();
@@ -235,8 +257,6 @@ namespace
 		auto trd = parser.parse_internal((int)ExprPrecedence::Group16);
 		return std::make_unique<TernaryExpr>(mv(lh), mv(snd), mv(trd));
 	} };
-
-
 
 	DEF_BIN_OP(assignment_etc, Group16, true);
 	DEF_PREFIX_OP(throw_, Group16);	
@@ -313,6 +333,10 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::MemCpy, mem_op);
 	ADD_OP(Token::Specifier::MemMove, mem_op);
 	ADD_OP(Token::Specifier::MemSet, mem_op);
+	ADD_OP(Token::Specifier::RParenL,paren);
+	ADD_OP(Token::Specifier::KwAlignof,align_sizeof);
+	ADD_OP(Token::Specifier::KwSizeof,align_sizeof);
+	ADD_OP(Token::Specifier::KwOffsetof,offsetof_);
 
 	file = filename;
 }

@@ -4,3 +4,4 @@ meta/invoke_cmake_debug.bat
 meta/invoke_cmake_release.bat
 meta/invoke_reflex.bat
 test.exe
+.vscode

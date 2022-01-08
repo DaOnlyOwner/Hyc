@@ -279,12 +279,17 @@ void Messages::trigger_6_e32(const Token& from, const std::string& ident)
 
 void Messages::trigger_6_e33(const Token& from, const std::string& msg, const std::string& t)
 {
-	semantic_error(from, fmt::format("{} argument is not a pointer in memory operation expression. Instead is of type: {}",msg,t)));
+	semantic_error(from, fmt::format("{} argument is not a pointer in memory operation expression. Instead is of type: {}",msg,t));
 }
 
 void Messages::trigger_6_e34(const Token& from, const std::string& s)
 {
 	semantic_error(from, fmt::format("Expression '{}' must be of type 'uint'",s));
+}
+
+void Messages::trigger_6_e35(const Token& from, const std::string& t)
+{
+	semantic_error(from, fmt::format("first parameter of offsetof needs to be a struct type, not '{}'",t));
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)

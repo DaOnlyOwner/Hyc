@@ -36,6 +36,9 @@ private:
 	virtual void visit(MatchStmt& match) override;
 	virtual void visit(ScopeStmt& sc) override;
 	virtual void visit(MemOpExpr& mem) override;
+	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
+	virtual void visit(OffsetofExpr& e) override;
+
 
 	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);
 	bool handle_bin_op_predefined(Type& tlh, Type& trh, BinOpExpr& bin_op);

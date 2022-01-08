@@ -1,31 +1,15 @@
-struct A
-{
-   int a; 
-   int b;
-   B c;
-}
-
 struct B
 {
-   int a;
+    int a;
+    int b;
+    int c;
 }
 
-operator void =(B* lhs, B* rhs)
-{
 
-}
-
-moved B test(moved B b, B c)
-{
-   B d;
-   return d;
-} 
 
 int main()
 {
    B b;
    B c;
-   B foo = test(b,c);
-   foo.a = 0;
-   return foo.a;
+   &b --> &c : 5;
 }

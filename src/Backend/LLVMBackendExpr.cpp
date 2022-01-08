@@ -763,16 +763,47 @@ void LLVMBackendExpr::visit(MemOpExpr& mem)
 	switch(mem.mem_type.type)
 	{
 		case Token::Specifier::MemSet:
-			RETURN(be.builder.CreateMemSet(to,from,s,from_align));
+			be.builder.CreateMemSet(to,from,s,from_align);
+			RETURN(to);
 		case Token::Specifier::MemCpy:
-			RETURN(be.builder.CreateMemCpyInline(to,to_align,from,from_align,s));
+			be.builder.CreateMemCpyInline(to,to_align,from,from_align,s);
+			RETURN(to);
 		case Token::Specifier::MemMove:
-			RETURN(be.builder.CreateMemMove(to,to_align,from,from_align,s));
+			be.builder.CreateMemMove(to,to_align,from,from_align,s);
+			RETURN(to);
 		default:
 			assert(false);
 			break;
 	}
 }
+
+void LLVMBackendExpr::visit(OffsetofExpr& e)
+{
+	auto mapped = llvm::dyn_cast<llvm::StructType>(map_type(e.of_type,scopes,be.context));
+	assert(mapped);
+	size_t idx = scopes.get_decl_idx_for(e.of_type.get_base_type(),e.member.text);
+	auto sl = be.mod.getDataLayout().getStructLayout(mapped);
+	auto offset = sl->getElementOffsetInBits(idx);
+	RETURN(llvm::ConstantInt::get(be.context, llvm::APInt(64, offset, false)));
+}
+
+void LLVMBackendExpr::visit(SizeOrAlignmentInfoExpr& e)
+{
+	auto mapped = map_type(e.sem_type,scopes,be.context);
+	auto dl = be.mod.getDataLayout();
+	assert(e.op.type == Token::Specifier::KwSizeof || e.op.type == Token::Specifier::KwAlignof);
+	if(e.op.type == Token::Specifier::KwSizeof)
+	{
+		auto size = dl.getTypeStoreSizeInBits(mapped);
+		RETURN(llvm::ConstantInt::get(be.context,llvm::APInt(64,size,false)));
+	}
+	else
+	{
+		auto align = (uint64_t)dl.getABITypeAlignment(mapped);
+		RETURN(llvm::ConstantInt::get(be.context,llvm::APInt(64,align,false)));
+	}
+}
+
 
 void LLVMBackendExpr::visit(TernaryExpr& tern)
 {
