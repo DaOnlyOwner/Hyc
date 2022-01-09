@@ -25,125 +25,163 @@ void GenerateOps::visit(TypeDefStmt& td)
 
 	if (td.get_ct() == CollectionType::Struct)
 	{
-		for (auto& p : td.stmts)
+		// Destructor
+		if (fds->decl->arg_list.size() == 1)
 		{
-			auto& gen_stmt_opt = get(*p);
-			if (!gen_stmt_opt.has_value())
-			{
-				generated_op = false;
+			if (!gen_struct_destr(td, fds.get()))
 				return;
-			}
-			auto& gen_stmt = gen_stmt_opt.value();
-			if (gen_stmt)
-			{
-				fds->body.push_back(std::move(gen_stmt));
-			}
+		}
 
+		// Move, Copy
+		else
+		{
+			// TODO: single value is not copied.
+			if(!gen_struct_movecopy(td, fds))
+				return;
 		}
 	}
 
 	// Union
 	else
 	{
-		// Automatically generating move and copy constructors for unions is problematic
-		// Consider this:
-		/*
-		union A
-		{
-		   B b;
-		   float f;
-		}
-
-		A foo;
-		A bar;
-		foo.b = [...]
-		bar.f = 0;
-		bar = foo;
-		This calls somewhere =(float* a, B* b);
-		What is the semantic of this call?
-		*/
-		// 
-		//// copy and move op.
-		//if (fds->decl->arg_list.size() == 2)
-		//{
-		//	auto& arg1 = fds->decl->arg_list[0];
-		//	auto& arg2 = fds->decl->arg_list[1];
-		//	auto ie = std::make_unique<IdentExpr>(arg1->name);
-		//	auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
-		//	auto mcs = std::vector<MatchCase>();
-		//	auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
-		//	for (auto& p1 : td.stmts)
-		//	{
-		//		auto ie_inner = std::make_unique<IdentExpr>(arg2->name);
-		//		auto pe_inner = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie_inner));
-		//		auto mcs_inner = std::vector<MatchCase>();
-		//		auto ms_inner = std::make_unique<MatchStmt>(std::move(mcs_inner), std::move(pe_inner));
-		//		
-		//		// Do the unions explicitly without traversing the AST. 
-		//		// TODO: This is basically just a hacked solution
-		//		auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
-		//		assert(lhs);
-		//		for (auto& p2 : td.stmts)
-		//		{
-		//			auto rhs = dynamic_cast<UnionDeclStmt*>(p2.get());
-		//			assert(rhs);
-		//			auto stmt_opt = gen_func_union(&td,{ lhs->decl_stmt.get(),rhs->decl_stmt.get() }, scopes, ns);
-		//			if (!stmt_opt.has_value())
-		//			{
-		//				generated_op = false;
-		//				return;
-		//			}
-		//			auto& stmt = stmt_opt.value();
-		//			std::vector<uptr<Stmt>> body;
-		//			if (!stmt)
-		//			{
-		//				body.push_back(std::move(stmt));
-		//			}
-		//			auto match_case = MatchCase(rhs->decl_stmt->name, Token(Token::Specifier::Ident,"rhs"), std::move(body));
-		//			ms_inner->match_cases.push_back(std::move(match_case));
-		//		}
-
-		//		std::vector<uptr<Stmt>> body;
-		//		body.push_back(std::move(ms_inner));
-		//		auto match_case = MatchCase(lhs->decl_stmt->name, Token(Token::Specifier::Ident, "lhs"), std::move(body));
-		//		ms->match_cases.push_back(std::move(match_case));
-		//	}
-		//	fds->body.push_back(std::move(ms));
-		//}
-
 		// Destructor
 		if (fds->decl->arg_list.size() == 1)
 		{
-			auto& arg1 = fds->decl->arg_list[0];
-			auto& arg2 = fds->decl->arg_list[1];
-			auto ie = std::make_unique<IdentExpr>(arg1.decl->name);
-			auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
-			auto mcs = std::vector<MatchCase>();
-			auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
-			for (auto& p1 : td.stmts)
-			{
-				auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
-				auto stmt_opt = gen_func_union(&td,lhs->decl_stmt.get(), scopes, ns);
-				if (!stmt_opt.has_value())
-				{
-					generated_op = false;
-					return;
-				}
-				auto& stmt = stmt_opt.value();
-				std::vector<uptr<Stmt>> body;
-				if (stmt)
-				{
-					body.push_back(std::move(stmt));
-				}
-				auto match_case = MatchCase(lhs->decl_stmt->name, Token(Token::Specifier::Ident, "matched"), std::move(body));
-				ms->match_cases.push_back(std::move(match_case));
-			}
-			fds->body.push_back(std::move(ms));
+			if (!gen_union_destr(fds, td))
+				return;
 		}
 	}
 	assert(scopes.add_op(fds.get()));
 	generated_op = true;
 	ns.stmts.push_back(std::move(fds));
+}
+
+bool GenerateOps::gen_union_destr(std::unique_ptr<FuncDefStmt, std::default_delete<FuncDefStmt>>& fds, TypeDefStmt& td)
+{
+	auto& arg1 = fds->decl->arg_list[0];
+	auto& arg2 = fds->decl->arg_list[1];
+	auto ie = std::make_unique<IdentExpr>(arg1.decl->name);
+	auto pe = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), std::move(ie));
+	auto mcs = std::vector<MatchCase>();
+	auto ms = std::make_unique<MatchStmt>(std::move(mcs), std::move(pe));
+	for (auto& p1 : td.stmts)
+	{
+		auto lhs = dynamic_cast<UnionDeclStmt*>(p1.get());
+		auto stmt_opt = gen_func_union(&td, lhs->decl_stmt.get(), scopes, ns);
+		if (!stmt_opt.has_value())
+		{
+			generated_op = false;
+			return false;
+		}
+		auto& stmt = stmt_opt.value();
+		std::vector<uptr<Stmt>> body;
+		if (stmt)
+		{
+			body.push_back(std::move(stmt));
+		}
+		auto match_case = MatchCase(lhs->decl_stmt->name, Token(Token::Specifier::Ident, "matched"), std::move(body));
+		ms->match_cases.push_back(std::move(match_case));
+	}
+	fds->body.push_back(std::move(ms));
+	return true;
+}
+
+
+bool GenerateOps::gen_struct_movecopy(TypeDefStmt& td, std::unique_ptr<FuncDefStmt, std::default_delete<FuncDefStmt>>& fds)
+{
+	int64_t start = 0;
+	for (int64_t i = 0; i < td.stmts.size(); i++)
+	{
+		auto& stmt = td.stmts[i];
+		auto* decl = static_cast<DeclStmt*>(stmt.get());
+		if (decl->type.is_user_defined(scopes))
+		{
+			std::unique_ptr<Stmt> gen_stmt;
+			int64_t end = i - 1;
+			handle_memcpy_op_gen(end, start, td, gen_stmt);
+			auto& gen_stmt2_ = get(*decl);
+			if (!gen_stmt2_.has_value())
+			{
+				generated_op = false;
+				return false;
+			}
+			auto gen_stmt2 = std::move(gen_stmt2_.value());
+			assert(gen_stmt2);
+			if (gen_stmt)
+			{
+				fds->body.push_back(std::move(gen_stmt));
+			}
+			fds->body.push_back(std::move(gen_stmt2));
+			start = i + 1;
+		}
+	}
+	if (!td.stmts.empty())
+	{
+		std::unique_ptr<Stmt> gen_stmt=nullptr;
+		handle_memcpy_op_gen(td.stmts.size() - 1, start, td, gen_stmt);
+		if (gen_stmt != nullptr)
+		{
+			fds->body.push_back(std::move(gen_stmt));
+		}
+	}
+}
+
+bool GenerateOps::gen_struct_destr(TypeDefStmt& td, FuncDefStmt* fds)
+{
+	for (auto& p : td.stmts)
+	{
+		auto& gen_stmt_opt = get(*p);
+		if (!gen_stmt_opt.has_value())
+		{
+			generated_op = false;
+			return false;
+		}
+		auto& gen_stmt = gen_stmt_opt.value();
+		if (gen_stmt)
+		{
+			fds->body.push_back(std::move(gen_stmt));
+		}
+	}
+	return true;
+}
+
+
+void GenerateOps::handle_memcpy_op_gen(const int64_t& end, const int64_t& start, TypeDefStmt& td, std::unique_ptr<Stmt>& gen_stmt)
+{
+	if (end > 0 && (end - start > 0))
+	{
+		auto* mem1 = static_cast<DeclStmt*>(td.stmts[start].get());
+		auto* mem2 = static_cast<DeclStmt*>(td.stmts[end].get());
+		int64_t dst = end - start;
+		// We memcpy if memcpy spans more >= two members
+		if (dst >= 1)
+		{
+			auto size = std::make_unique<SizeBetweenMemberInfoExpr>(&td, mem1->name, mem2->name);
+
+			auto lhs_a = std::make_unique<IdentExpr>(Token(Token::Specifier::Ident, "a"));
+			auto rhs_a = std::make_unique<IdentExpr>(mem1->name);
+			auto bin_a = std::make_unique<BinOpExpr>(Token(Token::Specifier::MemAccess, "->"), std::move(lhs_a), std::move(rhs_a));
+			auto pre_a = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Ampersand, "&"), std::move(bin_a));
+
+			auto lhs_b = std::make_unique<IdentExpr>(Token(Token::Specifier::Ident, "b"));
+			auto rhs_b = std::make_unique<IdentExpr>(mem1->name);
+			auto bin_b = std::make_unique<BinOpExpr>(Token(Token::Specifier::MemAccess, "->"), std::move(lhs_b), std::move(rhs_b));
+			auto pre_b = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Ampersand, "&"), std::move(bin_b));
+
+			auto memcpy_op = std::make_unique<MemOpExpr>(std::move(pre_a), std::move(pre_b),
+				std::move(size), Token(Token::Specifier::MemCpy, "-->"));
+			gen_stmt = std::make_unique<ExprStmt>(std::move(memcpy_op));
+		}
+		// Dont copy if it spans less than two members 
+		else
+		{
+			assert(dst > 0);
+			auto& gen_opt = get(*mem2);
+			assert(gen_opt.has_value());
+			assert(gen_opt.value());
+			gen_stmt = std::move(gen_opt.value());
+		}
+	}
 }
 
 void GenerateOps::visit(NamespaceStmt& ns)

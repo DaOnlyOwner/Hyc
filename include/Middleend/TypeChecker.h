@@ -38,6 +38,7 @@ private:
 	virtual void visit(MemOpExpr& mem) override;
 	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
 	virtual void visit(OffsetofExpr& e) override;
+	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
 
 
 	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);

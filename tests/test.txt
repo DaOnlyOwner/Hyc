@@ -5,11 +5,36 @@ struct B
     int c;
 }
 
+struct A
+{
+    int a;
+    int b;
+    B c;
+}
+
+struct C
+{
+   A a;
+   int b;
+   A c;
+}
+
+struct D
+{
+   A a;
+   int b;
+   int c;
+   A d;
+   int e;
+}
 
 
 int main()
 {
    B b;
    B c;
-   &b --> &c : 5;
+   b = c;
+
+
+
 }

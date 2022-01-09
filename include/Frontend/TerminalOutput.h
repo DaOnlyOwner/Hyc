@@ -12,6 +12,10 @@ private:
 	virtual void visit(IntegerLiteralExpr& lit) override;
 	virtual void visit(BinOpExpr& bin_op) override;
 	virtual void visit(DelOpExpr& del) override;
+	virtual void visit(MemOpExpr& mem) override;
+	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
+	virtual void visit(OffsetofExpr& o) override;
+	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
 	virtual void visit(PrefixOpExpr& pre_op) override;
 	virtual void visit(PostfixOpExpr& post_op) override;
 	virtual void visit(DeclCpyStmt& decl_cpy) override;

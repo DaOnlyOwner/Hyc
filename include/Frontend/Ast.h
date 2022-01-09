@@ -73,7 +73,8 @@ struct IAstVisitor
 	virtual void visit(struct DelOpExpr& del) {};
 	virtual void visit(struct MemOpExpr& mem) {}
 	virtual void visit(struct OffsetofExpr& ooe){}
-	virtual void visit(struct SizeOrAlignmentInfoExpr& soaie);
+	virtual void visit(struct SizeOrAlignmentInfoExpr& soaie){};
+	virtual void visit(struct SizeBetweenMemberInfoExpr& e){}
 };
 
 struct Node
@@ -597,6 +598,28 @@ struct MemOpExpr : Expr
 
 };
  
+struct SizeBetweenMemberInfoExpr : Expr
+{
+	SizeBetweenMemberInfoExpr(TypeDefStmt* of, const Token& mem1, const Token& mem2)
+		:of(of),mem1(mem1),mem2(mem2){}
+	TypeDefStmt* of;
+	Token mem1, mem2;
+	IMPL_FT
+	{
+		return mem1;
+	}
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+		return uptr<Expr>(new SizeBetweenMemberInfoExpr(of,mem1,mem2));
+	}
+	IMPL_ASSTR
+	{
+		return "If you see this, then you hit a compilerbug. Printed SizeBetweenMemberInfoExpr";
+	}
+};
+
+
 struct ArraySubscriptExpr : Expr
 {
 	ArraySubscriptExpr(uptr<Expr>&& from, uptr<Expr>&& inner)

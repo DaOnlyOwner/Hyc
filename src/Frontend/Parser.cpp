@@ -218,11 +218,11 @@ namespace
 	PrefixOperation<Expr> offsetof_{(int)ExprPrecedence::Group2,[](PrefixExprFnArgs){
 		auto& l = parser.overall_parser->get_lexer();
 		l.match_token(Token::Specifier::RParenL);
-		auto& of = l.match_token(Token::Specifier::Ident);
+		auto of = parser.overall_parser->parse_base_type_spec();
 		l.match_token(Token::Specifier::Comma);
 		auto member = l.match_token(Token::Specifier::Ident);
 		l.match_token(Token::Specifier::RParenR);
-		return std::make_unique<OffsetofExpr>(token,of,member);
+		return std::make_unique<OffsetofExpr>(token,std::move(of),member);
 	}};
 
 	PrefixOperation<Expr> align_sizeof{(int)ExprPrecedence::Group3,[](PrefixExprFnArgs){
@@ -487,36 +487,7 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 {
 	if (tkns.lookahead(1).type == Token::Specifier::Ident)
 	{
-		std::vector<uptr<TypeSpec>> generics;
-		auto& name = tkns.eat();
-		if (tkns.lookahead(1).type == Token::Specifier::Less)
-		{
-			tkns.eat(); // <
-			auto fst = parse_type_spec();
-			generics.push_back(mv(fst));
-			while (tkns.lookahead(1).type == Token::Specifier::Comma)
-			{
-				tkns.eat(); // ","
-				generics.push_back(parse_type_spec());
-			}
-
-			tkns.match_token(Token::Specifier::Greater);
-
-		} // Generics
-		// Maybe later I will introduce namespaces
-		/*uptr<TypeSpec> scope = nullptr;
-		if (tkns.lookahead(1).type == Token::Specifier::DoubleColon)
-		{
-			tkns.eat();
-			scope = parse_type_spec();
-		}
-		if (scope != nullptr)
-		{
-			return std::make_unique<ScopeTypeSpec>(mv(scope),
-				std::make_unique<BaseTypeSpec>(mv(name), nullptr, std::move(generics)));
-		}*/
-		auto inner = parse_type_spec_part();
-		return std::make_unique<BaseTypeSpec>(name, mv(inner), std::move(generics));
+		return parse_base_type_spec();
 	}
 
 	else if (tkns.lookahead(1).type == Token::Specifier::KwAuto)
@@ -544,6 +515,28 @@ std::unique_ptr<TypeSpec> Parser::parse_type_spec()
 		return std::make_unique<FptrTypeSpec>(mv(args), mv(ret_type),mv(inner));
 	}
 	return nullptr;
+}
+
+inline std::unique_ptr<BaseTypeSpec> Parser::parse_base_type_spec()
+{
+	std::vector<uptr<TypeSpec>> generics;
+	auto& name = tkns.eat();
+	if (tkns.lookahead(1).type == Token::Specifier::Less)
+	{
+		tkns.eat(); // <
+		auto fst = parse_type_spec();
+		generics.push_back(mv(fst));
+		while (tkns.lookahead(1).type == Token::Specifier::Comma)
+		{
+			tkns.eat(); // ","
+			generics.push_back(parse_type_spec());
+		}
+
+		tkns.match_token(Token::Specifier::Greater);
+
+	} // Generics
+	auto inner = parse_type_spec_part();
+	return std::make_unique<BaseTypeSpec>(name, mv(inner), std::move(generics));
 }
 
 // type ident ;

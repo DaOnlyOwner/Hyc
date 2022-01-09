@@ -795,13 +795,34 @@ void LLVMBackendExpr::visit(SizeOrAlignmentInfoExpr& e)
 	if(e.op.type == Token::Specifier::KwSizeof)
 	{
 		auto size = dl.getTypeStoreSizeInBits(mapped);
-		RETURN(llvm::ConstantInt::get(be.context,llvm::APInt(64,size,false)));
+		RETURN(llvm::ConstantInt::get(be.context,llvm::APInt(64,size/8,false)));
 	}
 	else
 	{
 		auto align = (uint64_t)dl.getABITypeAlignment(mapped);
 		RETURN(llvm::ConstantInt::get(be.context,llvm::APInt(64,align,false)));
 	}
+}
+
+void LLVMBackendExpr::visit(SizeBetweenMemberInfoExpr& e)
+{
+	auto mapped = llvm::dyn_cast<llvm::StructType>(map_type(Type(e.of), scopes, be.context));
+	assert(mapped);
+	auto sl = be.mod.getDataLayout().getStructLayout(mapped);
+	auto mem1_idx = scopes.get_decl_idx_for(e.of, e.mem1.text);
+	auto mem2_idx = scopes.get_decl_idx_for(e.of, e.mem2.text);
+	assert(mem1_idx != std::numeric_limits<size_t>::max() && mem2_idx != std::numeric_limits<size_t>::max());
+	mem2_idx++;
+	uint64_t offset_to_mem2;
+	if (mem2_idx >= e.of->stmts.size())
+	{
+		offset_to_mem2 = sl->getSizeInBits();
+	}
+	else offset_to_mem2 = sl->getElementOffsetInBits(mem2_idx);
+	auto offset_to_mem1 = sl->getElementOffsetInBits(mem1_idx);
+	auto dst = offset_to_mem2 - offset_to_mem1;
+	assert(dst % 8 == 0);
+	RETURN(llvm::ConstantInt::get(be.context, llvm::APInt(64, dst/8, false)));
 }
 
 

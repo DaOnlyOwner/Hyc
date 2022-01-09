@@ -67,6 +67,7 @@ public:
 	std::unique_ptr<Stmt> parse_allowed_func_stmt(bool in_loop=false);
 	std::vector<std::unique_ptr<Stmt>> parse_allowed_func_stmts(bool in_loop);
 	std::unique_ptr<TypeSpec> parse_type_spec();
+	std::unique_ptr<BaseTypeSpec> parse_base_type_spec();
 	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
 

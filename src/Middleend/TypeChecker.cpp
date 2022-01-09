@@ -865,16 +865,18 @@ void TypeChecker::visit(SizeOrAlignmentInfoExpr& e)
 
 void TypeChecker::visit(OffsetofExpr& e)
 {
+	auto uint_type = scopes.get_type("uint");
+	e.sem_type = uint_type;
 	auto [t,succ] = create_type(*e.of,scopes,ns,true);
 	if(!succ)
 	{
 		Messages::inst().trigger_4_e1(e.of->get_ident_token());
-		RETURN(scopes.get_type("uint"));
+		RETURN(uint_type);
 	}
 	if(!t.is_user_defined(scopes))
 	{
 		Messages::inst().trigger_6_e35(e.of->get_ident_token(),t.as_str());
-		RETURN(scopes.get_type("uint"));
+		RETURN(uint_type);
 	}
 	e.of_type = t;
 	auto member = scopes.get_decl_for(t.get_base_type(),e.member.text);
@@ -882,7 +884,13 @@ void TypeChecker::visit(OffsetofExpr& e)
 	{
 		Messages::inst().trigger_6_e12(e.member,e.of->as_str(), e.member.text);
 	}
-	RETURN(scopes.get_type("uint"));
+	RETURN(uint_type);
+}
+
+void TypeChecker::visit(SizeBetweenMemberInfoExpr& e)
+{
+	e.sem_type = scopes.get_type("uint");
+	RETURN(e.sem_type);
 }
 
 void TypeChecker::visit(MemOpExpr& mem)

@@ -65,11 +65,6 @@ void DesugarAccess::visit(SizeOrAlignmentInfoExpr& e)
 	e.expr->accept(*this);
 }
 
-void DesugarAccess::visit(OffsetofExpr& e)
-{
-	e.expr->accept(*this);
-}
-
 void DesugarForStmt::visit(NamespaceStmt& ns)
 {
 	update(ns.stmts);

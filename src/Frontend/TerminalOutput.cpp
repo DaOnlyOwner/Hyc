@@ -154,6 +154,38 @@ void TerminalOutput::visit(DelOpExpr& del)
 	indent--;
 }
 
+void TerminalOutput::visit(MemOpExpr& mem)
+{
+	make_indent();
+	out += fmt::format("MemOpExpr: '{}', semantic_type='{}'", mem.mem_type.text, mem.sem_type.as_str());
+	indent++;
+	mem.from->accept(*this);
+	mem.to->accept(*this);
+	mem.size->accept(*this);
+	indent--;
+}
+
+void TerminalOutput::visit(SizeBetweenMemberInfoExpr& e)
+{
+	make_indent();
+	out += fmt::format("SizeBetweenMemberInfoExpr: type='{}', member_from='{}', member_to='{}', sem_type='{}'", e.of->name.text, e.mem1.text, e.mem2.text,e.sem_type.as_str());
+}
+
+void TerminalOutput::visit(OffsetofExpr& o)
+{
+	make_indent();
+	out += fmt::format("OffsetofExpr: type='{}', member='{}', sem_type='{}'", o.of->as_str(), o.member.text, o.sem_type.as_str());
+}
+
+void TerminalOutput::visit(SizeOrAlignmentInfoExpr& e)
+{
+	make_indent();
+	out += fmt::format("SizeOrAlignmentInfoExpr: operator_type='{}'", e.op.text);
+	indent++;
+	e.expr->accept(*this);
+	indent--;
+}
+
 void TerminalOutput::visit(PrefixOpExpr& pre_op)
 {
 	make_indent();

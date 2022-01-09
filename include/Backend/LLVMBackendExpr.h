@@ -53,5 +53,8 @@ private:
 	virtual void visit(TernaryExpr& tern) override;
 	virtual void visit(DelOpExpr& del) override;
 	virtual void visit(MemOpExpr& mem) override;
+	virtual void visit(OffsetofExpr& e) override;
+	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
+	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
 
 };
