@@ -24,6 +24,7 @@ public:
 	std::unique_ptr<Stmt> parse_return_stmt();
 	std::unique_ptr<Stmt> parse_decl_operator_stmt(); 
 	std::unique_ptr<Stmt> parse_decl_stmt();
+	std::unique_ptr<InitList> parse_init_list();
 	std::unique_ptr<Stmt> parse_union_decl_stmt();
 	std::unique_ptr<Stmt> parse_struct_def();
 	std::unique_ptr<Stmt> parse_union_def();

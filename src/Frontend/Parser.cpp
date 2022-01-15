@@ -406,7 +406,6 @@ std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 		throw Error::SyntaxErrorException(); // Bail out of simulation mode.
 	}
 
-
 	if (la1 == Token::Specifier::DeclCpy || la1 == Token::Specifier::Equal)
 	{
 		tkns.eat(); // := || =
@@ -415,6 +414,7 @@ std::unique_ptr<Stmt> Parser::parse_decl_operator_stmt()
 		return std::make_unique<DeclCpyStmt>(std::move(type), ident, std::move(expr));
 	}
 
+	// TODO: DeclMove 
 	else if (la1 == Token::Specifier::Colon)
 	{
 		tkns.eat(); // :
@@ -546,6 +546,12 @@ std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 	auto& name = tkns.match_token(Token::Specifier::Ident);
 	tkns.match_token(Token::Specifier::Semicolon);
 	return std::make_unique<DeclStmt>(mv(type), name);
+}
+
+std::unique_ptr<InitList> Parser::parse_init_list()
+{
+	tkns.match_token(Token::Specifier::BraceL);
+
 }
 
 std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()
