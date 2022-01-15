@@ -224,12 +224,24 @@ void operator=(C* c, B* b){}
 B b;
 c := b; // <-- doesn't call operator=(C*,B*)!, instead calls operator=(B* b1, B* b2).
 ```
+# Implemented features
+- [X] Structs
+- [X] Unions
+- [X] Destructors
+- [X] Move and Copy operators
+- [ ] explicitly delete Move and Copy operators
+- [X] Function Pointers
+- [ ] Lambdas
+- [ ] Initialize all variables in place 
+- [X] Named return values
+- [X] Uniform Call syntax
+- [X] Array types
+- [ ] Compile more than one file
+- [ ] Compile to library
+- [ ] Const
+- [ ] Global Variables
 
-# Coming in future versions:
-- Initializer lists
-- Destructuring
-- const
-
+Features now being worked on: Initialize all variables in place
 
 
 
