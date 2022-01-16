@@ -72,6 +72,7 @@ struct IAstVisitor
 	virtual void visit(struct FptrIdentExpr& fptr){};
 	virtual void visit(struct DelOpExpr& del) {};
 	virtual void visit(struct MemOpExpr& mem) {}
+	virtual void visit(struct InitListExpr& i) {}
 	virtual void visit(struct OffsetofExpr& ooe){}
 	virtual void visit(struct SizeOrAlignmentInfoExpr& soaie){};
 	virtual void visit(struct SizeBetweenMemberInfoExpr& e){}
@@ -79,6 +80,10 @@ struct IAstVisitor
 	virtual void visit(struct InitListStruct& s) {}
 	virtual void visit(struct InitListInteger& i) {}
 	virtual void visit(struct InitListDecimal& d) {}
+	virtual void visit(struct InitListIdent&) {}
+	virtual void visit(struct InitListFptrIdent&){}
+
+
 };
 
 struct Node
@@ -527,6 +532,32 @@ struct IdentExpr : Expr
 	}
 };
 
+struct InitListExpr : Expr
+{
+	InitListExpr(uptr<TypeSpec> type_to_init, uptr<InitList> init, const Token& fst_token)
+		:type_to_init(mv(type_to_init)),init(mv(init)),brace(fst_token){}
+
+	uptr<TypeSpec> type_to_init;
+	uptr<InitList> init;
+	Token brace;
+	IMPL_VISITOR;
+	IMPL_CLONE(Expr)
+	{
+		return uptr<Expr>(new InitListExpr(type_to_init->clone(), init->clone()));
+	}
+	IMPL_FT
+	{
+		if (type_to_init) return type_to_init->get_ident_token();
+		else return brace;
+	}
+		IMPL_ASSTR
+	{
+		return type_to_init ? fmt::format("{}{}",type_to_init->as_str(),init->as_str())
+		: init->as_str();
+	}
+
+};
+
 struct FuncCallArg
 {
 	uptr<Expr> expr;
@@ -709,6 +740,7 @@ struct ScopeStmt : Stmt
 struct InitList : Node
 {
 	virtual uptr<InitList> clone() const = 0;
+	virtual std::string as_str() const = 0;
 };
 
 struct InitListArray : InitList
@@ -722,14 +754,29 @@ struct InitListArray : InitList
 		CPY_VEC(values, values_cpy, uptr<InitList>);
 		return uptr<InitList>(new InitListArray(mv(values_cpy)));
 	}
+	IMPL_ASSTR
+	{
+	std::string out = "";
+	if (!values.empty())
+	{
+		out += fmt::format("{}", values[0]->as_str());
+	}
+	for (int i = 1; i < values.size(); i++)
+	{
+		auto& val = values[i];
+		out += fmt::format(",{}", val->as_str());
+	}
+	return fmt::format("{{{}}}", out);
+	}
 };
 
 struct StructInitInfo
 {
-	StructInitInfo(Token& member, uptr<InitList> init)
-		:member(member),init(mv(init)){}
+	StructInitInfo(Token& member, uptr<InitList> init, bool moved)
+		:member(member),init(mv(init)),moved(moved) {}
 	Token member;
 	uptr<InitList> init;
+	bool moved;
 };
 
 struct InitListStruct : InitList
@@ -743,74 +790,83 @@ struct InitListStruct : InitList
 		std::vector<StructInitInfo> sii_cpy;
 		for (auto& p : struct_init_info)
 		{
-			sii_cpy.emplace_back(p.member, p.init->clone());
+			sii_cpy.emplace_back(p.member, p.init->clone(),p.moved);
 		}
 		return uptr<InitList>(new InitListStruct(mv(sii_cpy)));
 	}
-};
-
-struct InitListDecimal : InitList
-{
-	InitListDecimal(uptr<DecimalLiteralExpr>&& expr)
-		:expr(mv(expr)){}
-	uptr<DecimalLiteralExpr> expr;
-	IMPL_VISITOR;
-	IMPL_CLONE(InitList)
+	IMPL_ASSTR
 	{
-		auto cloned = expr->clone();
-		auto clone_rp = cloned.release();
-		auto managed = uptr<DecimalLiteralExpr>(static_cast<DecimalLiteralExpr*>(clone_rp));
-		return uptr<InitList>(new InitListDecimal(mv(managed)));
+		std::string out = "";
+	if (!struct_init_info.empty())
+	{
+		auto& info = struct_init_info[0];
+		out += fmt::format(".{}{}{}", info.member.text,info.moved ? "#" : "=",info.init->as_str());
+	}
+	for (int i = 1; i < struct_init_info.size(); i++)
+	{
+		auto& info = struct_init_info[i];
+		out += fmt::format(",.{}{}{}", info.member.text, info.moved ? "#" : "=", info.init->as_str());
+	}
+	return fmt::format("{{{}}}", out);
 	}
 };
 
-struct InitListInteger : InitList
+template<typename T>
+struct InitListScalar : InitList
 {
-	InitListInteger(uptr<IntegerLiteralExpr>&& expr)
-		:expr(mv(expr)) {}
-	uptr<IntegerLiteralExpr> expr;
+	InitListScalar(uptr<T>&& scalar)
+		:scalar(mv(scalar)) {}
+	uptr<T> expr;
 	IMPL_VISITOR;
 	IMPL_CLONE(InitList)
 	{
-		auto cloned = expr->clone();
+		auto cloned = scalar->clone();
 		auto clone_rp = cloned.release();
-		auto managed = uptr<DecimalLiteralExpr>(static_cast<DecimalLiteralExpr*>(clone_rp));
-		return uptr<InitList>(new InitListDecimal(mv(managed)));
+		auto managed = uptr<T>(static_cast<T*>(clone_rp));
+		return uptr<InitList>(new InitListScalar(mv(managed)));
+	}
+	IMPL_ASSTR
+	{
+		return fmt::format("{{{}}}",expr->as_str());
 	}
 };
+
+typedef InitListScalar<DecimalLiteralExpr> InitListDecimal;
+typedef InitListScalar<IntegerLiteralExpr> InitListInteger;
+typedef InitListScalar<IdentExpr> InitListIdent;
+typedef InitListScalar<FptrIdentExpr> InitListFptrIdent;
 
 struct DeclOpStmt : TypedStmt
 {
-	DeclOpStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr, uptr<InitList> init)
-		: type(mv(type)), name(name), expr(mv(expr)),init(mv(init)) {}
+	DeclOpStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: type(mv(type)), name(name), expr(mv(expr)) {}
 	Token name;
 	uptr<TypeSpec> type;
 	uptr<Expr> expr;
-	uptr<InitList> init;
 };
 
 struct DeclCpyStmt : DeclOpStmt
 {
-	DeclCpyStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr,uptr<InitList> init)
-		: DeclOpStmt(mv(type),name,mv(expr),mv(init)) {}
+	DeclCpyStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type),name,mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclCpyStmt(type->clone(), name, expr->clone(), init ? init->clone() : nullptr)); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclCpyStmt(type->clone(), name, expr->clone())); }
 };
 
 struct DeclMvStmt : DeclOpStmt
 {
-	DeclMvStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr, uptr<InitList> init)
-		: DeclOpStmt(mv(type), name, mv(expr),mv(init)) {}
+	DeclMvStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), name, mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclMvStmt(type->clone(), name, expr->clone(),init?init->clone():nullptr)); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclMvStmt(type->clone(), name, expr->clone())); }
 };
 
 struct DeclInitStmt : DeclOpStmt
 {
-	DeclInitStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr,uptr<InitList> init)
-		: DeclOpStmt(mv(type), name, mv(expr),mv(init)) {}
+	DeclInitStmt(uptr<TypeSpec> type, const Token& name, uptr<Expr> expr)
+		: DeclOpStmt(mv(type), name, mv(expr)) {}
 	IMPL_VISITOR;
-	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclInitStmt(type->clone(), name, expr->clone(),init?init->clone():nullptr)); }
+	IMPL_CLONE(Stmt) { return uptr<Stmt>(new DeclInitStmt(type->clone(), name, expr->clone())); }
 };
 
 struct ContinueStmt : Stmt

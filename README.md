@@ -240,11 +240,18 @@ c := b; // <-- doesn't call operator=(C*,B*)!, instead calls operator=(B* b1, B*
 - [ ] Compile to library
 - [ ] Const
 - [ ] Global Variables
-
+- [ ] Compile time code execution: Make everything executable at compile time
+- [ ] Support for 128,256 bit integers and 128bit floating point values
+- [ ] Strings
+- [ ] Stdout
+- [ ] String interpolation / String format
+- [ ] Language support in vscode
+- [ ] Debug Information
 Features now being worked on: Initialize all variables in place
 
-
-
-
-
-
+# Other TODOS
+- Support move operator in every aspect (currently no MoveDeclStmt etc.) 
+- Optimize destructor calls -> destructor calls that are basically no ops should not be called!
+- implement casts
+- expose parts of c std lib
+- better error messages (show whole line in error message)

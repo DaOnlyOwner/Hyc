@@ -39,6 +39,14 @@ private:
 	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
 	virtual void visit(OffsetofExpr& e) override;
 	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
+	virtual void visit(InitListExpr& iexpr) override;
+	virtual void visit(struct InitListArray& init_array) override;
+	virtual void visit(struct InitListStruct& init_struct) override;
+	virtual void visit(struct InitListInteger& init_int) override;
+	virtual void visit(struct InitListDecimal& init_dec) override;
+	virtual void visit(struct InitListIdent& init_ident) override;
+	virtual void visit(struct InitListFptrIdent& init_fptr_ident) override;
+
 
 
 	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);
