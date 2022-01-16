@@ -895,6 +895,10 @@ void TypeChecker::visit(SizeBetweenMemberInfoExpr& e)
 	RETURN(e.sem_type);
 }
 
+void TypeChecker::visit(InitListExpr& iexpr)
+{
+}
+
 void TypeChecker::visit(MemOpExpr& mem)
 {
 	auto from_t = get(mem.from);

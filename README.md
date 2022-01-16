@@ -224,15 +224,34 @@ void operator=(C* c, B* b){}
 B b;
 c := b; // <-- doesn't call operator=(C*,B*)!, instead calls operator=(B* b1, B* b2).
 ```
+# Implemented features
+- [X] Structs
+- [X] Unions
+- [X] Destructors
+- [X] Move and Copy operators
+- [ ] explicitly delete Move and Copy operators
+- [X] Function Pointers
+- [ ] Lambdas
+- [ ] Initialize all variables in place 
+- [X] Named return values
+- [X] Uniform Call syntax
+- [X] Array types
+- [ ] Compile more than one file
+- [ ] Compile to library
+- [ ] Const
+- [ ] Global Variables
+- [ ] Compile time code execution: Make everything executable at compile time
+- [ ] Support for 128,256 bit integers and 128bit floating point values
+- [ ] Strings
+- [ ] Stdout
+- [ ] String interpolation / String format
+- [ ] Language support in vscode
+- [ ] Debug Information
+Features now being worked on: Initialize all variables in place
 
-# Coming in future versions:
-- Initializer lists
-- Destructuring
-- const
-
-
-
-
-
-
-
+# Other TODOS
+- Support move operator in every aspect (currently no MoveDeclStmt etc.) 
+- Optimize destructor calls -> destructor calls that are basically no ops should not be called!
+- implement casts
+- expose parts of c std lib
+- better error messages (show whole line in error message)

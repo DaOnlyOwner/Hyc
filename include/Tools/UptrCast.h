@@ -25,5 +25,15 @@ std::unique_ptr<To> dynamic_uptr_cast_no_deleter(std::unique_ptr<From>&& p)
     return nullptr;
 }
 
+template<typename To, typename From>
+std::unique_ptr<To> static_uptr_cast_no_deleter(std::unique_ptr<From>&& p)
+{
+    auto raw = p.release();
+    auto casted = static_cast<To*>(raw);
+    return std::unique_ptr<To>(casted);
+}
+
+
+
 
 
