@@ -1,3 +1,10 @@
+struct C
+{
+   A a;
+   int b;
+   A c;
+}
+
 struct B
 {
     int a;
@@ -12,13 +19,6 @@ struct A
     B c;
 }
 
-struct C
-{
-   A a;
-   int b;
-   A c;
-}
-
 struct D
 {
    A a;
@@ -27,7 +27,6 @@ struct D
    A d;
    int e;
 }
-
 
 int main()
 {

@@ -860,7 +860,9 @@ void TypeChecker::visit(ScopeStmt& sc)
 
 void TypeChecker::visit(SizeOrAlignmentInfoExpr& e)
 {
-	RETURN(scopes.get_type("uint"));
+	get(e.expr);
+	e.sem_type = scopes.get_type("uint");
+	RETURN(e.sem_type);
 }
 
 void TypeChecker::visit(OffsetofExpr& e)

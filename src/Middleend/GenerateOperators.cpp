@@ -98,7 +98,7 @@ bool GenerateOps::gen_struct_movecopy(TypeDefStmt& td, std::unique_ptr<FuncDefSt
 		{
 			std::unique_ptr<Stmt> gen_stmt;
 			int64_t end = i - 1;
-			handle_memcpy_op_gen(end, start, td, gen_stmt);
+			handle_memcpy_op_gen(end, start, td.stmts.size(), td,  gen_stmt);
 			auto& gen_stmt2_ = get(*decl);
 			if (!gen_stmt2_.has_value())
 			{
@@ -118,7 +118,7 @@ bool GenerateOps::gen_struct_movecopy(TypeDefStmt& td, std::unique_ptr<FuncDefSt
 	if (!td.stmts.empty())
 	{
 		std::unique_ptr<Stmt> gen_stmt=nullptr;
-		handle_memcpy_op_gen(td.stmts.size() - 1, start, td, gen_stmt);
+		handle_memcpy_op_gen(td.stmts.size() - 1, start, td.stmts.size(), td, gen_stmt);
 		if (gen_stmt != nullptr)
 		{
 			fds->body.push_back(std::move(gen_stmt));
@@ -146,9 +146,20 @@ bool GenerateOps::gen_struct_destr(TypeDefStmt& td, FuncDefStmt* fds)
 }
 
 
-void GenerateOps::handle_memcpy_op_gen(const int64_t& end, const int64_t& start, TypeDefStmt& td, std::unique_ptr<Stmt>& gen_stmt)
+void GenerateOps::handle_memcpy_op_gen(int64_t end, int64_t start, size_t stmt_size, TypeDefStmt& td, std::unique_ptr<Stmt>& gen_stmt)
 {
-	if (end > 0 && (end - start > 0))
+	// Spans over the whole range, but don't memcpy a single 
+	if (stmt_size - 1 == end - start && stmt_size > 1)
+	{
+		auto lhs_a = std::make_unique<IdentExpr>(Token(Token::Specifier::Ident, "a"));
+		auto lhs_b = std::make_unique<IdentExpr>(Token(Token::Specifier::Ident, "b"));
+		auto pre = std::make_unique<PrefixOpExpr>(Token(Token::Specifier::Asterix, "*"), lhs_a->clone());
+		auto size = std::make_unique<SizeOrAlignmentInfoExpr>(Token(Token::Specifier::KwSizeof, "sizeof"), std::move(pre));
+		auto mem = std::make_unique<MemOpExpr>(std::move(lhs_a), std::move(lhs_b), std::move(size), Token(Token::Specifier::MemCpy, "-->"));
+		auto stmt = std::make_unique<ExprStmt>(std::move(mem));
+		gen_stmt = std::move(stmt);
+	}
+	else if (end > 0 && (end - start >= 0))
 	{
 		auto* mem1 = static_cast<DeclStmt*>(td.stmts[start].get());
 		auto* mem2 = static_cast<DeclStmt*>(td.stmts[end].get());
@@ -175,7 +186,7 @@ void GenerateOps::handle_memcpy_op_gen(const int64_t& end, const int64_t& start,
 		// Dont copy if it spans less than two members 
 		else
 		{
-			assert(dst > 0);
+			assert(dst >= 0);
 			auto& gen_opt = get(*mem2);
 			assert(gen_opt.has_value());
 			assert(gen_opt.value());

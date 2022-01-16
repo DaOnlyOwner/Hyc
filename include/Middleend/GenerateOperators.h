@@ -40,7 +40,7 @@ private:
 	bool gen_union_destr(std::unique_ptr<FuncDefStmt, std::default_delete<FuncDefStmt>>& fds, TypeDefStmt& td);
 	bool gen_struct_movecopy(TypeDefStmt& td, std::unique_ptr<FuncDefStmt, std::default_delete<FuncDefStmt>>& fds);
 	bool gen_struct_destr(TypeDefStmt& td, FuncDefStmt* fds);
-	void handle_memcpy_op_gen(const int64_t& end, const int64_t& start, TypeDefStmt& td, std::unique_ptr<Stmt>& gen_stmt);
+	void handle_memcpy_op_gen(int64_t end, int64_t start, size_t stmt_size, TypeDefStmt& td, std::unique_ptr<Stmt>& gen_stmt);
 	virtual void visit(DeclStmt& decl) override;
 	virtual void visit(NamespaceStmt& ns) override;
 };

@@ -789,7 +789,7 @@ void LLVMBackendExpr::visit(OffsetofExpr& e)
 
 void LLVMBackendExpr::visit(SizeOrAlignmentInfoExpr& e)
 {
-	auto mapped = map_type(e.sem_type,scopes,be.context);
+	auto mapped = map_type(e.expr->sem_type,scopes,be.context);
 	auto dl = be.mod.getDataLayout();
 	assert(e.op.type == Token::Specifier::KwSizeof || e.op.type == Token::Specifier::KwAlignof);
 	if(e.op.type == Token::Specifier::KwSizeof)
