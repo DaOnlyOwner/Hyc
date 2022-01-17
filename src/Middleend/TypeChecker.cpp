@@ -684,9 +684,12 @@ void TypeChecker::visit(DeclStmt& decl_stmt)
 {
 	if (decl_stmt.type_spec != nullptr)
 	{
-		auto [t, succ] = create_type(*decl_stmt.type_spec, scopes, ns, false);
-		assert(succ);
-		decl_stmt.type = t;
+		auto [t, succ] = create_type_with_msg(*decl_stmt.type_spec);
+		if (!succ)
+		{
+			decl_stmt.type = error_type;
+		}
+		else decl_stmt.type = t;
 	}
 	// Type needs to be inferred.
 	bool succAdd = scopes.add(&decl_stmt);
@@ -897,45 +900,105 @@ void TypeChecker::visit(SizeBetweenMemberInfoExpr& e)
 
 void TypeChecker::visit(InitListArrayExpr& init_array)
 {
-	Type t_first;
-	if (init_array.values.empty())
+	Type deduced;
+	int start_idx;
+	if (init_array.type_to_init)
 	{
-		init_array.sem_type = t_first;
-		RETURN(t_first);
+		auto [created, succ] = create_type_with_msg(*init_array.type_to_init);
+		if (!succ)
+		{
+			init_array.sem_type = error_type;
+			RETURN(error_type);
+		}
+		if (!created.is_array_type())
+		{
+			//Error: Needs to be an array type
+			Messages::inst().trigger_6_e39(init_array.first_token());
+			init_array.sem_type = error_type;
+			RETURN(error_type);
+		}
+		deduced = created;	
+		start_idx = 0;
+		if (init_array.values.empty())
+		{
+			init_array.sem_type = created;
+			RETURN(created);
+		}
 	}
-	auto& fst = init_array.values[0];
-	t_first = get(fst);
-
-	for (int i = 1;i< init_array.values.size();i++)
+	else
+	{
+		if (init_array.values.empty())
+		{
+			// Cannot deduce type
+			Messages::inst().trigger_6_e37(init_array.first_token());
+			init_array.sem_type = error_type;
+			RETURN(error_type);
+		}
+		auto& fst = init_array.values[0];
+		deduced = get(fst);
+		start_idx = 1;
+	}
+	for (int i = start_idx;i< init_array.values.size();i++)
 	{
 		auto& elem = init_array.values[i];
 		auto t_further = get(elem);
-		if (t_further != t_first)
+		auto [succ,new_elem] = maybe_make_implicit_cast(t_further, deduced.with_pop(), std::move(elem));
+		if (!succ)
 		{
 			// Error: deduced type t_first doesn't match t_further
-			Messages::inst().trigger_6_e37(init_array.values[0]->first_token(), t_first, t_further);
+			Messages::inst().trigger_6_e36(init_array.values[i]->first_token(), deduced.with_pop().as_str(), t_further.as_str());
 		}
+		init_array.values[i] = std::move(new_elem);
 	}
-	init_array.sem_type = t_first;
-	RETURN(t_first);
+	init_array.sem_type = deduced;
+	RETURN(deduced);
 }
 
 void TypeChecker::visit(InitListStructExpr& init_struct)
 {
-	auto t = create_type(init_struct.;
-	if (!init_struct.struct_init_info.empty())
+	Type* deduced = nullptr;
+	Type given;
+	if (init_struct.type_to_init)
 	{
-		if (!tmp->is_base_type())
+		auto [tmp, succ] = create_type_with_msg(*init_struct.type_to_init);
+		if (!succ)
 		{
-			Messages::inst().trigger_6_e13(p.member, tmp->as_str()); // Pointer and other types do not have members
 			init_struct.sem_type = error_type;
 			RETURN(error_type);
 		}
+		given = tmp;
+		deduced = &given;
 	}
+	if (current_type)
+	{
+		if (init_struct.type_to_init && *deduced != *current_type)
+		{
+			//ERROR: given type does not match the inferred type
+			Messages::inst().trigger_6_e36(init_struct.first_token(),current_type->as_str(),deduced->as_str());
+			init_struct.sem_type = error_type;
+			RETURN(error_type);
+		}
+		else if (!init_struct.type_to_init) deduced = current_type;		
+	}
+	else
+	{
+		if (!init_struct.type_to_init)
+		{
+			// Error: Cannot infer struct type 
+			Messages::inst().trigger_6_e37(init_struct.first_token());
+		}
+	}
+	if (!init_struct.struct_init_info.empty() && !deduced->is_base_type())
+	{
+		Messages::inst().trigger_6_e13(init_struct.struct_init_info[0].member, given.as_str()); // Pointer and other types do not have members
+		init_struct.sem_type = error_type;
+		RETURN(error_type);
+	}
+
 
 	if (init_struct.struct_init_info.size() > 1)
 	{
-		if (tmp->get_base_type()->get_ct() == CollectionType::Union)
+		if (deduced->get_base_type()->get_ct() == CollectionType::Union)
 		{
 			// More than one member initializer for union for initializer list.
 			Messages::inst().trigger_6_e38(init_struct.first_token());
@@ -944,15 +1007,15 @@ void TypeChecker::visit(InitListStructExpr& init_struct)
 
 	for (auto& p : init_struct.struct_init_info)
 	{
-		DeclStmt* decl = scopes.get_decl_for(tmp->get_base_type(), p.member.text);
+		DeclStmt* decl = scopes.get_decl_for(deduced->get_base_type(), p.member.text);
 		Type* inner = nullptr;
 		if (decl == nullptr)
 		{
-			auto* udecl = scopes.get_union_decl_for(tmp->get_base_type(), p.member.text);
+			auto* udecl = scopes.get_union_decl_for(deduced->get_base_type(), p.member.text);
 			if (!udecl)
 			{
 				// Error: no member named "decl->name" in trh
-				Messages::inst().trigger_6_e12(p.member, tmp->as_str(), p.member.text);
+				Messages::inst().trigger_6_e12(p.member, deduced->as_str(), p.member.text);
 				init_struct.sem_type = error_type;
 				RETURN(error_type);
 			}
@@ -962,6 +1025,8 @@ void TypeChecker::visit(InitListStructExpr& init_struct)
 		current_type = inner;
 		auto out_t = get(p.init);
 	}
+	init_struct.sem_type = *deduced;
+	RETURN(*deduced);
 }
 
 void TypeChecker::visit(MemOpExpr& mem)

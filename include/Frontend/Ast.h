@@ -707,9 +707,10 @@ struct ScopeStmt : Stmt
 
 struct InitListArrayExpr : Expr
 {
-	InitListArrayExpr(std::vector<uptr<Expr>>&& values, const Token& brace)
-		:values(mv(values)),brace(brace) {}
+	InitListArrayExpr(uptr<TypeSpec> type_to_init,std::vector<uptr<Expr>>&& values, const Token& brace)
+		:type_to_init(mv(type_to_init)),values(mv(values)),brace(brace) {}
 	std::vector<uptr<Expr>> values;
+	uptr<TypeSpec> type_to_init;
 	Token brace;
 	IMPL_VISITOR;
 	IMPL_FT
@@ -748,8 +749,8 @@ struct StructInitInfo
 
 struct InitListStructExpr : Expr
 {
-	InitListStructExpr(uptr<TypeSpec> type_to_init,	std::vector<StructInitInfo>&& sii)
-		:type_to_init(mv(type_to_init)),struct_init_info(mv(sii)) {}
+	InitListStructExpr(uptr<TypeSpec> type_to_init,	std::vector<StructInitInfo>&& sii,const Token& brace)
+		:type_to_init(mv(type_to_init)),struct_init_info(mv(sii)),brace(brace) {}
 	Token brace;
 	std::vector<StructInitInfo> struct_init_info;
 	uptr<TypeSpec> type_to_init;

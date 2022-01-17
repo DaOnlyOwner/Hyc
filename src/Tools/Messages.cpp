@@ -289,7 +289,27 @@ void Messages::trigger_6_e34(const Token& from, const std::string& s)
 
 void Messages::trigger_6_e35(const Token& from, const std::string& t)
 {
-	semantic_error(from, fmt::format("first parameter of offsetof needs to be a struct type, not '{}'",t));
+	semantic_error(from, fmt::format("First parameter of offsetof needs to be a struct type, not '{}'",t));
+}
+
+void Messages::trigger_6_e36(const Token& from, const std::string& d, const std::string& t)
+{
+	semantic_error(from, fmt::format("Deduced type '{}' doesn't match type '{}' in initializer expression", d, t));
+}
+
+void Messages::trigger_6_e37(const Token& from)
+{
+	semantic_error(from, "Cannot deduce type of initalization expression");
+}
+
+void Messages::trigger_6_e38(const Token& from)
+{
+	semantic_error(from, "More than one initialized member in union initialization expression");
+}
+
+void Messages::trigger_6_e39(const Token& from)
+{
+	semantic_error(from, "Given type needs to be an array type");
 }
 
 void Messages::trigger_7_e1(const Token& from, const std::string& coll_name)

@@ -156,7 +156,7 @@ namespace
 
 	PrefixOperation<Expr> init_list_expr{ (int)ExprPrecedence::Group0,[](PrefixExprFnArgs) {
 		auto init = parser.overall_parser->parse_init_list();
-		return std::make_unique<InitListExpr>(nullptr, std::move(init), token);
+		return init;
 } };
 
 	// Precedence  right_assoc?  Parsing function
@@ -565,32 +565,45 @@ std::unique_ptr<InitList> Parser::parse_init_list()
 		return out;
 	}
 }
-std::unique_ptr<InitList> Parser::parse_init_list_struct()
+std::unique_ptr<InitListStructExpr> Parser::parse_init_list_struct()
 {
-	tkns.match_token(Token::Specifier::Dot);
-	auto member = tkns.match_token(Token::Specifier::Ident);
-	bool moved = tkns.match_one_of<Token::Specifier::Hashtag,
-		Token::Specifier::Equal>().type == Token::Specifier::Hashtag;
-	auto fst = parse_init_list();
-	StructInitInfo sii(member, std::move(fst), moved);
-	std::vector<StructInitInfo> siis{ std::move(sii) };
-	while (tkns.lookahead(1).type == Token::Specifier::Comma)
+	uptr<TypeSpec> type_to_init = nullptr;
+	if (tkns.lookahead(1).type == Token::Specifier::Ident)
 	{
-		tkns.eat(); // ,
+		type_to_init = parse_type_spec();
+	}
+	auto& brace = tkns.match_token(Token::Specifier::BraceL);
+
+	std::vector<StructInitInfo> siis;
+	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
+	{
+		tkns.match_token(Token::Specifier::Dot);
 		auto member = tkns.match_token(Token::Specifier::Ident);
 		bool moved = tkns.match_one_of<Token::Specifier::Hashtag,
 			Token::Specifier::Equal>().type == Token::Specifier::Hashtag;
 		auto init = parse_init_list();
-		StructInitInfo sii_inner(member, std::move(fst), moved);
+		StructInitInfo sii_inner(member, std::move(init), moved);
 		siis.push_back(std::move(sii_inner));
+		if (tkns.lookahead(1).type == Token::Specifier::Comma)
+		{
+			tkns.eat(); // ,
+		}
+		else break;
 	}
-
-	return std::make_unique<InitListStruct>(std::move(siis));
+	tkns.match_token(Token::Specifier::BraceR);
+	return std::make_unique<InitListStructExpr>(std::move(type_to_init),std::move(siis),brace);
 }
 
-std::unique_ptr<InitList> Parser::parse_init_list_array()
+std::unique_ptr<InitListArrayExpr> Parser::parse_init_list_array()
 {
-	std::vector<uptr<InitList>> inits;
+	uptr<TypeSpec> type_to_init = nullptr;
+	if (tkns.lookahead(1).type == Token::Specifier::Ident)
+	{
+		type_to_init = parse_type_spec();
+	}
+	auto& brace = tkns.match_token(Token::Specifier::BraceL);
+
+	std::vector<uptr<Expr>> inits;
 	while (tkns.lookahead(1).type != Token::Specifier::BraceR && tkns.lookahead(1).type != Token::Specifier::Eof)
 	{
 		inits.push_back(parse_init_list());
@@ -598,102 +611,7 @@ std::unique_ptr<InitList> Parser::parse_init_list_array()
 			tkns.eat(); // ,
 	}
 
-	return std::make_unique<InitListArray>(std::move(inits));
-}
-
-std::unique_ptr<InitList> Parser::parse_init_list_literal()
-{
-	auto t = tkns.lookahead(1).type;
-	auto tkn = tkns.match_one_of<
-		Token::Specifier::Int,
-		Token::Specifier::UInt,
-		Token::Specifier::UShort,
-		Token::Specifier::Short,
-		Token::Specifier::Char,
-		Token::Specifier::UChar,
-		Token::Specifier::Half,
-		Token::Specifier::UHalf,
-		Token::Specifier::Float,
-		Token::Specifier::Double,
-		Token::Specifier::Quad>();
-
-	switch (t)
-	{
-	case Token::Specifier::Int:
-	case Token::Specifier::UInt:
-	case Token::Specifier::UShort:
-	case Token::Specifier::Short:
-	case Token::Specifier::Char:
-	case Token::Specifier::UChar:
-	case Token::Specifier::Half:
-	case Token::Specifier::UHalf:
-	{
-		static std::unordered_map<Token::Specifier, IntegerLiteralType> m
-		{
-			{ Token::Specifier::UInt,IntegerLiteralType::UInt },
-			{ Token::Specifier::Int, IntegerLiteralType::Int },
-			{ Token::Specifier::Short, IntegerLiteralType::Short },
-			{ Token::Specifier::UShort, IntegerLiteralType::UShort },
-			{ Token::Specifier::Char, IntegerLiteralType::Char },
-			{ Token::Specifier::UChar,IntegerLiteralType::UChar },
-			{ Token::Specifier::Half,IntegerLiteralType::Half },
-			{ Token::Specifier::UHalf,IntegerLiteralType::UHalf }
-		};
-
-		auto eval = eval_integer_val(tkn, m[tkn.type]);
-		return std::make_unique<InitListInteger>(
-			std::make_unique<IntegerLiteralExpr>(tkn, eval)
-			);
-
-	}
-	case Token::Specifier::Float:
-	case Token::Specifier::Double:
-	case Token::Specifier::Quad:
-	{
-		static std::unordered_map<Token::Specifier, DecimalLiteralType> m
-		{
-			{ Token::Specifier::Float,DecimalLiteralType::Float },
-			{ Token::Specifier::Double,DecimalLiteralType::Double }
-		};
-
-		auto eval = eval_decimal_val(tkn, m[tkn.type]);
-		return std::make_unique<InitListDecimal>(
-			std::make_unique<DecimalLiteralExpr>(tkn, eval)
-			);
-	}
-	default:
-		assert(false);
-		return nullptr;
-	}
-}
-
-std::unique_ptr<InitList> Parser::parse_init_list_ident()
-{
-	Token t = tkns.eat();
-	auto [is_ident, ident_or_fptr_ident] = parse_ident_expr(t);
-	uptr<InitList> init;
-	if (is_ident)
-	{
-		auto ident = static_uptr_cast_no_deleter<IdentExpr>(std::move(ident_or_fptr_ident));
-		init = std::make_unique<InitListIdent>(
-			std::move(ident)
-			);
-	}
-	else
-	{
-		auto fptr_ident = static_uptr_cast_no_deleter<FptrIdentExpr>(std::move(ident_or_fptr_ident));
-		init = std::make_unique<InitListFptrIdent>(
-			std::move(fptr_ident)
-			);
-	}
-	if (tkns.lookahead(1).type == Token::Specifier::Comma)
-	{
-		uptr<InitList> parsed = parse_init_list_array();
-		auto initl_array = static_uptr_cast_no_deleter<InitListArray>(std::move(parsed));
-		initl_array->values.insert(initl_array->values.begin(), std::move(init));
-		return initl_array;
-	}
-	else return init;
+	return std::make_unique<InitListArrayExpr>(std::move(type_to_init), std::move(inits),brace);
 }
 
 std::unique_ptr<Stmt> Parser::parse_union_decl_stmt()

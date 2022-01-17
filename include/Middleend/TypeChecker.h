@@ -41,7 +41,15 @@ private:
 	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
 	virtual void visit(InitListArrayExpr& init_array) override;
 	virtual void visit(InitListStructExpr& init_struct) override;
+	
 
+	inline std::pair<Type,bool> create_type_with_msg(TypeSpec& ts, bool instantiate_generics = true)
+	{
+		auto t = create_type(ts, scopes, ns,instantiate_generics);
+		if(!t.second)
+			Messages::inst().trigger_4_e1(ts.get_ident_token());
+		return t;
+	}
 
 
 	bool handle_bin_op_pointer_arithmetic(Type& tlh, Type& trh, BinOpExpr& bin_op);
@@ -64,6 +72,7 @@ private:
 
 	Scopes& scopes;
 	NamespaceStmt& ns;
+	Type* current_type;
 	FuncDefStmt* current_function = nullptr;
 	size_t new_elem_idx = 0;
 };
