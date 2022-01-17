@@ -76,14 +76,8 @@ struct IAstVisitor
 	virtual void visit(struct OffsetofExpr& ooe){}
 	virtual void visit(struct SizeOrAlignmentInfoExpr& soaie){};
 	virtual void visit(struct SizeBetweenMemberInfoExpr& e){}
-	virtual void visit(struct InitListArray& a) {}
-	virtual void visit(struct InitListStruct& s) {}
-	virtual void visit(struct InitListInteger& i) {}
-	virtual void visit(struct InitListDecimal& d) {}
-	virtual void visit(struct InitListIdent&) {}
-	virtual void visit(struct InitListFptrIdent&){}
-
-
+	virtual void visit(struct InitListArrayExpr& a) {}
+	virtual void visit(struct InitListStructExpr& s) {}
 };
 
 struct Node
@@ -532,32 +526,6 @@ struct IdentExpr : Expr
 	}
 };
 
-struct InitListExpr : Expr
-{
-	InitListExpr(uptr<TypeSpec> type_to_init, uptr<InitList> init, const Token& fst_token)
-		:type_to_init(mv(type_to_init)),init(mv(init)),brace(fst_token){}
-
-	uptr<TypeSpec> type_to_init;
-	uptr<InitList> init;
-	Token brace;
-	IMPL_VISITOR;
-	IMPL_CLONE(Expr)
-	{
-		return uptr<Expr>(new InitListExpr(type_to_init->clone(), init->clone()));
-	}
-	IMPL_FT
-	{
-		if (type_to_init) return type_to_init->get_ident_token();
-		else return brace;
-	}
-		IMPL_ASSTR
-	{
-		return type_to_init ? fmt::format("{}{}",type_to_init->as_str(),init->as_str())
-		: init->as_str();
-	}
-
-};
-
 struct FuncCallArg
 {
 	uptr<Expr> expr;
@@ -737,22 +705,21 @@ struct ScopeStmt : Stmt
 	}
 };
 
-struct InitList : Node
+struct InitListArrayExpr : Expr
 {
-	virtual uptr<InitList> clone() const = 0;
-	virtual std::string as_str() const = 0;
-};
-
-struct InitListArray : InitList
-{
-	InitListArray(std::vector<uptr<InitList>>&& values)
-		:values(mv(values)) {}
-	std::vector<uptr<InitList>> values;
+	InitListArrayExpr(std::vector<uptr<Expr>>&& values, const Token& brace)
+		:values(mv(values)),brace(brace) {}
+	std::vector<uptr<Expr>> values;
+	Token brace;
 	IMPL_VISITOR;
-	IMPL_CLONE(InitList)
+	IMPL_FT
 	{
-		CPY_VEC(values, values_cpy, uptr<InitList>);
-		return uptr<InitList>(new InitListArray(mv(values_cpy)));
+		return brace;
+	}
+	IMPL_CLONE(Expr)
+	{
+		CPY_VEC(values, values_cpy, uptr<Expr>);
+		return uptr<Expr>(new InitListArrayExpr(mv(values_cpy),brace));
 	}
 	IMPL_ASSTR
 	{
@@ -772,27 +739,34 @@ struct InitListArray : InitList
 
 struct StructInitInfo
 {
-	StructInitInfo(Token& member, uptr<InitList> init, bool moved)
+	StructInitInfo(Token& member, uptr<Expr> init, bool moved)
 		:member(member),init(mv(init)),moved(moved) {}
 	Token member;
-	uptr<InitList> init;
+	uptr<Expr> init;
 	bool moved;
 };
 
-struct InitListStruct : InitList
+struct InitListStructExpr : Expr
 {
-	InitListStruct(std::vector<StructInitInfo>&& sii)
-		:struct_init_info(mv(sii)) {}
+	InitListStructExpr(uptr<TypeSpec> type_to_init,	std::vector<StructInitInfo>&& sii)
+		:type_to_init(mv(type_to_init)),struct_init_info(mv(sii)) {}
+	Token brace;
 	std::vector<StructInitInfo> struct_init_info;
+	uptr<TypeSpec> type_to_init;
+
+	IMPL_FT
+	{
+		return type_to_init->get_ident_token();
+	}
 	IMPL_VISITOR;
-	IMPL_CLONE(InitList)
+	IMPL_CLONE(Expr)
 	{
 		std::vector<StructInitInfo> sii_cpy;
 		for (auto& p : struct_init_info)
 		{
 			sii_cpy.emplace_back(p.member, p.init->clone(),p.moved);
 		}
-		return uptr<InitList>(new InitListStruct(mv(sii_cpy)));
+		return uptr<Expr>(new InitListStructExpr(type_to_init->clone(),mv(sii_cpy)));
 	}
 	IMPL_ASSTR
 	{
@@ -810,31 +784,6 @@ struct InitListStruct : InitList
 	return fmt::format("{{{}}}", out);
 	}
 };
-
-template<typename T>
-struct InitListScalar : InitList
-{
-	InitListScalar(uptr<T>&& scalar)
-		:scalar(mv(scalar)) {}
-	uptr<T> expr;
-	IMPL_VISITOR;
-	IMPL_CLONE(InitList)
-	{
-		auto cloned = scalar->clone();
-		auto clone_rp = cloned.release();
-		auto managed = uptr<T>(static_cast<T*>(clone_rp));
-		return uptr<InitList>(new InitListScalar(mv(managed)));
-	}
-	IMPL_ASSTR
-	{
-		return fmt::format("{{{}}}",expr->as_str());
-	}
-};
-
-typedef InitListScalar<DecimalLiteralExpr> InitListDecimal;
-typedef InitListScalar<IntegerLiteralExpr> InitListInteger;
-typedef InitListScalar<IdentExpr> InitListIdent;
-typedef InitListScalar<FptrIdentExpr> InitListFptrIdent;
 
 struct DeclOpStmt : TypedStmt
 {

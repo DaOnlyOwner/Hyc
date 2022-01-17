@@ -322,7 +322,7 @@ Parser::Parser(Lexer& token_source, const std::string& filename)
 	ADD_OP(Token::Specifier::KwAlignof,align_sizeof);
 	ADD_OP(Token::Specifier::KwSizeof,align_sizeof);
 	ADD_OP(Token::Specifier::KwOffsetof,offsetof_);
-	ADD_OP(Token::Specifier::BraceR, init_list_expr);
+	ADD_OP(Token::Specifier::BraceL, init_list_expr);
 
 	file = filename;
 }

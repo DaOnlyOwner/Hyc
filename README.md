@@ -247,6 +247,7 @@ c := b; // <-- doesn't call operator=(C*,B*)!, instead calls operator=(B* b1, B*
 - [ ] String interpolation / String format
 - [ ] Language support in vscode
 - [ ] Debug Information
+- [ ] Overload operators
 Features now being worked on: Initialize all variables in place
 
 # Other TODOS
@@ -255,3 +256,5 @@ Features now being worked on: Initialize all variables in place
 - implement casts
 - expose parts of c std lib
 - better error messages (show whole line in error message)
+- in InitListArray: Allow conversions between basic types in array initalizer.
+- infer amount of array from init list.

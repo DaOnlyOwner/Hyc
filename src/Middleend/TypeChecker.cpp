@@ -895,8 +895,73 @@ void TypeChecker::visit(SizeBetweenMemberInfoExpr& e)
 	RETURN(e.sem_type);
 }
 
-void TypeChecker::visit(InitListExpr& iexpr)
+void TypeChecker::visit(InitListArrayExpr& init_array)
 {
+	Type t_first;
+	if (init_array.values.empty())
+	{
+		init_array.sem_type = t_first;
+		RETURN(t_first);
+	}
+	auto& fst = init_array.values[0];
+	t_first = get(fst);
+
+	for (int i = 1;i< init_array.values.size();i++)
+	{
+		auto& elem = init_array.values[i];
+		auto t_further = get(elem);
+		if (t_further != t_first)
+		{
+			// Error: deduced type t_first doesn't match t_further
+			Messages::inst().trigger_6_e37(init_array.values[0]->first_token(), t_first, t_further);
+		}
+	}
+	init_array.sem_type = t_first;
+	RETURN(t_first);
+}
+
+void TypeChecker::visit(InitListStructExpr& init_struct)
+{
+	auto t = create_type(init_struct.;
+	if (!init_struct.struct_init_info.empty())
+	{
+		if (!tmp->is_base_type())
+		{
+			Messages::inst().trigger_6_e13(p.member, tmp->as_str()); // Pointer and other types do not have members
+			init_struct.sem_type = error_type;
+			RETURN(error_type);
+		}
+	}
+
+	if (init_struct.struct_init_info.size() > 1)
+	{
+		if (tmp->get_base_type()->get_ct() == CollectionType::Union)
+		{
+			// More than one member initializer for union for initializer list.
+			Messages::inst().trigger_6_e38(init_struct.first_token());
+		}
+	}
+
+	for (auto& p : init_struct.struct_init_info)
+	{
+		DeclStmt* decl = scopes.get_decl_for(tmp->get_base_type(), p.member.text);
+		Type* inner = nullptr;
+		if (decl == nullptr)
+		{
+			auto* udecl = scopes.get_union_decl_for(tmp->get_base_type(), p.member.text);
+			if (!udecl)
+			{
+				// Error: no member named "decl->name" in trh
+				Messages::inst().trigger_6_e12(p.member, tmp->as_str(), p.member.text);
+				init_struct.sem_type = error_type;
+				RETURN(error_type);
+			}
+			inner = &udecl->decl_stmt->type;
+		}
+		else inner = &decl->type;
+		current_type = inner;
+		auto out_t = get(p.init);
+	}
 }
 
 void TypeChecker::visit(MemOpExpr& mem)
