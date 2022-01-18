@@ -534,37 +534,22 @@ std::unique_ptr<Stmt> Parser::parse_decl_stmt()
 	return std::make_unique<DeclStmt>(mv(type), name);
 }
 
-std::unique_ptr<InitList> Parser::parse_init_list()
+std::unique_ptr<Expr> Parser::parse_init_list()
 {
-	tkns.match_token(Token::Specifier::BraceL);
-	if (tkns.lookahead(1).type == Token::Specifier::Dot)
+	auto type_to_init = parse_type_spec();
+	if (tkns.lookahead(2).type == Token::Specifier::Dot)
 	{
 		auto out = parse_init_list_struct();
-		tkns.match_token(Token::Specifier::BraceR);
 		return (out);
 	}
-	else if (tkns.lookahead(1).type == Token::Specifier::Ident)
-	{
-		auto out = parse_init_list_ident();
-		tkns.match_token(Token::Specifier::BraceR);
-		return out;
-	}
-
-	else if (tkns.lookahead(1).type == Token::Specifier::BraceL
-		|| tkns.lookahead(2).type == Token::Specifier::Comma)
-	{
-		auto out = parse_init_list_array();
-		tkns.match_token(Token::Specifier::BraceR);
-		return out;
-	}
-
+	// Its an array initializer
 	else
 	{
-		auto out = parse_init_list_literal();
-		tkns.match_token(Token::Specifier::BraceR);
+		auto out = parse_init_list_array();
 		return out;
 	}
 }
+
 std::unique_ptr<InitListStructExpr> Parser::parse_init_list_struct()
 {
 	uptr<TypeSpec> type_to_init = nullptr;
