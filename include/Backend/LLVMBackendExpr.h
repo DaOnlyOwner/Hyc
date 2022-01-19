@@ -56,5 +56,8 @@ private:
 	virtual void visit(OffsetofExpr& e) override;
 	virtual void visit(SizeOrAlignmentInfoExpr& e) override;
 	virtual void visit(SizeBetweenMemberInfoExpr& e) override;
+	virtual void visit(InitListArrayExpr& iexpr) override;
+	virtual void visit(InitListStructExpr& iexpr) override;
 
+	llvm::Value* array_to_assign = nullptr;
 };

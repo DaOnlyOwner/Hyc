@@ -705,11 +705,19 @@ struct ScopeStmt : Stmt
 	}
 };
 
+struct ArrayInitInfo
+{
+	ArrayInitInfo(uptr<Expr> values, bool moved)
+		:values(mv(values)), moved(moved) {}
+	uptr<Expr> values;
+	bool moved;
+};
+
 struct InitListArrayExpr : Expr
 {
-	InitListArrayExpr(uptr<TypeSpec> type_to_init,std::vector<uptr<Expr>>&& values, const Token& brace)
+	InitListArrayExpr(uptr<TypeSpec> type_to_init,std::vector<ArrayInitInfo>&& values, const Token& brace)
 		:type_to_init(mv(type_to_init)),values(mv(values)),brace(brace) {}
-	std::vector<uptr<Expr>> values;
+	std::vector<ArrayInitInfo> values;
 	uptr<TypeSpec> type_to_init;
 	Token brace;
 	IMPL_VISITOR;

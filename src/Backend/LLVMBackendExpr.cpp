@@ -825,6 +825,38 @@ void LLVMBackendExpr::visit(SizeBetweenMemberInfoExpr& e)
 	RETURN(llvm::ConstantInt::get(be.context, llvm::APInt(64, dst/8, false)));
 }
 
+void LLVMBackendExpr::visit(InitListArrayExpr& iexpr)
+{
+	std::vector<llvm::Value*> vec;
+	bool is_const = true;
+	for (auto& expr : iexpr.values)
+	{
+		auto* val = get_with_params(expr, true);
+		vec.push_back(val);
+		auto* casted = llvm::dyn_cast<llvm::Constant>(val);
+		if(!casted)
+		{
+			is_const = false;
+		}
+	}
+	if (is_const)
+	{
+		std::vector<llvm::Constant*> consts;
+		consts.reserve(vec.size());
+		std::transform(vec.begin(), vec.end(), std::back_inserter(consts), [](const auto& p) {
+			return llvm::dyn_cast<llvm::Constant>(p);
+			});
+
+		auto elem_t = map_type(iexpr.sem_type.with_pop(), scopes, be.context);
+		auto ca = static_cast<llvm::Value*>(llvm::ConstantArray::get(llvm::ArrayType::get(elem_t,consts.size()),consts));
+		RETURN(ca);
+	}
+	else
+	{
+		
+	}
+}
+
 
 void LLVMBackendExpr::visit(TernaryExpr& tern)
 {

@@ -256,5 +256,6 @@ Features now being worked on: Initialize all variables in place
 - implement casts
 - expose parts of c std lib
 - better error messages (show whole line in error message)
-- in InitListArray: Allow conversions between basic types in array initalizer.
 - infer amount of array from init list.
+- support move operator in array/struct initialization expression
+- Optimize generation of array init expression.

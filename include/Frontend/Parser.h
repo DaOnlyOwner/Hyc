@@ -25,8 +25,8 @@ public:
 	std::unique_ptr<Stmt> parse_decl_operator_stmt(); 
 	std::unique_ptr<Stmt> parse_decl_stmt();
 	std::unique_ptr<Expr> parse_init_list();
-	std::unique_ptr<InitListStructExpr> parse_init_list_struct();
-	std::unique_ptr<InitListArrayExpr> parse_init_list_array();
+	std::unique_ptr<InitListStructExpr> parse_init_list_struct(uptr<TypeSpec> type_to_init);
+	std::unique_ptr<InitListArrayExpr> parse_init_list_array(uptr<TypeSpec> type_to_init);
 	std::unique_ptr<Stmt> parse_union_decl_stmt();
 	std::unique_ptr<Stmt> parse_struct_def();
 	std::unique_ptr<Stmt> parse_union_def();
@@ -73,7 +73,7 @@ public:
 	std::unique_ptr<BaseTypeSpec> parse_base_type_spec();
 	std::unique_ptr<TypeSpec> parse_type_spec_part();
 	// returns true if the returned expr is an ident, else false if the returned expr is a fptr ident
-	std::pair<bool,std::unique_ptr<FptrIdentExpr>> parse_ident_expr(const Token& token);
+	std::pair<bool,std::unique_ptr<Expr>> parse_ident_expr(const Token& token);
 	std::vector<GenericInfo> parse_comma_separated_ident_list();
 
 	void save();
